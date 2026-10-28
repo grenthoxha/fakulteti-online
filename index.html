@@ -11418,7 +11418,7 @@ function AcademyApp({
     if (prev.view === 'home') return 'Kreu';
     if (prev.view === 'week') return 'Orari';
     if (prev.view === 'courses') return 'Lëndët';
-    if (prev.view === 'student') return prev.studentTab === 'today' ? 'Plani' : prev.studentTab && prev.studentTab.startsWith('arena') ? 'Arena' : prev.studentTab && prev.studentTab.startsWith('cases') ? 'Rastet' : 'Provimet';
+    if (prev.view === 'student') return prev.studentTab && prev.studentTab.startsWith('arena') ? 'Arena' : prev.studentTab && prev.studentTab.startsWith('cases') ? 'Rastet' : 'Provimet';
     if (prev.view === 'studentservices') return 'Shërbimet';
     if (prev.view === 'settings') return 'Profili';
     if (prev.view === 'course') return 'Lënda';
@@ -11437,46 +11437,12 @@ function AcademyApp({
   };
   const [selectedPlanDate, setSelectedPlanDate] = useState(() => dateKey());
   const [planExamFilter, setPlanExamFilter] = useState('');
-  const [examRoadmaps, setExamRoadmaps] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('u_exam_roadmaps') || '{}');
-    } catch {
-      return {};
-    }
-  });
-  const [selectedRoadmapCourseId, setSelectedRoadmapCourseId] = useState('');
-  const [roadmapExamDate, setRoadmapExamDate] = useState('');
   const [studentXp, setStudentXp] = useState(() => {
     try {
       return Number(localStorage.getItem('u_student_xp')) || 180;
     } catch {
       return 180;
     }
-  });
-  const [dailyChallengesState, setDailyChallengesState] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(`u_daily_challenges_${dateKey()}`) || '{}');
-      return saved && typeof saved === 'object' ? saved : {};
-    } catch {
-      return {};
-    }
-  });
-  const [customMultiDayChallenges, setCustomMultiDayChallenges] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('u_custom_multiday_challenges') || '[]');
-      return Array.isArray(saved) ? saved : [];
-    } catch {
-      return [];
-    }
-  });
-  const [challengeDraft, setChallengeDraft] = useState({
-    isOpen: false,
-    title: '',
-    daysCount: 7,
-    courseId: '',
-    dailyGoal: '2 seanca studimi & lexim kapitulli',
-    useDetailedSteps: false,
-    customDailySteps: {}
   });
   const [housingFilterType, setHousingFilterType] = useState('all');
   const [housingFilterZone, setHousingFilterZone] = useState('all');
@@ -15115,11 +15081,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const getCategoryLabel = (cat = '') => {
     const c = String(cat).toLowerCase();
     if (c.includes('bio') || c.includes('neuro') || c.includes('trur')) return 'Biopsikologji';
-    if (c.includes('kognitiv') || c.includes('kujtes')) return 'Psikologji Kognitive';
-    if (c.includes('klinik') || c.includes('ankth')) return 'Psikologji Klinike';
-    if (c.includes('zhvillim') || c.includes('femij')) return 'Psikologji Zhvillimore';
-    if (c.includes('social') || c.includes('grup')) return 'Psikologji Sociale';
-    return cat.replace(/^Psikologji\s*/i, '') || 'Psikologji';
+    if (c.includes('kognitiv') || c.includes('kujtes')) return 'Psikologji kognitive';
+    if (c.includes('klinik') || c.includes('ankth')) return 'Psikologji klinike';
+    if (c.includes('zhvillim') || c.includes('femij')) return 'Psikologji zhvillimore';
+    if (c.includes('social') || c.includes('grup')) return 'Psikologji sociale';
+    const rest = cat.replace(/^Psikologji\s*/i, '');
+    return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : 'Psikologji';
   };
 
   const getCategoryVisuals = (cat = '') => {
@@ -15845,7 +15812,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       } : candidate));
       const selectedCourse = allCourses.find(candidate => candidate.id === item.courseId);
       if (selectedCourse) openCourseSection(selectedCourse, 'syllabus');
-      else { setStudentTab('today'); setView('student'); }
+      else { setStudentTab('exams'); setView('student'); }
       return;
     }
     if (item.kind === 'topic') {
@@ -16018,374 +15985,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       return next;
     });
   };
-  const toggleDailyChallenge = challengeId => {
-    setDailyChallengesState(prev => {
-      const isNowDone = !prev[challengeId];
-      const next = { ...prev, [challengeId]: isNowDone };
-      try {
-        localStorage.setItem(`u_daily_challenges_${today}`, JSON.stringify(next));
-      } catch {}
-      if (isNowDone) {
-        const bonus = challengeId === 'ch_attendance' ? 30 : 40;
-        addStudentXp(bonus);
-        showToast(`+${bonus} XP! Sfida u p\u00EBrfundua me sukses!`, '\uD83C\uDFC6');
-      }
-      return next;
-    });
-  };
-  const generateExamRoadmap = (targetCourseId, targetDateStr, silent = false) => {
-    const cId = targetCourseId || enrolledCourses[0]?.id || allCourses[0]?.id || '';
-    if (!cId) {
-      showToast('Zgjidh nj\u00EB l\u00EBnd\u00EB p\u00EBr planin e provimit.', '\u26A0\uFE0F');
-      return;
-    }
-    const c = allCourses.find(item => item.id === cId) || enrolledCourses.find(item => item.id === cId);
-    if (!c) return;
-    {
-      const challengeEnd = new Date(today + 'T12:00:00');
-      challengeEnd.setDate(challengeEnd.getDate() + 29);
-      const challengeEndDate = dateKey(challengeEnd);
-      const deadline = examDeadlines.find(item => item.courseId === cId);
-      const registeredExamDate = targetDateStr || deadline?.date || challengeEndDate;
-      const resources = getCourseResources(c);
-      const personalNotesAvailable = Boolean(String(courseNotes[c.id] || myNotes[c.id] || '').trim());
-      const studyUnits = [];
-      const seenUnits = new Set();
-      const addUnit = (title, source, topicId = '') => {
-        const safeTitle = String(title || '').trim();
-        const key = safeTitle.toLowerCase();
-        if (!safeTitle || seenUnits.has(key)) return;
-        seenUnits.add(key);
-        studyUnits.push({ title: safeTitle, source, topicId });
-      };
-      (c.chapters || []).forEach(chapter => addUnit(chapter.title, 'Libri / kapitulli', chapter.id));
-      getCourseSyllabus(c).topics.forEach(topic => addUnit(topic.title, 'Programi i lëndës', topic.id));
-      resources.filter(item => item.type === 'lesson').forEach(item => addUnit(item.title, item.label || 'Materiali i lëndës', item.id));
-      sessionMaterials.filter(item => item.courseId === c.id).forEach(item => addUnit(item.title, 'Materiali i profesorit', item.topicId || ''));
-      if (personalNotesAvailable) addUnit('Shënimet e tua personale', 'Shënimet e tua');
-      resources.filter(item => item.type === 'pdf').forEach(item => addUnit(item.title, 'Libri / PDF', item.id));
-      if (!studyUnits.length) {
-        addUnit('Konceptet bazë të lëndës', 'Programi i lëndës');
-        addUnit('Përkufizimet dhe shembujt kryesorë', 'Materiali i lëndës');
-      }
-      const testsByDay = {
-        7: { label: 'Testi bazë', difficulty: 'easy', questionCount: 6, requiredScore: 60 },
-        14: { label: 'Testi i kuptimit', difficulty: 'medium', questionCount: 8, requiredScore: 70 },
-        21: { label: 'Testi i zbatimit', difficulty: 'hard', questionCount: 10, requiredScore: 80 },
-        27: { label: 'Simulimi i provimit', difficulty: 'hard', questionCount: 12, requiredScore: 85 },
-        30: { label: 'Provimi final i sfidës', difficulty: 'mastery', questionCount: 15, requiredScore: 90 }
-      };
-      const challengeSteps = [];
-      for (let index = 0; index < 30; index += 1) {
-        const dayNum = index + 1;
-        const stepDate = new Date(today + 'T12:00:00');
-        stepDate.setDate(stepDate.getDate() + index);
-        const generatedTest = testsByDay[dayNum];
-        if (generatedTest) {
-          challengeSteps.push({
-            id: 'challenge30_' + c.id + '_' + dayNum,
-            dayNum,
-            dateStr: dateKey(stepDate),
-            phase: dayNum === 30 ? 'Provimi final' : 'Test kontrollues',
-            title: generatedTest.label + ': ' + c.title,
-            desc: generatedTest.questionCount + ' pyetje të gjeneruara nga materialet, kapitujt dhe shënimet e disponueshme. Kalimi kërkon ' + generatedTest.requiredScore + '%.',
-            done: false,
-            isTest: true,
-            difficulty: generatedTest.difficulty,
-            questionCount: generatedTest.questionCount,
-            requiredScore: generatedTest.requiredScore,
-            attempts: 0,
-            bestScore: 0,
-            source: 'Materialet e kombinuara',
-            xp: 50
-          });
-          continue;
-        }
-        const unit = studyUnits[index % studyUnits.length];
-        const phase = dayNum <= 6 ? 'Bazat' : dayNum <= 13 ? 'Kuptim' : dayNum <= 20 ? 'Zbatim' : dayNum <= 26 ? 'Analizë' : 'Përvetësim';
-        const difficulty = dayNum <= 6 ? 'E lehtë' : dayNum <= 13 ? 'Mesatare' : dayNum <= 20 ? 'E avancuar' : 'E vështirë';
-        let title = 'Lexo dhe kupto: ' + unit.title;
-        let desc = 'Puno 25 minuta me ' + unit.source.toLowerCase() + ', pastaj shkruaj 3 ide kryesore me fjalët e tua.';
-        let minutes = 25;
-        if (dayNum >= 8 && dayNum <= 13) {
-          title = 'Shpjego pa material: ' + unit.title;
-          desc = 'Lexo burimin, mbylle dhe shpjegoje nga kujtesa. Krahasoje përgjigjen me shënimet e tua.';
-          minutes = 35;
-        } else if (dayNum >= 15 && dayNum <= 20) {
-          title = 'Zbato njohuritë: ' + unit.title;
-          desc = 'Krijo një shembull, rast ose krahasim dhe përgjigju në pyetje pa e parë materialin.';
-          minutes = 45;
-        } else if (dayNum >= 22 && dayNum <= 26) {
-          title = 'Analizo dhe lidh: ' + unit.title;
-          desc = 'Lidhe këtë temë me dy tema të tjera dhe kontrollo boshllëqet te fletorja e gabimeve.';
-          minutes = 50;
-        } else if (dayNum === 28) {
-          title = 'Korrigjo të gjitha gabimet e testeve';
-          desc = 'Përsërit vetëm pyetjet e gabuara derisa t’i shpjegosh saktë pa ndihmë.';
-          minutes = 50;
-        } else if (dayNum === 29) {
-          title = 'Përsëritja finale për objektivin 10';
-          desc = 'Rikujto konceptet kryesore, formulat dhe shembujt; mos hap material të ri.';
-          minutes = 40;
-        }
-        challengeSteps.push({
-          id: 'challenge30_' + c.id + '_' + dayNum,
-          dayNum,
-          dateStr: dateKey(stepDate),
-          phase,
-          difficulty,
-          title,
-          desc,
-          minutes,
-          source: unit.source,
-          topicId: unit.topicId,
-          done: Boolean(silent && dayNum <= 2),
-          xp: dayNum >= 22 ? 35 : dayNum >= 15 ? 30 : 25
-        });
-      }
-      const roadmapObj30 = {
-        type: 'challenge-30',
-        courseId: c.id,
-        courseTitle: c.title,
-        targetDate: registeredExamDate,
-        challengeEndDate,
-        daysLeft: 30,
-        goal: 'Objektivi: përgatitje për notën 10',
-        generatedAt: today,
-        sourceStats: {
-          chapters: (c.chapters || []).length,
-          notes: personalNotesAvailable ? 1 : 0,
-          professorMaterials: sessionMaterials.filter(item => item.courseId === c.id).length + resources.filter(item => item.type === 'lesson' && !(c.chapters || []).some(chapter => chapter.id === item.id)).length,
-          booksAndPdfs: resources.filter(item => item.type === 'pdf').length
-        },
-        steps: challengeSteps
-      };
-      setExamRoadmaps(prev => {
-        const next = { ...prev, [c.id]: roadmapObj30 };
-        try {
-          localStorage.setItem('u_exam_roadmaps', JSON.stringify(next));
-        } catch {}
-        return next;
-      });
-      setSelectedRoadmapCourseId(c.id);
-      if (!silent) showToast('Plani 30-ditor p\u00EBr "' + c.title + '" filloi!', '\u2713');
-      return;
-    }
-    const targetDate = targetDateStr || (() => {
-      const deadline = examDeadlines.find(d => d.courseId === cId);
-      if (deadline && deadline.date) return deadline.date;
-      const d = new Date();
-      d.setDate(d.getDate() + 14);
-      return dateKey(d);
-    })();
-    const diffDays = Math.ceil((new Date(`${targetDate}T12:00:00`).getTime() - new Date(`${today}T12:00:00`).getTime()) / 86400000);
-    const daysLeft = Math.max(1, isNaN(diffDays) ? 14 : diffDays);
-    const rawChapters = Array.isArray(c.chapters) && c.chapters.length > 0 ? c.chapters : [
-      { id: 'ch_1', title: 'Kapitulli 1: Hyrje dhe bazat thelb\u00EBsore' },
-      { id: 'ch_2', title: 'Kapitulli 2: Parimet themelore dhe klasifikimet' },
-      { id: 'ch_3', title: 'Kapitulli 3: Diagnostika, trajtimi dhe analiza' },
-      { id: 'ch_4', title: 'Kapitulli 4: Aplikimet klinike dhe rastet' }
-    ];
-    const stepCount = Math.min(Math.max(3, daysLeft), Math.max(rawChapters.length + 2, 4));
-    const chsPerStep = Math.max(1, Math.ceil(rawChapters.length / Math.max(1, stepCount - 2)));
-    let chCursor = 0;
-    const steps = [];
-    for (let i = 0; i < stepCount; i++) {
-      const stepDate = new Date(`${today}T12:00:00`);
-      const offsetDays = Math.min(daysLeft, Math.round((i / (stepCount - 1)) * daysLeft));
-      stepDate.setDate(stepDate.getDate() + offsetDays);
-      const sDateKey = dateKey(stepDate);
-      const isExamDay = i === stepCount - 1;
-      const isFinalReview = i === stepCount - 2;
-      if (isExamDay) {
-        steps.push({
-          id: `step_${c.id}_${i}`,
-          dayNum: i + 1,
-          dateStr: sDateKey,
-          phase: 'Provim',
-          title: `Dita e Provimit: ${c.title}`,
-          desc: 'Rishiko sh\u00EBnimet ky\u00E7e para fillimit. Sukses dhe p\u00EBrqendrim maksimal!',
-          done: false,
-          xp: 50
-        });
-      } else if (isFinalReview) {
-        steps.push({
-          id: `step_${c.id}_${i}`,
-          dayNum: i + 1,
-          dateStr: sDateKey,
-          phase: 'P\u00EBrs\u00EBritje',
-          title: 'P\u00EBrs\u00EBritje P\u00EBrmbledh\u00EBse & "Bie n\u00EB Provim"',
-          desc: 'Testim i njohurive, analiza e gabimeve t\u00EB m\u00EBparshme dhe konceptet ky\u00E7e.',
-          done: false,
-          xp: 35
-        });
-      } else {
-        const assigned = rawChapters.slice(chCursor, chCursor + chsPerStep);
-        chCursor += chsPerStep;
-        const chTitles = assigned.map(ch => ch.title || 'Kapitull').join(', ');
-        const phase = i % 2 === 0 ? 'M\u00EBsim' : 'Praktik\u00EB';
-        steps.push({
-          id: `step_${c.id}_${i}`,
-          dayNum: i + 1,
-          dateStr: sDateKey,
-          phase,
-          title: `${phase}: ${chTitles || `Kapitulli ${i + 1}`}`,
-          desc: i % 2 === 0 ? 'Studim i thelluar i koncepteve dhe sh\u00EBnime vetjake.' : 'Kuize, p\u00EBrs\u00EBritje me flashcards dhe pyetje orientuese.',
-          done: false,
-          xp: 25
-        });
-      }
-    }
-    const roadmapObj = {
-      courseId: c.id,
-      courseTitle: c.title,
-      targetDate,
-      daysLeft,
-      generatedAt: today,
-      steps
-    };
-    setExamRoadmaps(prev => {
-      const next = { ...prev, [c.id]: roadmapObj };
-      try {
-        localStorage.setItem('u_exam_roadmaps', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-    setSelectedRoadmapCourseId(c.id);
-    showToast(`Plani p\u00EBr "${c.title}" u gjenerua me sukses!`, '\uD83C\uDFAF');
-  };
-  const toggleRoadmapStep = (courseId, stepId) => {
-    setExamRoadmaps(prev => {
-      const roadmap = prev[courseId];
-      if (!roadmap) return prev;
-      let toggledTo = false;
-      let stepXp = 25;
-      const updatedSteps = (roadmap.steps || []).map(s => {
-        if (s.id === stepId) {
-          toggledTo = !s.done;
-          stepXp = s.xp || 25;
-          return { ...s, done: toggledTo };
-        }
-        return s;
-      });
-      const updatedRoadmap = { ...roadmap, steps: updatedSteps };
-      const next = { ...prev, [courseId]: updatedRoadmap };
-      try {
-        localStorage.setItem('u_exam_roadmaps', JSON.stringify(next));
-      } catch {}
-      if (toggledTo) {
-        addStudentXp(stepXp);
-        showToast(`+${stepXp} XP! Hapi u sh\u00EBnua si i kryer!`, '\u2705');
-      }
-      return next;
-    });
-  };
-  const deleteExamRoadmap = courseId => {
-    setExamRoadmaps(prev => {
-      const next = { ...prev };
-      delete next[courseId];
-      try {
-        localStorage.setItem('u_exam_roadmaps', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-    showToast('Plani i provimit u fshi.', '\uD83D\uDDD1\uFE0F');
-  };
-  const handleCreateMultiDayChallenge = () => {
-    const days = Math.max(1, Math.min(100, Number(challengeDraft.daysCount) || 7));
-    const linkedCourse = allCourses.find(c => c.id === challengeDraft.courseId);
-    const title = (challengeDraft.title || '').trim() || (linkedCourse ? `Sfida ${days}-ditore: ${linkedCourse.title}` : `Sfida ${days}-ditore e Studimit`);
-    const defaultGoal = (challengeDraft.dailyGoal || '').trim() || 'Studim i thelluar & seanc\u00EB studimi';
-    
-    const steps = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date(`${today}T12:00:00`);
-      d.setDate(d.getDate() + i);
-      const stepDateStr = dateKey(d);
-      const customText = challengeDraft.useDetailedSteps && challengeDraft.customDailySteps && challengeDraft.customDailySteps[i] ? challengeDraft.customDailySteps[i].trim() : '';
-      steps.push({
-        dayNum: i + 1,
-        dateStr: stepDateStr,
-        task: customText || defaultGoal,
-        done: false
-      });
-    }
-
-    const newChallenge = {
-      id: `challenge_${Date.now()}`,
-      title,
-      daysCount: days,
-      courseId: challengeDraft.courseId || '',
-      courseTitle: linkedCourse ? linkedCourse.title : '',
-      dailyGoal: defaultGoal,
-      createdAt: today,
-      steps
-    };
-
-    setCustomMultiDayChallenges(prev => {
-      const next = [newChallenge, ...prev];
-      try {
-        localStorage.setItem('u_custom_multiday_challenges', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-
-    addStudentXp(20);
-    setChallengeDraft({
-      isOpen: false,
-      title: '',
-      daysCount: 7,
-      courseId: '',
-      dailyGoal: '2 seanca studimi & lexim kapitulli',
-      useDetailedSteps: false,
-      customDailySteps: {}
-    });
-    showToast(`Sfida "${title}" u krijua me sukses! (+20 XP)`, '\uD83D\uDD25');
-  };
-
-  const toggleChallengeDay = (challengeId, dayNum) => {
-    setCustomMultiDayChallenges(prev => {
-      let isNowDone = false;
-      let allCompleted = false;
-      const next = prev.map(ch => {
-        if (ch.id !== challengeId) return ch;
-        const updatedSteps = (ch.steps || []).map(s => {
-          if (s.dayNum === dayNum) {
-            isNowDone = !s.done;
-            return { ...s, done: isNowDone };
-          }
-          return s;
-        });
-        allCompleted = updatedSteps.length > 0 && updatedSteps.every(s => s.done);
-        return { ...ch, steps: updatedSteps };
-      });
-      try {
-        localStorage.setItem('u_custom_multiday_challenges', JSON.stringify(next));
-      } catch {}
-
-      if (isNowDone) {
-        if (allCompleted) {
-          addStudentXp(150);
-          showToast('\uD83C\uDFC6 URIME! P\u00EBrfundove t\u00EB gjith\u00EB sfid\u00EBn! +150 XP BONUS!', '\uD83C\uDFC6');
-        } else {
-          addStudentXp(30);
-          showToast(`+30 XP! Dita ${dayNum} u p\u00EBrfundua me sukses!`, '\u2705');
-        }
-      }
-      return next;
-    });
-  };
-
-  const deleteMultiDayChallenge = challengeId => {
-    setCustomMultiDayChallenges(prev => {
-      const next = prev.filter(ch => ch.id !== challengeId);
-      try {
-        localStorage.setItem('u_custom_multiday_challenges', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-    showToast('Sfida u fshi.', '\uD83D\uDDD1\uFE0F');
-  };
   useEffect(() => {
     if (!enrolledCourses.length) return;
     const scopeId = `${branchId}_${yearId}`;
@@ -16422,53 +16021,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       ];
       setDeadlines(prev => [...prev, ...sampleExams]);
       try { localStorage.setItem(`u_seeded_exams_${scopeId}`, '1'); } catch {}
-    }
-
-    // 2. Seed sample 30-day exam roadmap if none exist
-    if (Object.keys(examRoadmaps).length === 0 && !localStorage.getItem('u_seeded_roadmap_v1')) {
-      const dExam = new Date(`${today}T12:00:00`);
-      dExam.setDate(dExam.getDate() + 29);
-      generateExamRoadmap(c1.id, dateKey(dExam), true);
-      try { localStorage.setItem('u_seeded_roadmap_v1', '1'); } catch {}
-    }
-
-    // 3. Seed sample custom multi-day study challenge if empty
-    if (customMultiDayChallenges.length === 0 && !localStorage.getItem('u_seeded_multiday_v1')) {
-      const buildSteps = (days, tasks) => Array.from({ length: days }, (_, idx) => {
-        const d = new Date(`${today}T12:00:00`);
-        d.setDate(d.getDate() + idx - 1);
-        return {
-          dayNum: idx + 1,
-          dateStr: dateKey(d),
-          task: tasks[idx % tasks.length],
-          done: idx === 0
-        };
-      });
-      const seededChallenges = [
-        {
-          id: `seed_ch_1`,
-          title: `P\u00EBrs\u00EBritje 7-ditore: ${c1.title}`,
-          daysCount: 7,
-          courseId: c1.id,
-          courseTitle: c1.title,
-          dailyGoal: '2 seanca fokusi studimi + p\u00EBrmbledhje e kapitullit',
-          createdAt: today,
-          steps: buildSteps(7, [
-            'Lexim aktiv i kapitullit kryesor dhe nxjerrja e koncepteve ky\u00E7e',
-            '2 seanca studimi (50 min) me sh\u00EBnime t\u00EB strukturuara',
-            'Praktik\u00EB me 15 pyetje kontrolluese n\u00EB Aren\u00EB',
-            'P\u00EBrs\u00EBritje me kartela m\u00EBsimore (Flashcards) dhe vet\u00EB-testim',
-            'Zgjidhje e nj\u00EB rasti studimor dhe rishikim i gabimeve',
-            'Sintez\u00EB e temave t\u00EB jav\u00EBs dhe skema p\u00EBrmbledh\u00EBse',
-            'Simulim i shkurt\u00EBr provimi dhe vler\u00EBsim i gatishm\u00EBris\u00EB'
-          ])
-        }
-      ];
-      setCustomMultiDayChallenges(seededChallenges);
-      try {
-        localStorage.setItem('u_custom_multiday_challenges', JSON.stringify(seededChallenges));
-        localStorage.setItem('u_seeded_multiday_v1', '1');
-      } catch {}
     }
 
     // 4. Seed psychology videos for enrolled courses
@@ -18501,12 +18053,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const currentLevelMinXp = (studentLevelNumber - 1) * 200;
   const currentLevelProgressPct = Math.min(100, Math.max(0, Math.round(((studentXp - currentLevelMinXp) / 200) * 100)));
   
-  const isReadingChallengeDone = Boolean(dailyChallengesState['ch_reading'] || Object.keys(readChapters || {}).length > 0);
-  const currentAcademicDayId = new Date().getDay() || 7;
-  const todayDaySessions = (scopedSchedule || []).filter(item => Number(item.dayOfWeek) === currentAcademicDayId);
-  const isAttendanceChallengeDone = Boolean(dailyChallengesState['ch_attendance'] || todayDaySessions.length === 0 || todayDaySessions.some(item => getScheduleAttendance(today, item.id) === 'attended'));
-  const isArenaChallengeDone = Boolean(dailyChallengesState['ch_arena'] || (arenaScore || 0) >= 10);
-  const completedChallengesCount = [isReadingChallengeDone, isAttendanceChallengeDone, isArenaChallengeDone].filter(Boolean).length;
   const toggleDone = id => setDone(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   const saveNote = () => {
@@ -18881,36 +18427,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       });
       return next;
     });
-    if (mockExam.challengeStepId && mockExam.requiredScore > 0) {
-      const passedChallengeTest = score >= mockExam.requiredScore;
-      setExamRoadmaps(prev => {
-        const roadmap = prev[mockExam.courseId];
-        if (!roadmap) return prev;
-        const updatedSteps = (roadmap.steps || []).map(step => step.id === mockExam.challengeStepId ? {
-          ...step,
-          done: passedChallengeTest || step.done,
-          bestScore: Math.max(Number(step.bestScore) || 0, score),
-          attempts: (Number(step.attempts) || 0) + 1
-        } : step);
-        const next = {
-          ...prev,
-          [mockExam.courseId]: {
-            ...roadmap,
-            steps: updatedSteps
-          }
-        };
-        try {
-          localStorage.setItem('u_exam_roadmaps', JSON.stringify(next));
-        } catch {}
-        return next;
-      });
-      if (passedChallengeTest) {
-        addStudentXp(50);
-        showToast(`Testi i ditës ${mockExam.challengeDay} u kalua me ${score}%.`, '🏆');
-      } else {
-        showToast(`Arrite ${score}%. Për këtë hap duhen ${mockExam.requiredScore}%.`, '↻');
-      }
-    }
   };
   const openMockAnalysis = courseId => {
     if (!requirePremium('examAnalysis')) return;
@@ -21521,135 +21037,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, "\u00D7 Mungoj")));
   };
   // === FUNDI I MODALITETIT TE SALLES ===
-  const renderStudentGamificationHeader = () => {
-    return /*#__PURE__*/React.createElement("section", {
-      className: "card-surface p-4 sm:p-5 rounded-2xl border border-default shadow-2xs select-none relative overflow-hidden anim-fade-up"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-3.5 min-w-0"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-xl active-surface border border-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0"
-    }, TaskIcons.GradCap({ className: "w-5 h-5" })), /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0 space-y-1.5"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2 flex-wrap"
-    }, /*#__PURE__*/React.createElement("h2", {
-      className: "text-sm sm:text-base font-bold text-primary tracking-tight"
-    }, `Niveli ${studentLevelNumber}: ${studentLevelTitle}`), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] font-bold px-2 py-0.5 rounded-md active-surface text-brand-700 dark:text-brand-300 border border-brand-500/20 tabular-nums"
-    }, `${studentXp} XP`)), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2.5"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-1.5 w-36 sm:w-48 rounded-full input-bg border border-default/60 overflow-hidden"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full rounded-full bg-brand-600 transition-all duration-500",
-      style: {
-        width: `${currentLevelProgressPct}%`
-      }
-    })), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] text-secondary font-medium tabular-nums"
-    }, `${currentLevelProgressPct}% drejt Niv. ${studentLevelNumber + 1}`)))), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2 shrink-0 self-start sm:self-auto"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "px-3 py-1.5 rounded-xl input-bg border border-default flex items-center gap-1.5 text-xs font-semibold text-primary"
-    }, TaskIcons.Flame({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400" }), /*#__PURE__*/React.createElement("span", null, "4 Dit\u00EB Rresht")), /*#__PURE__*/React.createElement("div", {
-      className: "px-3 py-1.5 rounded-xl input-bg border border-default flex items-center gap-1.5 text-xs font-semibold text-primary"
-    }, TaskIcons.CheckSquare({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400" }), /*#__PURE__*/React.createElement("span", null, `${completedChallengesCount}/3 Sfidat e Sotme`)))));
-  };
-
-  const renderDailyChallengesSection = () => {
-    const challengesList = [
-      {
-        id: 'ch_reading',
-        title: 'M\u00EBsimi i nj\u00EB Kapitulli',
-        desc: 'Lexo ose p\u00EBrs\u00EBrit materialin e nj\u00EB kapitulli m\u00EBsimor.',
-        iconEl: TaskIcons.Book({ className: "w-4 h-4" }),
-        xp: 40,
-        done: isReadingChallengeDone,
-        actionLabel: 'Hap L\u00EBnd\u00EBn',
-        onAction: () => {
-          const targetCourse = homeContinueCourse || enrolledCourses[0] || allCourses[0];
-          if (targetCourse) openCourse(targetCourse);
-        }
-      },
-      {
-        id: 'ch_attendance',
-        title: 'Pjes\u00EBmarrja n\u00EB Lig\u00EBrat\u00EB',
-        desc: todayDaySessions.length === 0 ? 'Sot nuk ka lig\u00EBrata n\u00EB orar (Plot\u00EBsuar automatikisht).' : `Ndiq lig\u00EBratat e sotme (${todayDaySessions.length} seanca n\u00EB orar).`,
-        iconEl: TaskIcons.GradCap({ className: "w-4 h-4" }),
-        xp: 30,
-        done: isAttendanceChallengeDone,
-        actionLabel: 'Shiko Orarin',
-        onAction: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(null); setView('week'); }
-      },
-      {
-        id: 'ch_arena',
-        title: 'Arena & Testimi i Dijes',
-        desc: 'Testo njohurit\u00EB me pyetje dhe fito pik\u00EB n\u00EB Aren\u00EB.',
-        iconEl: TaskIcons.Zap({ className: "w-4 h-4" }),
-        xp: 40,
-        done: isArenaChallengeDone,
-        actionLabel: 'Hap Aren\u00EBn',
-        onAction: () => setStudentTab('arena_redirect')
-      }
-    ];
-
-    return /*#__PURE__*/React.createElement("section", {
-      className: "card-surface p-4 sm:p-5 rounded-2xl border border-default shadow-2xs space-y-4 anim-fade-up"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-8 h-8 rounded-lg active-surface border border-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 mt-0.5"
-    }, TaskIcons.Target({ className: "w-4 h-4" })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
-      className: "text-sm sm:text-base font-bold text-primary"
-    }, "Sfidat Ditore t\u00EB Studimit"), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary mt-0.5"
-    }, "Plot\u00EBso aktivitetet e dit\u00EBs p\u00EBr t\u00EB ruajtur ritmin e p\u00EBrgatitjes."))), /*#__PURE__*/React.createElement("div", {
-      className: "text-right self-end sm:self-auto"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-bold text-brand-600 dark:text-brand-400 tabular-nums"
-    }, `${completedChallengesCount} nga 4 t\u00EB kryera`), /*#__PURE__*/React.createElement("div", {
-      className: "w-28 sm:w-36 h-1.5 rounded-full input-bg overflow-hidden mt-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full rounded-full bg-brand-600 transition-all duration-500",
-      style: {
-        width: `${Math.round(completedChallengesCount / 4 * 100)}%`
-      }
-    })))), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1"
-    }, challengesList.map(ch => /*#__PURE__*/React.createElement("div", {
-      key: ch.id,
-      className: `p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${ch.done ? 'active-surface/40 border-brand-500/25' : 'input-bg border-default hover:border-brand-300 dark:hover:border-brand-700'}`
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${ch.done ? 'bg-brand-600 text-white' : 'card-surface border border-default text-brand-600 dark:text-brand-400'}`
-    }, ch.done ? TaskIcons.Check({ className: "w-4 h-4" }) : ch.iconEl), /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0 flex-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between gap-2"
-    }, /*#__PURE__*/React.createElement("h3", {
-      className: `text-xs font-bold leading-tight ${ch.done ? 'text-secondary line-through' : 'text-primary'}`
-    }, ch.title), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] font-semibold px-1.5 py-0.5 rounded-md card-surface border border-default text-secondary tabular-nums shrink-0"
-    }, `+${ch.xp} XP`)), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary mt-1 leading-relaxed"
-    }, ch.desc))), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between gap-2 pt-2 border-t border-default/60"
-    }, /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => toggleDailyChallenge(ch.id),
-      className: `text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${ch.done ? 'card-surface border-default text-secondary hover:text-primary' : 'bg-brand-600 hover:bg-brand-500 text-white border-transparent'}`
-    }, ch.done ? TaskIcons.Check({ className: "w-3 h-3" }) : null, ch.done ? 'E kryer (Anulo)' : 'Sh\u00EBno si t\u00EB kryer'), !ch.done && /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: ch.onAction,
-      className: "text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-500 transition-colors flex items-center gap-1 cursor-pointer"
-    }, ch.actionLabel, TaskIcons.ChevronRight({ className: "w-3.5 h-3.5" })))))));
-  };
-
   /* ── FEATURE 4: ARCHIVE EXAM 1 HOUR (PROVIM 1 ORË NGA ARKIVA E VITIT TË PËRFUNDUAR) ── */
   const startArchiveExam1Hour = (targetYearId) => {
     const completedYearsList = (branchYears || []).filter(y => {
@@ -21998,503 +21385,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, TaskIcons.Zap ? TaskIcons.Zap({ className: "w-4 h-4" }) : "⚡", "Fillo Provimin 1-Orësh →")
       )
     );
-  };
-
-  const renderExamRoadmapSection = () => {
-    const roadmapCourses = enrolledCourses.length ? enrolledCourses : allCourses;
-    const activeRoadmapId = selectedRoadmapCourseId || Object.keys(examRoadmaps)[0] || roadmapCourses[0]?.id || '';
-    const activeRoadmap = examRoadmaps[activeRoadmapId] || null;
-    const roadmapKeys = Object.keys(examRoadmaps);
-
-    const defaultExamDate = (() => {
-      const d = new Date();
-      d.setDate(d.getDate() + 29);
-      return dateKey(d);
-    })();
-
-    const activeRoadmapCompletedSteps = activeRoadmap ? (activeRoadmap.steps || []).filter(s => s.done).length : 0;
-    const activeRoadmapTotalSteps = activeRoadmap ? (activeRoadmap.steps || []).length : 0;
-    const activeRoadmapPct = activeRoadmapTotalSteps > 0 ? Math.round((activeRoadmapCompletedSteps / activeRoadmapTotalSteps) * 100) : 0;
-
-    return /*#__PURE__*/React.createElement("section", {
-      className: "card-surface p-4 sm:p-5 rounded-2xl border border-default shadow-2xs space-y-4 anim-fade-up"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-8 h-8 rounded-lg active-surface border border-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 mt-0.5"
-    }, TaskIcons.Compass({ className: "w-4 h-4" })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
-      className: "text-sm sm:text-base font-bold text-primary"
-    }, "Plani 30-ditor i P\u00EBrgatitjes"), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary mt-0.5"
-    }, "Nga bazat te simulimi final, i ndar\u00EB hap pas hapi sipas l\u00EBnd\u00EBs."))), activeRoadmap && /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => deleteExamRoadmap(activeRoadmap.courseId),
-      className: "text-[11px] font-semibold text-secondary hover:text-red-500 transition-colors cursor-pointer self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg input-bg border border-default"
-    }, TaskIcons.Trash({ className: "w-3.5 h-3.5" }), "Fshi planin")), /*#__PURE__*/React.createElement("div", {
-      className: "p-3.5 rounded-2xl input-bg border border-default space-y-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] font-bold text-primary uppercase tracking-wider flex items-center gap-1.5"
-    }, TaskIcons.Calendar({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400" }), /*#__PURE__*/React.createElement("span", null, "Zgjidh l\u00EBnd\u00EBn dhe dat\u00EBn e provimit")), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "sm:col-span-6"
-    }, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "L\u00EBnda"), /*#__PURE__*/React.createElement("select", {
-      value: selectedRoadmapCourseId || (roadmapCourses[0]?.id || ''),
-      onChange: e => {
-        const newId = e.target.value;
-        setSelectedRoadmapCourseId(newId);
-        const matchDeadline = examDeadlines.find(d => d.courseId === newId);
-        if (matchDeadline && matchDeadline.date) setRoadmapExamDate(matchDeadline.date);
-      },
-      className: "w-full p-2.5 rounded-xl card-surface border border-default text-xs font-semibold text-primary outline-none focus:border-brand-500"
-    }, roadmapCourses.map(c => {
-      const matchDeadline = examDeadlines.find(d => d.courseId === c.id);
-      return /*#__PURE__*/React.createElement("option", {
-        key: c.id,
-        value: c.id
-      }, `${c.title}${matchDeadline ? ` (Provimi: ${matchDeadline.date})` : ''}`);
-    }))), /*#__PURE__*/React.createElement("div", {
-      className: "sm:col-span-3"
-    }, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "Data e Provimit"), /*#__PURE__*/React.createElement("input", {
-      type: "date",
-      value: roadmapExamDate || defaultExamDate,
-      onChange: e => setRoadmapExamDate(e.target.value),
-      className: "w-full p-2 rounded-xl card-surface border border-default text-xs font-semibold text-primary outline-none focus:border-brand-500"
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "sm:col-span-3"
-    }, /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => generateExamRoadmap(selectedRoadmapCourseId || roadmapCourses[0]?.id, roadmapExamDate || defaultExamDate),
-      className: "w-full py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
-    }, TaskIcons.Plus({ className: "w-3.5 h-3.5" }), "Krijo planin 30-ditor")))), roadmapKeys.length > 1 && /*#__PURE__*/React.createElement("label", {
-      className: "flex items-center gap-3 p-2.5 rounded-xl input-bg border border-default hover:border-brand-300 transition-colors cursor-pointer min-w-0"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "w-8 h-8 rounded-lg active-surface text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0",
-      "aria-hidden": "true"
-    }, TaskIcons.Layers({ className: "w-4 h-4" })), /*#__PURE__*/React.createElement("span", {
-      className: "min-w-0 flex-1"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "block text-[9px] font-bold uppercase tracking-[0.12em] text-secondary mb-0.5"
-    }, "Plani aktiv"), /*#__PURE__*/React.createElement("span", {
-      className: "relative block min-w-0"
-    }, /*#__PURE__*/React.createElement("select", {
-      value: activeRoadmapId,
-      onChange: e => setSelectedRoadmapCourseId(e.target.value),
-      "aria-label": "Zgjidh planin 30-ditor sipas l\u00EBnd\u00EBs",
-      className: "w-full min-w-0 pr-7 bg-transparent text-xs sm:text-sm font-bold text-primary outline-none cursor-pointer truncate"
-    }, roadmapKeys.map(k => {
-      const r = examRoadmaps[k];
-      return /*#__PURE__*/React.createElement("option", {
-        key: k,
-        value: r.courseId
-      }, r.courseTitle);
-    }))))), activeRoadmap ? /*#__PURE__*/React.createElement("div", {
-      className: "space-y-3 pt-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "p-3.5 rounded-2xl input-bg border border-default flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-      className: "text-xs sm:text-sm font-bold text-primary"
-    }, activeRoadmap.courseTitle), /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] text-secondary mt-1 flex items-center gap-2 flex-wrap"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-brand-600 dark:text-brand-400 font-semibold inline-flex items-center gap-1"
-    }, TaskIcons.Calendar({ className: "w-3.5 h-3.5" }), `Provimi: ${formatDateSq(activeRoadmap.targetDate, { weekday: 'short', day: 'numeric', month: 'short' })}`), /*#__PURE__*/React.createElement("span", null, "\u00B7"), /*#__PURE__*/React.createElement("span", {
-      className: "font-medium inline-flex items-center gap-1"
-    }, TaskIcons.Clock({ className: "w-3.5 h-3.5" }), `${activeRoadmap.daysLeft} dit\u00EB t\u00EB mbetura`))), /*#__PURE__*/React.createElement("div", {
-      className: "text-right self-end sm:self-auto"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold text-brand-600 dark:text-brand-400 tabular-nums"
-    }, `${activeRoadmapCompletedSteps}/${activeRoadmapTotalSteps} hapa (${activeRoadmapPct}%)`), /*#__PURE__*/React.createElement("div", {
-      className: "w-32 h-1.5 rounded-full card-surface border border-default/60 overflow-hidden mt-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full rounded-full bg-brand-600 transition-all duration-500",
-      style: {
-        width: `${activeRoadmapPct}%`
-      }
-    })))), /*#__PURE__*/React.createElement("div", {
-      className: "space-y-2 pt-1"
-    }, (activeRoadmap.steps || []).map(step => {
-      const stepCourse = allCourses.find(c => c.id === activeRoadmap.courseId);
-      const phaseBadgeClass = step.isTest || step.phase === 'Provim'
-        ? 'active-surface text-brand-700 dark:text-brand-300 border-brand-500/25'
-        : 'card-surface text-secondary border-default';
-      return /*#__PURE__*/React.createElement("div", {
-        key: step.id,
-        className: `flex items-start gap-3 p-3 rounded-xl border transition-all ${step.done ? 'active-surface/35 border-brand-500/25' : 'input-bg border-default hover:border-brand-300 dark:hover:border-brand-700'}`
-      }, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => !step.isTest && toggleRoadmapStep(activeRoadmap.courseId, step.id),
-        disabled: Boolean(step.isTest),
-        "aria-label": step.isTest ? 'P\u00EBrfundo testin p\u00EBr ta kaluar k\u00EBt\u00EB hap' : 'Sh\u00EBno dit\u00EBn ' + step.dayNum,
-        className: `w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 text-xs font-bold transition-colors mt-0.5 ${step.done ? 'bg-brand-600 border-brand-600 text-white' : step.isTest ? 'active-surface border-brand-500/25 text-brand-600 dark:text-brand-400 cursor-default' : 'card-surface border-default text-secondary hover:border-brand-500 cursor-pointer'}`
-      }, step.done ? TaskIcons.Check({ className: "w-3.5 h-3.5" }) : step.isTest ? TaskIcons.FileText({ className: "w-3.5 h-3.5" }) : /*#__PURE__*/React.createElement("span", { className: "w-2 h-2 rounded-full border border-current opacity-60" })), /*#__PURE__*/React.createElement("div", {
-        className: "min-w-0 flex-1"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2 flex-wrap"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: `text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border tabular-nums ${phaseBadgeClass}`
-      }, step.phase), /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-semibold text-secondary tabular-nums"
-      }, `Dita ${step.dayNum} \u00B7 ${formatDateSq(step.dateStr, { weekday: 'short', day: 'numeric', month: 'short' })}`), /*#__PURE__*/React.createElement("span", {
-        className: "text-[9.5px] font-semibold text-secondary tabular-nums ml-auto"
-      }, `+${step.xp} XP`)), /*#__PURE__*/React.createElement("div", {
-        className: `text-xs font-bold mt-1 ${step.done ? 'text-secondary line-through' : 'text-primary'}`
-      }, step.title), /*#__PURE__*/React.createElement("p", {
-        className: "text-[11px] text-secondary mt-0.5 leading-relaxed"
-      }, step.desc), /*#__PURE__*/React.createElement("div", {
-        className: "text-[10px] text-tertiary mt-1 flex items-center gap-2 flex-wrap"
-      }, step.source && /*#__PURE__*/React.createElement("span", null, "Burimi: ", step.source), step.minutes && /*#__PURE__*/React.createElement("span", null, step.minutes, " min"), step.isTest && /*#__PURE__*/React.createElement("span", {
-        className: "font-semibold text-brand-600 dark:text-brand-400"
-      }, "Synimi: ", step.requiredScore, "%", step.attempts ? ' \u00B7 M\u00EB e mira: ' + (step.bestScore || 0) + '%' : ''))), stepCourse && /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => step.isTest ? startMockExam(stepCourse, { limit: step.questionCount, difficulty: step.difficulty, challengeDay: step.dayNum, challengeStepId: step.id, requiredScore: step.requiredScore }) : openCourse(stepCourse),
-        title: "Hap l\u00EBnd\u00EBn",
-        className: `text-[11px] font-semibold shrink-0 self-center cursor-pointer inline-flex items-center gap-1 ${step.isTest ? 'px-2.5 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-500' : 'text-brand-600 dark:text-brand-400 hover:underline'}`
-      }, step.isTest ? (step.done ? "Provo s\u00EBrish" : "Fillo testin") : "M\u00EBso", !step.isTest && TaskIcons.ChevronRight({ className: "w-3.5 h-3.5" })));
-    }))) : /*#__PURE__*/React.createElement("div", {
-      className: "p-6 rounded-2xl border border-dashed border-default text-center space-y-2"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-10 h-10 rounded-xl active-surface text-brand-600 dark:text-brand-400 mx-auto flex items-center justify-center"
-    }, TaskIcons.Compass({ className: "w-5 h-5" })), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold text-primary"
-    }, "Nuk ke krijuar ende nj\u00EB plan 30-ditor"), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary"
-    }, "Zgjidh l\u00EBnd\u00EBn m\u00EB lart dhe kliko \"Krijo planin 30-ditor\" p\u00EBr t\u00EB ndar\u00EB p\u00EBrgatitjen sipas dit\u00EBve.")));
-  };
-
-  const renderCustomMultiDayChallengesSection = () => {
-    const coursesList = enrolledCourses.length ? enrolledCourses : allCourses;
-
-    return /*#__PURE__*/React.createElement("section", {
-      className: "card-surface p-4 sm:p-5 rounded-2xl border border-default shadow-2xs space-y-4 anim-fade-up"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-8 h-8 rounded-lg active-surface border border-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 mt-0.5"
-    }, TaskIcons.Layers({ className: "w-4 h-4" })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
-      className: "text-sm sm:text-base font-bold text-primary"
-    }, "Sfidat e Personalizuara Shum\u00EB-Ditore"), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary mt-0.5"
-    }, "Krijo plane shum\u00EB-ditore dhe p\u00EBrcakto objektivat e studimit p\u00EBr secil\u00EBn dit\u00EB."))), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => setChallengeDraft(prev => ({ ...prev, isOpen: !prev.isOpen })),
-      className: "px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
-    }, challengeDraft.isOpen ? TaskIcons.X({ className: "w-3.5 h-3.5" }) : TaskIcons.Plus({ className: "w-3.5 h-3.5" }), challengeDraft.isOpen ? "Mbyll formularin" : "Krijo Sfid\u00EB t\u00EB Re")),
-
-    /* INLINE CREATOR FORM */
-    challengeDraft.isOpen && /*#__PURE__*/React.createElement("div", {
-      className: "p-4 sm:p-5 rounded-2xl input-bg border border-brand-500/30 space-y-4 anim-fade-in"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold text-primary flex items-center gap-1.5"
-    }, TaskIcons.Edit({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400" }), /*#__PURE__*/React.createElement("span", null, "Konfiguro sfid\u00EBn t\u00EBnde:")) , /*#__PURE__*/React.createElement("div", {
-      className: "space-y-3"
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "Titulli i Sfid\u00EBs (opsional)"), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      value: challengeDraft.title,
-      placeholder: "p.sh. P\u00EBrs\u00EBritje 7-ditore, 14 Dit\u00EB Fokus studimi...",
-      onChange: e => setChallengeDraft(prev => ({ ...prev, title: e.target.value })),
-      className: "w-full p-2.5 rounded-xl card-surface border border-default text-xs font-medium text-primary outline-none focus:border-brand-500"
-    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "Koh\u00EBzgjatja (Numri i dit\u00EBve)"), /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-wrap items-center gap-1.5 mb-2"
-    }, [3, 5, 7, 10, 14, 21, 30].map(n => /*#__PURE__*/React.createElement("button", {
-      key: n,
-      type: "button",
-      onClick: () => setChallengeDraft(prev => ({ ...prev, daysCount: n })),
-      className: `px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${Number(challengeDraft.daysCount) === n ? 'bg-brand-600 text-white' : 'card-surface border border-default text-secondary hover:text-primary'}`
-    }, `${n} Dit\u00EB`))), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-[11px] text-secondary font-medium"
-    }, "Ose vendos num\u00EBr tjet\u00EBr dit\u00EBsh:"), /*#__PURE__*/React.createElement("input", {
-      type: "number",
-      min: 1,
-      max: 100,
-      value: challengeDraft.daysCount,
-      onChange: e => setChallengeDraft(prev => ({ ...prev, daysCount: Math.max(1, Math.min(100, Number(e.target.value) || 1)) })),
-      className: "w-20 p-1.5 rounded-xl card-surface border border-default text-xs font-bold text-primary text-center outline-none focus:border-brand-500"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-semibold text-primary"
-    }, "dit\u00EB"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "L\u00EBnda p\u00EBrkat\u00EBse (opsionale)"), /*#__PURE__*/React.createElement("select", {
-      value: challengeDraft.courseId,
-      onChange: e => setChallengeDraft(prev => ({ ...prev, courseId: e.target.value })),
-      className: "w-full p-2.5 rounded-xl card-surface border border-default text-xs font-semibold text-primary outline-none focus:border-brand-500"
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, "T\u00EB gjitha l\u00EBnd\u00EBt / Q\u00EBllim i p\u00EBrgjithsh\u00EBm studimi"), coursesList.map(c => /*#__PURE__*/React.createElement("option", {
-      key: c.id,
-      value: c.id
-    }, c.title)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      className: "block text-[10px] font-bold text-secondary mb-1 uppercase tracking-wider"
-    }, "\u00C7far\u00EB do t\u00EB b\u00EBsh n\u00EB ato dit\u00EB (Objektivi ditor)"), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      value: challengeDraft.dailyGoal,
-      placeholder: "p.sh. 2 seanca studimi + 1 kapitull lexim...",
-      onChange: e => setChallengeDraft(prev => ({ ...prev, dailyGoal: e.target.value })),
-      className: "w-full p-2.5 rounded-xl card-surface border border-default text-xs font-medium text-primary outline-none focus:border-brand-500"
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-wrap gap-1.5 mt-2"
-    }, [
-      { l: '2 Seanca studimi', t: '2 seanca fokusi studimi (50 min)' },
-      { l: '1 Kapitull Lexim', t: 'Lexim i 1 kapitulli t\u00EB ri dhe sh\u00EBnime' },
-      { l: '15 Pyetje n\u00EB Aren\u00EB', t: 'P\u00EBrgjigju n\u00EB 15 pyetje t\u00EB Aren\u00EBs' },
-      { l: '60 min Studim Intensiv', t: '60 minuta studim intensiv pa shp\u00EBrqendrime' }
-    ].map(p => /*#__PURE__*/React.createElement("button", {
-      key: p.l,
-      type: "button",
-      onClick: () => setChallengeDraft(prev => ({ ...prev, dailyGoal: p.t })),
-      className: "px-2.5 py-1 rounded-lg card-surface border border-default text-[10px] font-semibold text-secondary hover:text-brand-600 cursor-pointer"
-    }, p.l)))), /*#__PURE__*/React.createElement("div", {
-      className: "pt-1"
-    }, /*#__PURE__*/React.createElement("label", {
-      className: "inline-flex items-center gap-2 cursor-pointer"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "checkbox",
-      checked: challengeDraft.useDetailedSteps,
-      onChange: e => setChallengeDraft(prev => ({ ...prev, useDetailedSteps: e.target.checked })),
-      className: "rounded border-default text-brand-600 focus:ring-brand-500"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-semibold text-primary"
-    }, "Dua t\u00EB p\u00EBrcaktoj detyra t\u00EB ndryshme p\u00EBr secil\u00EBn dit\u00EB (Dita 1, Dita 2...)")), challengeDraft.useDetailedSteps && /*#__PURE__*/React.createElement("div", {
-      className: "mt-3 space-y-2 max-h-48 overflow-y-auto p-2.5 rounded-xl card-surface border border-default"
-    }, Array.from({ length: Math.min(Number(challengeDraft.daysCount) || 7, 21) }, (_, i) => {
-      const d = new Date(`${today}T12:00:00`);
-      d.setDate(d.getDate() + i);
-      const sDateStr = dateKey(d);
-      return /*#__PURE__*/React.createElement("div", {
-        key: i,
-        className: "flex items-center gap-2"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-semibold text-secondary w-24 shrink-0 tabular-nums"
-      }, `Dita ${i + 1} (${sDateStr}):`), /*#__PURE__*/React.createElement("input", {
-        type: "text",
-        value: (challengeDraft.customDailySteps && challengeDraft.customDailySteps[i]) || '',
-        placeholder: challengeDraft.dailyGoal || `Detyra e dit\u00EBs ${i + 1}`,
-        onChange: e => {
-          const val = e.target.value;
-          setChallengeDraft(prev => ({
-            ...prev,
-            customDailySteps: {
-              ...(prev.customDailySteps || {}),
-              [i]: val
-            }
-          }));
-        },
-        className: "w-full p-1.5 rounded-lg input-bg border border-default text-[11px] font-medium text-primary outline-none focus:border-brand-500"
-      }));
-    })))), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-end gap-2 pt-2 border-t border-default/50"
-    }, /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => setChallengeDraft(prev => ({ ...prev, isOpen: false })),
-      className: "px-3.5 py-2 rounded-xl card-surface border border-default text-xs font-semibold text-secondary hover:text-primary transition-colors cursor-pointer"
-    }, "Anulo"), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: handleCreateMultiDayChallenge,
-      className: "px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
-    }, TaskIcons.Check({ className: "w-3.5 h-3.5" }), "Fillo Sfid\u00EBn (+20 XP)"))),
-
-    /* ACTIVE CHALLENGES LIST */
-    customMultiDayChallenges.length > 0 ? /*#__PURE__*/React.createElement("div", {
-      className: "space-y-4 pt-1"
-    }, customMultiDayChallenges.map(ch => {
-      const steps = ch.steps || [];
-      const completedStepsCount = steps.filter(s => s.done).length;
-      const totalStepsCount = steps.length;
-      const isCompleted = totalStepsCount > 0 && completedStepsCount === totalStepsCount;
-      const progressPct = totalStepsCount > 0 ? Math.round((completedStepsCount / totalStepsCount) * 100) : 0;
-
-      return /*#__PURE__*/React.createElement("div", {
-        key: ch.id,
-        className: "p-4 sm:p-5 rounded-2xl input-bg border border-default space-y-3.5 hover:border-brand-300 dark:hover:border-brand-700 transition-all"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "min-w-0"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2 flex-wrap"
-      }, /*#__PURE__*/React.createElement("h3", {
-        className: "text-xs sm:text-sm font-bold text-primary"
-      }, ch.title), ch.courseTitle && /*#__PURE__*/React.createElement("span", {
-        className: "text-[9.5px] font-semibold px-2 py-0.5 rounded-md active-surface text-brand-700 dark:text-brand-300"
-      }, ch.courseTitle), /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-semibold px-2 py-0.5 rounded-md card-surface text-secondary border border-default tabular-nums inline-flex items-center gap-1"
-      }, TaskIcons.Clock({ className: "w-3 h-3" }), `${ch.daysCount} Dit\u00EB`), isCompleted && /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-bold px-2 py-0.5 rounded-md active-surface text-brand-700 dark:text-brand-300 border border-brand-500/25 inline-flex items-center gap-1"
-      }, TaskIcons.Check({ className: "w-3 h-3" }), "E P\u00EBrfunduar")), /*#__PURE__*/React.createElement("p", {
-        className: "text-[11px] text-secondary mt-1"
-      }, ch.dailyGoal)), /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-3 self-end sm:self-auto shrink-0"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "text-right"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-bold text-brand-600 dark:text-brand-400 tabular-nums"
-      }, `${completedStepsCount}/${totalStepsCount} dit\u00EB (${progressPct}%)`), /*#__PURE__*/React.createElement("div", {
-        className: "w-28 sm:w-36 h-1.5 rounded-full card-surface overflow-hidden mt-1 border border-default/60"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "h-full rounded-full bg-brand-600 transition-all duration-500",
-        style: {
-          width: `${progressPct}%`
-        }
-      }))), /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => deleteMultiDayChallenge(ch.id),
-        title: "Fshi sfid\u00EBn",
-        className: "w-8 h-8 rounded-xl card-surface border border-default text-secondary hover:text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-colors cursor-pointer"
-      }, TaskIcons.Trash({ className: "w-3.5 h-3.5" })))),
-
-      /* STEPS GRID */
-      /*#__PURE__*/React.createElement("div", {
-        className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1"
-      }, steps.map(step => {
-        const isTodayStep = step.dateStr === today;
-        return /*#__PURE__*/React.createElement("div", {
-          key: step.dayNum,
-          className: `p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${step.done ? 'active-surface/35 border-brand-500/25' : isTodayStep ? 'card-surface border-brand-500/40 ring-1 ring-brand-500/20' : 'card-surface border-default'}`
-        }, /*#__PURE__*/React.createElement("button", {
-          type: "button",
-          onClick: () => toggleChallengeDay(ch.id, step.dayNum),
-          className: `w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 text-xs font-bold transition-colors cursor-pointer mt-0.5 ${step.done ? 'bg-brand-600 border-brand-600 text-white' : 'card-surface border-default text-secondary hover:border-brand-500'}`
-        }, step.done ? TaskIcons.Check({ className: "w-3.5 h-3.5" }) : /*#__PURE__*/React.createElement("span", { className: "w-2 h-2 rounded-full border border-current opacity-60" })), /*#__PURE__*/React.createElement("div", {
-          className: "min-w-0 flex-1"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "flex items-center gap-1.5 flex-wrap"
-        }, /*#__PURE__*/React.createElement("span", {
-          className: "text-[10px] font-bold text-primary tabular-nums"
-        }, `Dita ${step.dayNum}`), isTodayStep && /*#__PURE__*/React.createElement("span", {
-          className: "text-[9px] font-bold px-1.5 py-0.2 rounded bg-brand-600 text-white tracking-wider"
-        }, "SOT"), /*#__PURE__*/React.createElement("span", {
-          className: "text-[9.5px] text-secondary tabular-nums ml-auto"
-        }, step.dateStr)), /*#__PURE__*/React.createElement("div", {
-          className: `text-[11px] font-medium mt-0.5 leading-snug line-clamp-2 ${step.done ? 'text-secondary line-through' : 'text-primary'}`
-        }, step.task)), /*#__PURE__*/React.createElement("span", {
-          className: "text-[9px] font-semibold text-secondary tabular-nums shrink-0 self-center"
-        }, "+30 XP"));
-      })));
-    })) : !challengeDraft.isOpen && /*#__PURE__*/React.createElement("div", {
-      className: "p-6 rounded-2xl border border-dashed border-default text-center space-y-2"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-10 h-10 rounded-xl active-surface text-brand-600 dark:text-brand-400 mx-auto flex items-center justify-center"
-    }, TaskIcons.Layers({ className: "w-5 h-5" })), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold text-primary"
-    }, "Ende nuk ke krijuar nj\u00EB sfid\u00EB shum\u00EB-ditore"), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary"
-    }, "P\u00EBrcakto sa dit\u00EB d\u00EBshiron t\u00EB studiosh dhe \u00E7far\u00EB do t\u00EB arrish \u00E7do dit\u00EB."), /*#__PURE__*/React.createElement("div", {
-      className: "pt-1"
-    }, /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => setChallengeDraft(prev => ({ ...prev, isOpen: true })),
-      className: "px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
-    }, TaskIcons.Plus({ className: "w-3.5 h-3.5" }), "Krijo Sfid\u00EBn e Par\u00EB"))));
-  };
-
-  const renderHomeChallengesWidget = () => {
-    const firstRoadmapCourseId = Object.keys(examRoadmaps)[0];
-    const highlightedRoadmap = firstRoadmapCourseId ? examRoadmaps[firstRoadmapCourseId] : null;
-    const activeCustomChallenge = customMultiDayChallenges.find(ch => (ch.steps || []).some(s => !s.done)) || customMultiDayChallenges[0] || null;
-
-    return /*#__PURE__*/React.createElement("section", {
-      "data-home-section": "challenges-plan",
-      className: "card-surface rounded-2xl border border-default p-4 sm:p-5 shadow-2xs select-none relative overflow-hidden"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-3 min-w-0"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-10 h-10 rounded-xl active-surface text-brand-600 dark:text-brand-400 border border-brand-500/20 flex items-center justify-center shrink-0"
-    }, TaskIcons.Target({ className: "w-5 h-5" })), /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2 flex-wrap"
-    }, /*#__PURE__*/React.createElement("h2", {
-      className: "text-xs sm:text-sm font-bold text-primary tracking-tight leading-tight"
-    }, "Sfidat Ditore & Plani i Provimit"), /*#__PURE__*/React.createElement("span", {
-      className: "text-[9.5px] font-semibold px-2 py-0.5 rounded-md input-bg text-secondary border border-default tabular-nums inline-flex items-center gap-1"
-    }, TaskIcons.Flame({ className: "w-3 h-3 text-brand-600 dark:text-brand-400" }), "4 dit\u00EB rresht")), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] text-secondary mt-0.5"
-    }, `${studentLevelTitle} \u00B7 ${studentXp} XP \u00B7 ${completedChallengesCount}/3 t\u00EB kryera sot`))), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => {
-        setStudentTab('today');
-        setView('student');
-      },
-      className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-2xs cursor-pointer"
-    }, /*#__PURE__*/React.createElement("span", null, "Hap Planin & Sfidat"), TaskIcons.ChevronRight({ className: "w-3.5 h-3.5" }))), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3.5 relative z-10"
-    }, [{
-      id: 'ch_reading',
-      label: 'Lexim Kapitulli',
-      iconEl: TaskIcons.Book({ className: "w-4 h-4" }),
-      done: isReadingChallengeDone,
-      xp: '+40 XP'
-    }, {
-      id: 'ch_attendance',
-      label: 'Pjes\u00EBmarrja n\u00EB Or\u00EB',
-      iconEl: TaskIcons.GradCap({ className: "w-4 h-4" }),
-      done: isAttendanceChallengeDone,
-      xp: '+30 XP'
-    }, {
-      id: 'ch_arena',
-      label: 'Arena & Kuizi',
-      iconEl: TaskIcons.Zap({ className: "w-4 h-4" }),
-      done: isArenaChallengeDone,
-      xp: '+40 XP'
-    }].map(ch => /*#__PURE__*/React.createElement("div", {
-      key: ch.id,
-      className: `p-2.5 rounded-xl border flex items-center gap-2.5 transition-all ${ch.done ? 'active-surface/40 border-brand-500/25 text-primary' : 'input-bg border-default text-secondary'}`
-    }, /*#__PURE__*/React.createElement("span", {
-      className: `w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${ch.done ? 'bg-brand-600 text-white' : 'card-surface border border-default text-brand-600 dark:text-brand-400'}`
-    }, ch.done ? TaskIcons.Check({ className: "w-3.5 h-3.5" }) : ch.iconEl), /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0 flex-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] font-semibold truncate text-primary"
-    }, ch.label), /*#__PURE__*/React.createElement("div", {
-      className: "text-[9.5px] text-secondary tabular-nums"
-    }, ch.done ? 'P\u00EBrfunduar' : ch.xp))))), activeCustomChallenge && /*#__PURE__*/React.createElement("div", {
-      className: "mt-2.5 pt-2.5 border-t border-default/60 flex items-center justify-between gap-3 relative z-10 text-[11px]"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-1.5 min-w-0 text-primary"
-    }, TaskIcons.Layers({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" }), /*#__PURE__*/React.createElement("span", {
-      className: "font-semibold truncate"
-    }, `Sfida: ${activeCustomChallenge.title}`), /*#__PURE__*/React.createElement("span", {
-      className: "text-secondary hidden sm:inline"
-    }, `(${(activeCustomChallenge.steps || []).filter(s => s.done).length}/${(activeCustomChallenge.steps || []).length} dit\u00EB)`)), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => {
-        setStudentTab('today');
-        setView('student');
-      },
-      className: "text-brand-600 dark:text-brand-400 font-semibold hover:underline shrink-0 cursor-pointer inline-flex items-center gap-1"
-    }, "Vazhdo", TaskIcons.ChevronRight({ className: "w-3.5 h-3.5" }))), highlightedRoadmap && /*#__PURE__*/React.createElement("div", {
-      className: "mt-2.5 pt-2.5 border-t border-default/60 flex items-center justify-between gap-3 relative z-10 text-[11px]"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-1.5 min-w-0 text-primary"
-    }, TaskIcons.Compass({ className: "w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" }), /*#__PURE__*/React.createElement("span", {
-      className: "font-semibold truncate"
-    }, `Plani: ${highlightedRoadmap.courseTitle}`), /*#__PURE__*/React.createElement("span", {
-      className: "text-secondary hidden sm:inline"
-    }, `(${highlightedRoadmap.daysLeft} dit\u00EB)`)), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => {
-        setSelectedRoadmapCourseId(highlightedRoadmap.courseId);
-        setStudentTab('today');
-        setView('student');
-      },
-      className: "text-brand-600 dark:text-brand-400 font-semibold hover:underline shrink-0 cursor-pointer inline-flex items-center gap-1"
-    }, "Shiko ecurin\u00EB", TaskIcons.ChevronRight({ className: "w-3.5 h-3.5" }))));
   };
 
       const renderHousingView = () => {
@@ -30072,11 +28962,7 @@ Nënshkrimi: _____________________`;
                   }, /*#__PURE__*/React.createElement("svg", {
                     width: 12, height: 12, viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": true, style: { marginLeft: '1px' }
                   }, /*#__PURE__*/React.createElement("path", { d: "M8 5v14l11-7z" }))))
-              ),
-              /* Emri poshtë */
-              /*#__PURE__*/React.createElement("span", {
-                className: `w-full text-center text-xs truncate leading-tight ${isCompleted ? 'font-medium text-secondary' : 'font-semibold text-primary'}`
-              }, cleanTitle)
+              )
             );
           })
         )
@@ -30287,8 +29173,6 @@ Nënshkrimi: _____________________`;
           )
         )
       ),
-
-      renderHomeChallengesWidget(),
 
             /* 4c. HOUSING PREVIEW CARD */
       /*#__PURE__*/React.createElement("section", {
@@ -33600,31 +32484,35 @@ Nënshkrimi: _____________________`;
     const later = examDeadlines.slice(1);
     const label = txt => ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, txt);
 
+    const dayFull = date => `${capFirst(formatDateSq(date, { weekday: 'long' }))}, ${formatDateSq(date, { day: 'numeric' })} ${capFirst(formatDateSq(date, { month: 'long' }))}`;
     const hero = next && (() => {
       const item = courseOf(next);
       const d = daysUntil(next.date);
       const ready = readinessOf(item);
-      const dateText = `${capFirst(formatDateSq(next.date, { weekday: 'long' }))}, ${formatDateSq(next.date, { day: 'numeric', month: 'long' })}`;
-      return ce("section", { className: "card-surface border border-default rounded-2xl p-4 shadow-sm flex items-center gap-3.5" },
-        ce("button", {
-          type: "button",
-          disabled: !item,
-          onClick: () => { if (item) openCourse(item); },
-          "aria-label": `${ready && ready.read ? 'Vazhdo përgatitjen' : 'Fillo përgatitjen'}: ${nameOf(next)}`,
-          className: "flex items-center gap-3.5 flex-1 min-w-0 text-left cursor-pointer disabled:cursor-default"
-        },
-          ce("span", { className: "w-14 h-14 shrink-0 rounded-2xl bg-brand-600/10 dark:bg-brand-400/15 flex flex-col items-center justify-center" },
-            d === 0
-              ? ce("span", { className: "text-[16px] font-extrabold text-brand-700 dark:text-brand-300 leading-none" }, "Sot")
-              : [
-                  ce("span", { key: "n", className: "text-[22px] font-extrabold text-brand-700 dark:text-brand-300 leading-none tabular-nums" }, d),
-                  ce("span", { key: "l", className: "text-[11px] font-semibold text-brand-700/80 dark:text-brand-300/80 mt-0.5" }, "ditë")
-                ]),
-          ce("span", { className: "min-w-0 flex-1" },
-            ce("span", { className: "block text-[12.5px] text-secondary truncate" },
-              ce("span", { className: "font-semibold text-brand-600 dark:text-brand-300" }, "Provimi i radhës"), ` · ${dateText}`),
-            ce("span", { className: "block text-[16px] font-bold text-primary leading-snug mt-0.5 truncate" }, nameOf(next)))),
-        examMenu(next));
+      const R = 40, C = 2 * Math.PI * R;
+      const fill = Math.max(0.06, Math.min(1, (30 - d) / 30));
+      return ce("section", { className: "relative card-surface border border-default rounded-[20px] shadow-sm" },
+        ce("div", { className: "flex items-center gap-4 p-5 pb-4 pr-10" },
+          ce("div", { className: "relative w-[84px] h-[84px] shrink-0", "aria-hidden": true },
+            ce("svg", { width: 84, height: 84, viewBox: "0 0 92 92", className: "-rotate-90" },
+              ce("circle", { cx: 46, cy: 46, r: R, fill: "none", strokeWidth: 7, className: "stroke-black/[0.07] dark:stroke-white/10" }),
+              ce("circle", { cx: 46, cy: 46, r: R, fill: "none", strokeWidth: 7, strokeLinecap: "round", strokeDasharray: `${fill * C} ${C}`, className: "stroke-brand-600 dark:stroke-brand-300" })),
+            ce("div", { className: "absolute inset-0 flex flex-col items-center justify-center" },
+              ce("span", { className: "text-[28px] leading-none font-bold text-primary tabular-nums tracking-tight" }, d === 0 ? 'Sot' : d),
+              d === 0 ? null : ce("span", { className: "text-[12px] text-tertiary font-medium mt-0.5" }, d === 1 ? 'ditë' : 'ditë'))),
+          ce("div", { className: "min-w-0 flex-1" },
+            ce("div", { className: "text-[12px] font-semibold text-brand-600 dark:text-brand-300" }, "Provimi i radhës"),
+            ce("h3", { className: "text-[16px] font-bold text-primary leading-snug mt-1" }, nameOf(next)),
+            ce("p", { className: "text-[13px] text-tertiary mt-1" }, dayFull(next.date))),
+          ce("div", { className: "absolute top-2 right-2" }, examMenu(next))),
+        ce("div", { className: "px-5 pb-5" },
+          ce("button", {
+            type: "button",
+            disabled: !item,
+            onClick: () => { if (item) openCourse(item); },
+            "aria-label": `${ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu'}: ${nameOf(next)}`,
+            className: "w-full h-12 rounded-[13px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-default"
+          }, ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu', unitUiIcon("M5 12h14M13 6l6 6-6 6", "w-4 h-4"))));
     })();
 
     const addForm = deadlineDraft.isExamModalOpen && ce("form", {
@@ -33658,50 +32546,48 @@ Nënshkrimi: _____________________`;
         ce("button", { type: "button", onClick: closeAdd, className: "h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent" }, "Anulo"),
         ce("button", { type: "submit", className: "h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto")));
 
-    const row = (exam, i) => {
+    const row = exam => {
       const d = daysUntil(exam.date);
-      return ce("div", { key: exam.id, className: `flex items-center gap-3 py-3.5 ${i ? 'border-t border-black/5 dark:border-white/10' : ''}` },
-        ce("button", {
-          type: "button",
-          onClick: () => { const item = courseOf(exam); if (item) openCourse(item); },
-          className: "flex-1 min-w-0 text-left cursor-pointer"
-        },
-          ce("span", { className: "block text-[15px] font-semibold text-primary leading-snug truncate" }, nameOf(exam)),
-          ce("span", { className: "block text-[13px] text-tertiary mt-0.5" }, `${capFirst(formatDateSq(exam.date, { weekday: 'long' }))}, ${formatDateSq(exam.date, { day: 'numeric', month: 'long' })}`)),
-        ce("span", { className: "px-2.5 py-1 rounded-full bg-brand-600/10 dark:bg-brand-400/15 text-brand-700 dark:text-brand-300 text-[12.5px] font-bold tabular-nums shrink-0" }, d === 0 ? 'Sot' : d === 1 ? 'Nesër' : `${d} ditë`),
-        examMenu(exam));
+      return ce("div", { key: exam.id, className: "relative pb-5 last:pb-0" },
+        ce("span", { className: "absolute -left-[26px] top-[5px] w-3 h-3 rounded-full border-2 border-brand-600 dark:border-brand-300 bg-[var(--page)]", "aria-hidden": true }),
+        ce("div", { className: "text-[12px] font-semibold text-brand-600 dark:text-brand-300" }, dayFull(exam.date)),
+        ce("div", { className: "flex items-start gap-2 mt-0.5" },
+          ce("button", {
+            type: "button",
+            onClick: () => { const item = courseOf(exam); if (item) openCourse(item); },
+            className: "flex-1 min-w-0 text-left text-[15px] font-semibold text-primary leading-snug cursor-pointer"
+          }, nameOf(exam)),
+          ce("span", { className: "text-[13px] font-semibold text-tertiary tabular-nums whitespace-nowrap pt-px" }, d === 0 ? 'Sot' : d === 1 ? 'Nesër' : `${d} ditë`),
+          ce("span", { className: "-my-2 flex" }, examMenu(exam))));
     };
 
     const completedYearsList = (branchYears || []).filter(y => Number(y.id) < Number(yearId) || (completedAcademicYears || []).includes(Number(y.id)));
     const archiveYear = completedYearsList[0] || yr;
-    const roadmapList = Object.values(examRoadmaps || {}).filter(r => r && (r.steps || []).length);
-    const roadmapSub = roadmapList.length
-      ? roadmapList.slice(0, 1).map(r => { const c = allCourses.find(x => x.id === r.courseId); const done = r.steps.filter(s => s.done).length; return `${done}/${r.steps.length} hapa · ${c ? c.title : 'Plani'}`; })[0]
-      : "Hap pas hapi deri te dita e provimit";
     const tools = [
-      { id: 'calc', title: "Kalkulatori i notës", sub: "Sa pikë të duhen për notën", icon: "M5 3h14v18H5zM8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h2M16 15v3" },
-      { id: 'plan', title: "Plani 30-ditor", sub: roadmapSub, icon: "M4 5h16v15H4zM4 9h16M8 3v4M16 3v4M8 13h3M8 16h6" },
-      { id: 'archive', title: "Provim nga arkiva · 1 orë", sub: completedYearsList.length ? `Pyetje nga ${archiveYear && archiveYear.label ? archiveYear.label : 'viti i kaluar'}` : `Hapet kur të përfundojë ${yr && yr.label ? yr.label : 'viti'}`, icon: "M12 7v5l3 2M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z" }
+      { id: 'calc', title: "Kalkulatori i notës", icon: "M5 3h14v18H5zM8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M8 18h2M12 18h2" },
+      { id: 'archive', title: "Provim nga arkiva", icon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2", hint: completedYearsList.length ? '1 orë' : 'Hapet pas Vitit I' }
     ];
 
     return ce("div", { className: "exams-minimal w-full max-w-2xl mx-auto space-y-5 anim-fade-up" },
       hero,
-      ce("section", { className: "space-y-2.5" },
+      ce("section", { className: "space-y-3" },
         ce("div", { className: "flex items-center justify-between gap-3" },
           label(next ? (later.length ? "Më pas" : "Provimet") : "Provimet"),
-          !deadlineDraft.isExamModalOpen && ce("button", { type: "button", onClick: openAdd, className: "h-9 -mr-1 px-1 text-sm font-semibold text-brand-600 dark:text-brand-300 cursor-pointer inline-flex items-center gap-1" },
-            unitUiIcon("M12 5v14M5 12h14", "w-4 h-4"), "Shto provim")),
+          !deadlineDraft.isExamModalOpen && ce("button", { type: "button", onClick: openAdd, "aria-label": "Shto provim", className: "h-9 w-9 -mr-2 rounded-lg text-brand-600 dark:text-brand-300 cursor-pointer inline-flex items-center justify-center" },
+            unitUiIcon("M12 5v14M5 12h14", "w-5 h-5"))),
         addForm,
-        later.length > 0 && ce("div", { className: "card-surface border border-default rounded-[22px] px-5 shadow-sm" }, later.map(row)),
+        later.length > 0 && ce("div", { className: "relative ml-1.5 pl-[26px] pt-1" },
+          ce("span", { className: "absolute left-[5px] top-4 bottom-3 w-0.5 bg-black/[0.07] dark:bg-white/10", "aria-hidden": true }),
+          later.map(row)),
         !next && !deadlineDraft.isExamModalOpen && ce("div", { className: "card-surface border border-default rounded-[18px] px-5 py-8 text-center" },
           ce("div", { className: "text-[15px] font-semibold text-primary" }, "Nuk ke provime të shënuara"),
           ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Shto lëndën dhe datën, e ne të tregojmë sa ditë të kanë mbetur."),
           ce("button", { type: "button", onClick: openAdd, className: "mt-4 h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto provimin")),
         next && !later.length && !deadlineDraft.isExamModalOpen && ce("p", { className: "text-[13px] text-tertiary" }, "Nuk ke provime të tjera të shënuara.")),
-      ce("section", { className: "space-y-2.5" },
+      ce("section", { className: "space-y-3" },
         label("Mjete"),
-        ce("div", { className: "card-surface border border-default rounded-[18px] px-4" },
-          tools.map((tool, i) => {
+        ce("div", { className: "grid grid-cols-2 gap-2.5" },
+          tools.map(tool => {
             const expandable = tool.id !== 'archive';
             const open = examToolOpen === tool.id;
             return ce("button", {
@@ -33709,191 +32595,14 @@ Nënshkrimi: _____________________`;
               type: "button",
               onClick: () => expandable ? setExamToolOpen(open ? null : tool.id) : startArchiveExam1Hour(archiveYear && archiveYear.id),
               "aria-expanded": expandable ? open : undefined,
-              className: `w-full flex items-center gap-3.5 py-3.5 text-left cursor-pointer ${i ? 'border-t border-black/5 dark:border-white/10' : ''}`
+              className: `card-surface border rounded-2xl p-3.5 text-left flex flex-col gap-3 cursor-pointer ${open ? 'border-brand-500' : 'border-default'}`
             },
-              ce("span", { className: "w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] text-secondary flex items-center justify-center shrink-0" }, unitUiIcon(tool.icon, "w-[19px] h-[19px]")),
-              ce("span", { className: "flex-1 min-w-0" },
-                ce("span", { className: "block text-[15px] font-semibold text-primary" }, tool.title),
-                ce("span", { className: "block text-[13px] text-tertiary mt-0.5 truncate" }, tool.sub)),
-              unitUiIcon(expandable && open ? "M6 15l6-6 6 6" : expandable ? "M6 9l6 6 6-6" : UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0"));
+              ce("span", { className: "w-[34px] h-[34px] rounded-[10px] bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0" }, unitUiIcon(tool.icon, "w-[18px] h-[18px]")),
+              ce("span", { className: "block" },
+                ce("span", { className: "block text-[13.5px] font-semibold text-primary leading-tight" }, tool.title),
+                tool.hint ? ce("span", { className: "block text-[12px] text-tertiary mt-0.5" }, tool.hint) : null));
           })),
-        examToolOpen === 'calc' && renderGpaExamTargetCalculator(),
-        examToolOpen === 'plan' && renderExamRoadmapSection()));
-  };
-
-  /* ══ PLANI & SFIDA · pamja minimale ══ */
-  const renderPlanMinimal = () => {
-    const ce = React.createElement;
-    const line = 'border-t border-black/5 dark:border-white/10';
-    const label = txt => ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, txt);
-    const card = (children, extra = '') => ce("div", { className: `card-surface border border-default rounded-[18px] px-4 ${extra}` }, children);
-    const check = (done, onClick, aria, disabled) => ce("button", {
-      type: "button", onClick, disabled: Boolean(disabled), "aria-label": aria, "aria-pressed": Boolean(done),
-      className: `w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-default ${done ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-300 dark:border-slate-600 text-transparent'}`
-    }, unitUiIcon("M5 12.5l4.5 4.5L19 7.5", "w-3.5 h-3.5"));
-    const linkBtn = (txt, onClick, icon) => ce("button", { type: "button", onClick, className: "h-9 -mr-1 px-1 text-sm font-semibold text-brand-600 dark:text-brand-300 cursor-pointer inline-flex items-center gap-1" }, icon && unitUiIcon(icon, "w-4 h-4"), txt);
-    const header = (title, action) => ce("div", { className: "flex items-center justify-between gap-3 min-h-9" }, label(title), action || null);
-    const chev = unitUiIcon(UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0");
-    const coursesList = enrolledCourses.length ? enrolledCourses : allCourses;
-
-    /* 1 · përmbledhja */
-    const stats = [
-      { v: `Niveli ${studentLevelNumber}`, l: `${studentXp} XP` },
-      { v: String(Number(streakDays) || 0), l: 'ditë rresht' },
-      { v: `${completedChallengesCount}/3`, l: 'sfida sot' }
-    ];
-    const summary = ce("div", { className: "grid grid-cols-3 card-surface border border-default rounded-[18px]" },
-      stats.map((st, i) => ce("div", { key: i, className: `py-3.5 px-2 flex flex-col items-center justify-center gap-0.5 text-center ${i < 2 ? 'border-r border-default' : ''}` },
-        ce("span", { className: "text-lg font-bold text-primary tabular-nums" }, st.v),
-        ce("span", { className: "text-xs text-secondary leading-snug" }, st.l))));
-
-    /* 2 · sfidat e sotme */
-    const lastId = (() => { try { return localStorage.getItem('u_last_course') || ''; } catch { return ''; } })();
-    const readingCourse = enrolledCourses.find(c => c.id === lastId) || enrolledCourses.find(c => !done.includes(c.id)) || enrolledCourses[0] || allCourses[0];
-    const challenges = [
-      { id: 'ch_reading', title: 'Mëso një kapitull', sub: readingCourse ? readingCourse.title : 'Hap lëndën', xp: 40, done: isReadingChallengeDone, icon: "M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h14", onAction: () => { if (readingCourse) openCourse(readingCourse); } },
-      { id: 'ch_attendance', title: 'Ndiq ligjëratat', sub: todayDaySessions.length ? `${todayDaySessions.length} ${todayDaySessions.length === 1 ? 'seancë' : 'seanca'} sot në orar` : 'Sot s’ka ligjërata', xp: 30, done: isAttendanceChallengeDone, icon: "M3 5h18v15H3zM3 9h18M8 3v4M16 3v4", onAction: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(null); setView('week'); } },
-      { id: 'ch_arena', title: 'Testo dijen në Arenë', sub: 'Hap Arenën', xp: 40, done: isArenaChallengeDone, icon: "M13 2L4 14h7l-1 8 9-12h-7z", onAction: () => setStudentTab('arena_redirect') }
-    ];
-    const challengesCard = card(challenges.map((ch, i) => ce("div", { key: ch.id, className: `flex items-center gap-3.5 py-3 ${i ? line : ''}` },
-      check(ch.done, () => toggleDailyChallenge(ch.id), ch.done ? `Anulo: ${ch.title}` : `Shëno si të kryer: ${ch.title}`),
-      ce("button", { type: "button", onClick: ch.onAction, className: "flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer" },
-        ce("span", { className: "flex-1 min-w-0" },
-          ce("span", { className: `block text-[15px] font-semibold leading-snug ${ch.done ? 'text-tertiary line-through' : 'text-primary'}` }, ch.title),
-          ce("span", { className: "block text-[13px] text-tertiary mt-0.5 truncate" }, `${ch.sub} · +${ch.xp} XP`)),
-        !ch.done && chev))));
-
-    /* 3 · plani i studimit për sot */
-    const planTitle = selectedPlanDate === today ? 'Plani i studimit për sot' : `Plani për ${formatDateSq(selectedPlanDate, { weekday: 'long', day: 'numeric', month: 'short' })}`;
-    const taskForm = customTaskDraft.isOpen && ce("form", {
-      onSubmit: e => { e.preventDefault(); handleAddCustomStudyTask(); },
-      onKeyDown: e => { if (e.key === 'Escape') { e.preventDefault(); setCustomTaskDraft(prev => ({ ...prev, isOpen: false })); } },
-      "aria-label": "Shto sesion studimi",
-      className: "card-surface border border-default rounded-[18px] p-4 space-y-3 anim-fade-up"
-    },
-      ce("div", { className: "grid grid-cols-[1fr_auto] gap-2.5" },
-        ce("label", { className: "block min-w-0" },
-          ce("span", { className: "block text-[13px] text-secondary mb-1.5" }, "Lënda"),
-          ce("select", {
-            value: customTaskDraft.courseId || (coursesList[0] && coursesList[0].id) || '',
-            onChange: e => setCustomTaskDraft(prev => ({ ...prev, courseId: e.target.value })),
-            className: "w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500"
-          }, coursesList.map(c => ce("option", { key: c.id, value: c.id }, c.title)))),
-        ce("label", { className: "block" },
-          ce("span", { className: "block text-[13px] text-secondary mb-1.5" }, "Koha"),
-          ce("select", {
-            value: customTaskDraft.minutes,
-            onChange: e => setCustomTaskDraft(prev => ({ ...prev, minutes: Number(e.target.value) })),
-            className: "h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500"
-          }, [25, 30, 45, 60, 90, 120].map(m => ce("option", { key: m, value: m }, `${m} min`))))),
-      ce("label", { className: "block" },
-        ce("span", { className: "block text-[13px] text-secondary mb-1.5" }, "Çfarë do të bësh"),
-        ce("select", {
-          value: customTaskDraft.activityType,
-          onChange: e => setCustomTaskDraft(prev => ({ ...prev, activityType: e.target.value })),
-          className: "w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500"
-        }, ["Studim i thelluar", "Përsëritje e kapitullit", "Zgjidhje detyrash & kuize", "Shqyrtim rastesh klinike", "Përgatitje për provim"].map(t => ce("option", { key: t, value: t }, t)))),
-      ce("div", { className: "flex justify-end gap-2" },
-        ce("button", { type: "button", onClick: () => setCustomTaskDraft(prev => ({ ...prev, isOpen: false })), className: "h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent" }, "Anulo"),
-        ce("button", { type: "submit", className: "h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto")));
-    const taskRows = selectedDayTasks.length > 0 && card(selectedDayTasks.map((item, i) => {
-      const linked = allCourses.find(c => c.id === item.courseId);
-      const activity = linked ? String(item.title || '').replace(` - ${linked.title}`, '').trim() : 'Lëndë personale';
-      const taskSub = [activity && (!linked || activity !== linked.title) ? activity : null, `${item.minutes} min`].filter(Boolean).join(' · ');
-      return ce("div", { key: item.id, className: `flex items-center gap-3.5 py-3 ${i ? line : ''}` },
-        check(item.done, () => toggleStudyTask(item.id), item.done ? 'Shëno si të papërfunduar' : 'Shëno si të përfunduar'),
-        ce("button", { type: "button", onClick: () => linked && openCourse(linked), className: "flex-1 min-w-0 text-left cursor-pointer" },
-          ce("span", { className: `block text-[15px] font-semibold leading-snug truncate ${item.done ? 'text-tertiary line-through' : 'text-primary'}` }, linked ? linked.title : item.title),
-          ce("span", { className: "block text-[13px] text-tertiary mt-0.5 truncate" }, taskSub)),
-        ce("button", {
-          type: "button",
-          onClick: () => setStudyPlan(prev => prev.filter(x => x.id !== item.id)),
-          "aria-label": "Largo nga plani", title: "Largo nga plani",
-          className: "w-9 h-9 -mr-1.5 rounded-lg text-tertiary hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center shrink-0 cursor-pointer"
-        }, unitUiIcon("M6 6l12 12M18 6L6 18", "w-4 h-4")));
-    }));
-    const tasksEmpty = !selectedDayTasks.length && !customTaskDraft.isOpen && card(ce("div", { className: "py-5 text-center" },
-      ce("div", { className: "text-[15px] font-semibold text-primary" }, "Asnjë sesion për sot"),
-      ce("div", { className: "mt-3 flex justify-center gap-2" },
-        ce("button", { type: "button", onClick: regenerateDailyPlan, className: "h-10 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Krijo plan automatik"))));
-    const tasksDone = selectedDayTasks.filter(t => t.done).length;
-
-    /* 4 · plani 30-ditor */
-    const rmKeys = Object.keys(examRoadmaps || {});
-    const rmId = selectedRoadmapCourseId && examRoadmaps[selectedRoadmapCourseId] ? selectedRoadmapCourseId : rmKeys[0];
-    const rm = rmId ? examRoadmaps[rmId] : null;
-    const rmSteps = rm ? (rm.steps || []) : [];
-    const rmDone = rmSteps.filter(s => s.done).length;
-    const rmPct = rmSteps.length ? Math.round((rmDone / rmSteps.length) * 100) : 0;
-    const rmNext = rmSteps.find(s => !s.done) || null;
-    const rmCourse = rm ? allCourses.find(c => c.id === rm.courseId) : null;
-    const roadmapOpen = planSectionOpen === 'roadmap';
-    const roadmapCard = rm ? card([
-      ce("div", { key: 'h', className: "py-3.5 space-y-2.5" },
-        ce("div", { className: "flex items-baseline justify-between gap-3" },
-          ce("span", { className: "text-[15px] font-semibold text-primary truncate" }, rm.courseTitle || (rmCourse && rmCourse.title) || 'Plani'),
-          ce("span", { className: "text-[13px] text-tertiary tabular-nums shrink-0" }, `${rmDone}/${rmSteps.length} hapa`)),
-        ce("div", { className: "h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden", role: "progressbar", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": rmPct },
-          ce("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${Math.max(rmPct, rmDone ? 3 : 0)}%` } })),
-        rm.targetDate && ce("div", { className: "text-[13px] text-tertiary" }, `Provimi: ${formatDateSq(rm.targetDate, { weekday: 'long', day: 'numeric', month: 'long' })}`)),
-      rmNext && ce("div", { key: 'n', className: `flex items-center gap-3.5 py-3 ${line}` },
-        check(false, () => !rmNext.isTest && toggleRoadmapStep(rm.courseId, rmNext.id), rmNext.isTest ? 'Përfundo testin për ta kaluar këtë hap' : `Shëno ditën ${rmNext.dayNum}`, rmNext.isTest),
-        ce("span", { className: "flex-1 min-w-0" },
-          ce("span", { className: "block text-[13px] font-semibold text-brand-600 dark:text-brand-300" }, `Hapi tjetër · Dita ${rmNext.dayNum}`),
-          ce("span", { className: "block text-[15px] font-semibold text-primary leading-snug mt-0.5" }, rmNext.title),
-          ce("span", { className: "block text-[13px] text-tertiary mt-0.5" }, [rmNext.minutes ? `${rmNext.minutes} min` : null, rmNext.isTest ? `synimi ${rmNext.requiredScore}%` : null, `+${rmNext.xp} XP`].filter(Boolean).join(' · '))),
-        rmCourse && ce("button", {
-          type: "button",
-          onClick: () => rmNext.isTest ? startMockExam(rmCourse, { limit: rmNext.questionCount, difficulty: rmNext.difficulty, challengeDay: rmNext.dayNum, challengeStepId: rmNext.id, requiredScore: rmNext.requiredScore }) : openCourse(rmCourse),
-          className: "h-9 px-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shrink-0 cursor-pointer"
-        }, rmNext.isTest ? "Fillo testin" : "Mëso")),
-      !rmNext && ce("div", { key: 'd', className: `py-3 text-[13px] text-emerald-700 dark:text-emerald-400 font-medium ${line}` }, "✓ Të gjithë hapat u kryen"),
-      ce("button", { key: 't', type: "button", onClick: () => setPlanSectionOpen(roadmapOpen ? null : 'roadmap'), "aria-expanded": roadmapOpen, className: `w-full flex items-center justify-between gap-3 py-3 text-sm font-semibold text-brand-600 dark:text-brand-300 cursor-pointer ${line}` },
-        roadmapOpen ? "Mbyll planin e plotë" : "Shiko të gjithë hapat", unitUiIcon(roadmapOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6", "w-4 h-4"))
-    ]) : card(ce("button", { type: "button", onClick: () => setPlanSectionOpen(roadmapOpen ? null : 'roadmap'), "aria-expanded": roadmapOpen, className: "w-full flex items-center gap-3.5 py-3.5 text-left cursor-pointer" },
-      ce("span", { className: "flex-1 min-w-0" },
-        ce("span", { className: "block text-[15px] font-semibold text-primary" }, "Krijo planin 30-ditor"),
-        ce("span", { className: "block text-[13px] text-tertiary mt-0.5" }, "Hap pas hapi deri te dita e provimit")),
-      unitUiIcon(roadmapOpen ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6", "w-4 h-4 text-tertiary shrink-0")));
-
-    /* 5 · sfidat shumë-ditore */
-    const multiOpen = planSectionOpen === 'multi';
-    const multiRows = customMultiDayChallenges.length > 0 && card(customMultiDayChallenges.map((ch, i) => {
-      const steps = ch.steps || [];
-      const dn = steps.filter(s => s.done).length;
-      const pct = steps.length ? Math.round((dn / steps.length) * 100) : 0;
-      const todayStep = steps.find(s => s.dateStr === today);
-      return ce("div", { key: ch.id, className: `py-3.5 space-y-2.5 ${i ? line : ''}` },
-        ce("div", { className: "flex items-baseline justify-between gap-3" },
-          ce("span", { className: "text-[15px] font-semibold text-primary truncate" }, ch.title),
-          ce("span", { className: "text-[13px] text-tertiary tabular-nums shrink-0" }, `${dn}/${steps.length} ditë`)),
-        ce("div", { className: "h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden" },
-          ce("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${Math.max(pct, dn ? 3 : 0)}%` } })),
-        todayStep && ce("div", { className: "flex items-center gap-3 pt-0.5" },
-          check(todayStep.done, () => toggleChallengeDay(ch.id, todayStep.dayNum), todayStep.done ? 'Anulo ditën e sotme' : 'Shëno ditën e sotme si të kryer'),
-          ce("span", { className: `flex-1 min-w-0 text-[13px] leading-snug ${todayStep.done ? 'text-tertiary line-through' : 'text-secondary'}` }, `Sot: ${todayStep.task}`)));
-    }));
-
-    return ce("div", { className: "plan-minimal w-full max-w-2xl mx-auto space-y-5 anim-fade-up" },
-      summary,
-      ce("section", { className: "space-y-2.5" },
-        header("Sfidat e sotme", ce("span", { className: "text-[13px] text-tertiary tabular-nums" }, `${completedChallengesCount} nga 4`)),
-        challengesCard),
-      ce("section", { className: "space-y-2.5" },
-        header(selectedDayTasks.length ? `${planTitle} · ${tasksDone}/${selectedDayTasks.length}` : planTitle,
-          !customTaskDraft.isOpen && ce("div", { className: "flex items-center gap-3" },
-            selectedDayTasks.length > 0 && ce("button", { type: "button", onClick: regenerateDailyPlan, title: "Rigjenero planin", "aria-label": "Rigjenero planin", className: "w-9 h-9 rounded-lg text-tertiary hover:text-primary flex items-center justify-center cursor-pointer" }, unitUiIcon("M4 4v6h6M20 20v-6h-6M5.5 15a7 7 0 0 0 12.5 2.5M18.5 9A7 7 0 0 0 6 6.5", "w-4 h-4")),
-            linkBtn("Shto", () => setCustomTaskDraft(prev => ({ ...prev, isOpen: true, courseId: prev.courseId || (coursesList[0] && coursesList[0].id) || '' })), "M12 5v14M5 12h14"))),
-        taskForm, taskRows, tasksEmpty),
-      ce("section", { className: "space-y-2.5" },
-        header("Plani 30-ditor"),
-        roadmapCard,
-        roadmapOpen && renderExamRoadmapSection()),
-      ce("section", { className: "space-y-2.5" },
-        header("Sfidat shumë-ditore", linkBtn(multiOpen ? "Mbyll" : (customMultiDayChallenges.length ? "Menaxho" : "Krijo"), () => { if (!multiOpen && !customMultiDayChallenges.length) setChallengeDraft(prev => ({ ...prev, isOpen: true })); setPlanSectionOpen(multiOpen ? null : 'multi'); })),
-        !multiOpen && multiRows,
-        !multiOpen && !customMultiDayChallenges.length && ce("p", { className: "text-[13px] text-tertiary" }, "Vendos vetë sa ditë do të studiosh dhe çfarë do të bësh çdo ditë."),
-        multiOpen && renderCustomMultiDayChallengesSection()));
+        examToolOpen === 'calc' && renderGpaExamTargetCalculator()));
   };
 
   /* ══ KREU · Detyrat e sotme (pamja minimale) ══ */
@@ -34787,11 +33496,14 @@ Nënshkrimi: _____________________`;
 
           /* Lart: kategoria + mbyll (shirit më vete, nuk mbulon videon) */
           h('div', { className: "shrink-0 flex items-center gap-2.5 pl-4 pr-2 pt-3 pb-2" },
-            h('span', { className: "w-8 h-8 rounded-full bg-zinc-800 border border-white/20 shrink-0" }),
+            (() => {
+              const hs = getTopicVideoSource(curVideo.url);
+              const hp = hs?.videoId ? `https://i.ytimg.com/vi/${hs.videoId}/mqdefault.jpg` : (hs?.thumbnail || curVideo.thumbnail || '');
+              return h('span', { className: "relative w-9 h-9 rounded-full bg-zinc-800 border border-white/20 shrink-0 overflow-hidden", "aria-hidden": true },
+                hp ? h('img', { key: hp, src: hp, alt: "", draggable: false, onError: e => { e.currentTarget.style.display = 'none'; }, className: "absolute inset-0 w-full h-full object-cover" }) : null);
+            })(),
             h('div', { className: "flex-1 min-w-0" },
-              h('div', { className: "text-[13px] font-semibold truncate" }, getCategoryLabel(curVideo.category || curVideo.courseTitle || 'Psikologji')),
-              h('div', { className: "text-xs text-zinc-400" },
-                appearanceText(`Video ${courseVideoFeedIndex + 1} nga ${total}`, `Video ${courseVideoFeedIndex + 1} of ${total}`) + (curVideo.duration ? ` · ${curVideo.duration}` : ''))
+              h('div', { className: "text-[15px] font-semibold truncate" }, getCategoryLabel(curVideo.category || curVideo.courseTitle || 'Psikologji'))
             ),
             h('button', {
               type: "button",
@@ -34866,10 +33578,6 @@ Nënshkrimi: _____________________`;
 
                 /* Poshtë videos: titulli, përshkrimi, veprimet (nuk e mbulojnë videon) */
                 h('div', { className: "course-video-caption flex flex-col gap-3.5 px-4 py-3" },
-                  h('div', { className: "flex flex-col gap-1.5" },
-                    h('h3', { className: "text-lg font-semibold leading-snug" }, video.title || video.topicTitle || 'Leksion'),
-                    video.summary ? h('p', { className: "text-sm leading-relaxed text-zinc-400 line-clamp-3" }, video.summary) : null
-                  ),
                   h('div', { className: "flex gap-2" },
                     h('button', {
                       type: "button",
@@ -34887,10 +33595,7 @@ Nënshkrimi: _____________________`;
                       },
                       className: "h-[42px] px-4 rounded-full border border-white/25 hover:bg-white/10 text-sm font-medium flex items-center cursor-pointer transition-colors"
                     }, appearanceText('Lënda', 'Course')) : null
-                  ),
-                  idx < total - 1 ? h('div', { className: "flex items-center justify-center gap-1.5 pt-1 text-xs text-zinc-500" },
-                    h('svg', { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", "aria-hidden": true }, h('path', { d: "M6 15l6-6 6 6" })),
-                    appearanceText('Rrëshqit lart për videon tjetër', 'Swipe up for the next video')) : null
+                  )
                 )
               );
             })
@@ -35369,7 +34074,7 @@ Nënshkrimi: _____________________`;
     courses: 'Lëndët e regjistruara',
     week: 'Orari',
     session: 'Sesioni akademik',
-    student: 'Plani dhe provimet',
+    student: 'Provimet',
     arena: 'Arena',
     cases: 'Dosjet studimore',
     instructor: 'Paneli i profesorit',
@@ -35677,10 +34382,21 @@ Nënshkrimi: _____________________`;
     size: 18,
     color: "#fff"
   })), /*#__PURE__*/React.createElement("span", {
-    className: "unit-brand-name text-sm font-extrabold text-primary tracking-tight block lg:hidden"
-  }, "Fakulteti ", /*#__PURE__*/React.createElement("span", {
+    className: "unit-brand-name text-sm font-extrabold text-primary tracking-tight block lg:hidden min-w-0"
+  }, profileNameParts.length ? /*#__PURE__*/React.createElement("span", {
+    className: "block min-w-0 leading-tight"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "block text-[11px] font-semibold text-secondary tracking-normal leading-4"
+  }, isInstructorAccount ? "Profesori" : "Studenti"), /*#__PURE__*/React.createElement("span", {
+    className: "flex flex-wrap gap-x-[0.3em] h-5 leading-5 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap"
+  }, profileNameParts[0]), profileNameParts.length > 1 && /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap"
+  }, profileNameParts[profileNameParts.length - 1]))) : ["Fakulteti ", /*#__PURE__*/React.createElement("span", {
+    key: "online",
     className: "text-brand-600 dark:text-brand-300"
-  }, "Online"))), /*#__PURE__*/React.createElement("div", {
+  }, "Online")])), /*#__PURE__*/React.createElement("div", {
     className: "app-header-actions flex items-center gap-2"
   }, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSearchOpen(true),
@@ -36577,37 +35293,30 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col sm:flex-row sm:items-center justify-end gap-3 pb-1"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-4 gap-1 p-1 rounded-xl input-bg border border-default w-full sm:w-auto self-stretch sm:self-auto"
+    className: "grid grid-cols-3 gap-1 p-1 rounded-[14px] card-surface border border-default w-full sm:w-auto self-stretch sm:self-auto"
   }, [{
     k: 'exams',
-    l: `Provimet${examDeadlines.length ? ` (${examDeadlines.length})` : ''}`,
-    iconEl: TaskIcons.FileText({ className: "w-3.5 h-3.5 shrink-0" })
-  }, {
-    k: 'today',
-    l: 'Plani & Sfida',
-    iconEl: TaskIcons.Target({ className: "w-3.5 h-3.5 shrink-0" })
+    l: 'Provimet',
+    iconEl: null
   }, {
     k: 'arena_redirect',
     l: 'Arena',
-    iconEl: TaskIcons.Zap({ className: "w-3.5 h-3.5 shrink-0" })
+    iconEl: null
   }, {
     k: 'cases_redirect',
     l: 'Rastet',
-    iconEl: TaskIcons.Clipboard({ className: "w-3.5 h-3.5 shrink-0" })
+    iconEl: null
   }].map(item => {
     const isActive = studentTab === item.k || (item.k === 'arena_redirect' && studentTab === 'arena') || (item.k === 'cases_redirect' && studentTab === 'cases');
     return /*#__PURE__*/React.createElement("button", {
       key: item.k,
       type: "button",
       onClick: () => setStudentTab(item.k),
-      className: `w-full sm:w-auto sm:min-w-[116px] min-h-10 sm:min-h-9 px-2 sm:px-3.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center whitespace-nowrap ${isActive ? 'bg-brand-600 text-white shadow-2xs' : 'text-secondary hover:text-primary hover:bg-black/5 dark:hover:bg-white/5'}`
+      className: `w-full sm:w-auto sm:min-w-[116px] min-h-10 sm:min-h-9 px-2 sm:px-3.5 rounded-[10px] text-[14px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center whitespace-nowrap ${isActive ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-secondary hover:text-primary'}`
     }, item.iconEl, /*#__PURE__*/React.createElement("span", { className: "truncate" }, item.l));
   }))),
 
-  /* TAB 1: PLANI & SFIDA (pamja minimale) */
-  studentTab === 'today' && renderPlanMinimal(),
-
-  /* TAB 2: PROVIMET (pamja minimale) */
+  /* PROVIMET (pamja minimale) */
   studentTab === 'exams' && renderExamsMinimal(),
   (studentTab === 'arena_redirect' || studentTab === 'arena') && renderArenaView(),
   (studentTab === 'cases_redirect' || studentTab === 'cases') && (() => {
