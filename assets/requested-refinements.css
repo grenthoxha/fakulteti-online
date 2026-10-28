@@ -1,0 +1,93 @@
+/* Only the requested course, profile, physical-book preview, and schedule surfaces. */
+.course-detail-page :is(.card-surface,.course-detail-hero,.course-detail-tabs),
+.course-detail-page :is(.card-surface,.course-detail-hero,.course-detail-tabs):hover {
+  background:var(--surface) !important; border-color:rgba(174,188,255,.58) !important;
+  box-shadow:0 22px 46px -36px rgba(29,33,73,.62) !important; transform:none !important;
+  transition:none !important;
+}
+.dark .course-detail-page :is(.card-surface,.course-detail-hero,.course-detail-tabs),
+.dark .course-detail-page :is(.card-surface,.course-detail-hero,.course-detail-tabs):hover {
+  border-color:rgba(131,149,255,.28) !important; box-shadow:0 18px 40px -25px rgba(0,0,0,.72) !important;
+}
+.course-detail-page .course-detail-tabs,
+.course-detail-page .course-detail-tabs:hover { background:var(--surface-muted) !important; }
+.course-detail-page .course-detail-chapter-item:not([aria-current="step"]),
+.course-detail-page .course-detail-chapter-item:not([aria-current="step"]):hover { background:var(--surface-muted) !important; border-color:var(--line) !important; transition:none; }
+.course-detail-tabs > button:not([aria-pressed="true"]),
+.course-detail-tabs > button:not([aria-pressed="true"]):hover { color:var(--muted) !important; background:transparent !important; transition:none; }
+.course-detail-page .course-detail-document,
+.course-detail-page .course-detail-document:hover { background:var(--surface-muted) !important; border-color:var(--line) !important; transform:none; transition:none; }
+.course-detail-page .course-detail-focus-mode,
+.course-detail-page .course-detail-focus-mode:hover { color:var(--ink); border-color:rgba(var(--brand-rgb),.4); }
+.course-detail-quick-tool { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-width:2.5rem; min-height:2.5rem; padding:.5rem .65rem; border:1px solid var(--line); border-radius:.75rem; background:var(--surface-muted); color:var(--muted); font-size:.7rem; font-weight:650; flex-shrink:0; }
+.course-detail-quick-tool[aria-pressed="true"] { color:rgb(var(--brand-rgb)); border-color:rgba(var(--brand-rgb),.4); }
+.course-detail-page .course-detail-tabs > .course-detail-quick-tool { flex:0 0 2.5rem; min-width:2.5rem; padding:.5rem; }
+.course-detail-tabs > .course-detail-quick-tool svg { display:block; }
+.course-detail-assistant { display:flex; align-items:center; gap:.75rem; width:100%; padding:.8rem 1rem; border:1px solid var(--line); border-radius:1rem; background:var(--surface); color:var(--ink); text-align:left; }
+.course-detail-assistant > svg { color:rgb(var(--brand-rgb)); flex-shrink:0; }
+.course-detail-assistant > span { display:grid; gap:.2rem; min-width:0; flex:1; }
+.course-detail-assistant strong { font-size:.8rem; font-weight:650; }
+.course-detail-assistant small { color:var(--muted); font-size:.65rem; }
+.course-detail-assistant > span:last-child { flex:0; }
+:is(.course-detail-quick-tool,.course-detail-assistant,.profile-name-trigger,.profile-name-edit-hint,.profile-photo-trigger,.profile-membership-badge):focus-visible { outline:2px solid rgb(var(--brand-rgb)); outline-offset:3px; }
+.profile-page--refined > .profile-identity { padding:.25rem .25rem 1rem !important; border:0 !important; border-bottom:1px solid var(--line) !important; border-radius:0; background:transparent !important; box-shadow:none !important; gap:0; }
+.profile-page--refined .profile-identity-main { align-items:flex-start; }
+.profile-page--refined .profile-identity-avatar { overflow:visible; margin-top:.35rem; }
+.profile-identity-avatar > img { border-radius:inherit; }
+.profile-photo-trigger { position:absolute; bottom:-.3rem; right:-.3rem; display:grid; place-items:center; width:1.6rem; height:1.6rem; border-radius:.55rem; background:var(--surface); color:var(--muted); border:1px solid var(--line); }
+.profile-name-control { display:inline-flex; align-items:center; gap:.4rem; min-width:0; }
+.profile-name-trigger { min-width:0; padding:.3rem 0; background:transparent; border:0; color:inherit; font:inherit; text-align:left; overflow-wrap:anywhere; border-radius:.3rem; cursor:text; }
+.profile-name-edit-hint { display:inline-flex; align-items:center; gap:.3rem; padding:.4rem; min-height:2rem; border-radius:.5rem; font-size:.65rem; color:var(--muted); background:var(--surface-muted); border:1px solid var(--line); flex-shrink:0; }
+.profile-membership-badge { display:grid; place-items:center; flex-shrink:0; width:1.65rem; height:1.65rem; border-radius:.6rem; border:1px solid var(--line); color:var(--muted); background:var(--surface-muted); }
+.profile-membership-badge.is-premium { color:rgb(var(--brand-rgb)); border-color:rgba(var(--brand-rgb),.25); background:rgba(var(--brand-rgb),.1); }
+.dark .profile-membership-badge.is-premium,.dark .course-detail-assistant > svg { color:#b6bfff; }
+.schedule-page .schedule-day-card,
+.schedule-page .schedule-day-card:hover,
+.schedule-page .schedule-session-card,
+.schedule-page .schedule-session-card:hover { background:var(--surface) !important; border-color:var(--line) !important; box-shadow:none !important; --tw-ring-shadow:0 0 #0000; }
+.schedule-page .schedule-week-content > .schedule-day-card,
+.schedule-page .schedule-week-content > .schedule-day-card:hover { background:transparent !important; border:0 !important; border-radius:0 !important; padding:.375rem 0 0 !important; box-shadow:none !important; }
+.schedule-page .schedule-week-content > .schedule-day-card + .schedule-day-card { margin-top:1rem; padding-top:1rem !important; border-top:1px solid var(--line) !important; }
+.semester-materials-card { width:100%; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; min-height:145px; padding:.875rem; gap:.75rem; border-radius:1rem; }
+.semester-materials-card-copy strong { font-size:.75rem; font-weight:500; line-height:1.375; }
+.semester-materials-card-copy > span { font-size:.625rem; }
+.semester-materials-card-footer { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding-top:.625rem; border-top:1px solid var(--line); font-size:.625rem; font-weight:600; }
+.semester-materials-card > .semester-materials-card-footer:last-child { width:100%; margin:0; }
+.semester-materials-card .semester-materials-status { margin:0; padding:0; border:0; border-radius:0; background:transparent; font:inherit; }
+.semester-materials-card-cta { display:flex; align-items:center; gap:.5rem; color:rgb(var(--brand-rgb)); font:inherit; white-space:nowrap; }
+.dark .semester-materials-card-cta { color:#b6bfff; }
+.semester-materials-mini-book { width:2.9rem; height:3.8rem; flex-shrink:0; border-radius:.15rem .35rem .35rem .15rem; background:linear-gradient(100deg,#333986 0 12%,#5056c8 13%,#292e73 100%); color:#e3e6ff; display:flex; flex-direction:column; justify-content:space-between; padding:.4rem .4rem .4rem .6rem; box-shadow:3px 3px 0 var(--line),0 5px 12px rgba(0,0,0,.15); }
+.semester-materials-mini-book > span:first-child { font-size:.3rem; letter-spacing:.05em; }
+.semester-materials-mini-book > strong { font-size:1.1rem; line-height:1; }
+.semester-materials-mini-book > span:last-child { font-size:.3rem; text-transform:uppercase; }
+.semester-materials-panel { padding:1.25rem; scroll-margin-top:5.5rem; }
+.semester-materials-showcase { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); align-items:center; gap:1.5rem; padding:1.25rem; margin-bottom:1.25rem; border-radius:1rem; background:var(--surface-muted); }
+.semester-materials-book-scene { display:grid; justify-items:center; gap:1rem; min-width:0; perspective:900px; }
+.semester-materials-book { width:clamp(7.5rem,17vw,11rem); min-height:12rem; aspect-ratio: .69; position:relative; display:flex; flex-direction:column; gap:1rem; padding:1.2rem 1rem 1rem 1.4rem; color:#eef0ff; border-radius:.2rem .5rem .5rem .2rem; background:linear-gradient(105deg,#202455 0 8%,#474daf 9%,#353a8d 55%,#202455 100%); transform:rotateY(-14deg) rotateZ(-3deg); box-shadow:8px 9px 0 -3px #d7d9e7,10px 11px 0 -3px #b8bdd4,0 22px 24px -14px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.15); }
+.semester-materials-book::after { content:''; position:absolute; top:0; bottom:0; left:9%; width:1px; background:rgba(255,255,255,.17); }
+.semester-materials-book-brand { font-size:.42rem; font-weight:700; letter-spacing:.16em; }
+.semester-materials-book-name { font-size:1rem; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+.semester-materials-book-topic { color:#cbd0f6; font-size:.6rem; line-height:1.5; white-space:pre-line; }
+.semester-materials-book-volume { margin-top:auto; padding-top:1rem; border-top:1px solid rgba(255,255,255,.2); font-size:.55rem; letter-spacing:.06em; }
+.semester-materials-book-caption { font-size:.6rem; color:var(--muted); text-align:center; }
+.semester-materials-pitch > span { display:inline-block; font-size:.6rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
+.semester-materials-pitch h2 { font-size:clamp(1.2rem,3vw,1.6rem); line-height:1.3; letter-spacing:-.025em; margin:.5rem 0; font-weight:750; }
+.semester-materials-pitch > p { font-size:.75rem; color:var(--muted); line-height:1.7; }
+.semester-materials-benefits { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.85rem; }
+.semester-materials-benefits > span { padding:.35rem .55rem; font-size:.6rem; border:1px solid var(--line); border-radius:.5rem; color:var(--ink); background:var(--surface); }
+@media(max-width:639px) {
+  .course-detail-page .course-detail-clock { flex:0 1 auto; min-width:0; flex-wrap:wrap; justify-content:flex-end; }
+  .course-detail-quick-tool > span { display:none; }
+  .profile-page--refined .profile-identity-name { flex-wrap:wrap; }
+  .semester-materials-showcase { grid-template-columns:minmax(0,1fr); padding:1rem; gap:1.4rem; }
+  .semester-materials-book { width:9rem; }
+  .semester-materials-pitch { text-align:center; }
+  .semester-materials-benefits { justify-content:center; }
+}
+@media(min-width:640px) {
+  .semester-materials-card { min-height:175px; padding:1.25rem; gap:1rem; }
+  .semester-materials-card-copy strong { font-size:1rem; }
+  .semester-materials-card-copy > span { font-size:.75rem; }
+  .semester-materials-card-footer { padding-top:.75rem; font-size:.75rem; }
+}
+@media(prefers-reduced-motion:reduce) { .semester-materials-book { transform:none; } }
