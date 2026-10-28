@@ -243,6 +243,9 @@
       .medicine-anatomy-art { right: -2rem; bottom: -28%; width: 12rem; height: 158%; opacity: 0.08; }
       .psychology-brain-art { right: -2rem; width: 13rem; opacity: 0.085; }
     }
+    /* Fotoja e sfondit të fillimit shtrihet edhe mbi rreshtin e videove */
+    .home-section-list .home-hero-integrated { overflow-x: clip !important; overflow-y: visible !important; }
+    .home-section-list .home-hero-integrated .psychology-brain-art { top: calc(100% + 1rem); }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -2399,6 +2402,7 @@ const UI_EN = {
   'Mësimi bazë mbetet gjithmonë i përdorshëm pa pagesë.': 'Core learning always remains available for free.',
   'Ke qasje në përmbledhje automatike, analiza, raporte dhe eksporte.': 'You have access to automatic summaries, analytics, reports and exports.',
   '7 mjete të avancuara në një vend': '7 advanced tools in one place',
+  '5 mjete të avancuara në një vend': '5 advanced tools in one place',
   'Krijon automatikisht përmbledhjen, kartelat dhe pyetjet nga shënimet e ligjëratës.': 'Automatically creates a summary, flashcards and questions from lecture notes.',
   'Hap analizën e pjesëmarrjes sipas javës, muajit, semestrit dhe lëndës.': 'Opens attendance analysis by week, month, semester and course.',
   'Hap artikujt e thelluar dhe koleksionin e zgjeruar të materialeve shkencore.': 'Unlocks in-depth articles and the extended scientific collection.',
@@ -9125,168 +9129,6 @@ function CourseLearningExamples({ courseId, section, language }) {
         method !== 'explain' && btn(t('Rifillo këtë shembull', 'Restart this example'), restart))));
 }
 
-function HomeGoalInlineEditor({ value, onSave, language, label, children, className, editorClassName = '', wrapperClassName = '', multiline = false, maxLength = 500, onOpen }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(value ?? ''));
-  const [error, setError] = useState(false);
-  const inputRef = useRef(null);
-  const titleRef = useRef(null);
-  const restoreTitleFocusRef = useRef(false);
-  const gestureRef = useRef({ timer: null, pointer: null, lastTap: null, lastMouseClick: null, type: 'mouse' });
-  const editingRef = useRef(false);
-  const clearHold = () => {
-    clearTimeout(gestureRef.current.timer);
-    gestureRef.current.timer = null;
-  };
-  useEffect(() => () => clearHold(), []);
-  useEffect(() => {
-    if (!editing) setDraft(String(value ?? ''));
-  }, [value, editing]);
-  useEffect(() => {
-    if (editing) {
-      inputRef.current?.focus({ preventScroll: true });
-      inputRef.current?.select();
-    } else if (restoreTitleFocusRef.current) {
-      restoreTitleFocusRef.current = false;
-      titleRef.current?.focus({ preventScroll: true });
-    }
-  }, [editing]);
-  const begin = () => {
-    clearHold();
-    gestureRef.current.pointer = null;
-    gestureRef.current.lastTap = null;
-    editingRef.current = true;
-    setDraft(String(value ?? ''));
-    setError(false);
-    setEditing(true);
-  };
-  const finish = (save, returnFocus = false) => {
-    if (!editingRef.current) return;
-    const next = draft.trim() || null;
-    if (save && next === null && returnFocus) {
-      setError(true);
-      return;
-    }
-    editingRef.current = false;
-    gestureRef.current.lastMouseClick = null;
-    if (save && next !== null && next !== value) onSave(next);
-    setError(false);
-    restoreTitleFocusRef.current = returnFocus;
-    setEditing(false);
-  };
-  const cancelGesture = () => {
-    clearHold();
-    gestureRef.current.pointer = null;
-    gestureRef.current.lastTap = null;
-  };
-  const openDetails = () => {
-    cancelGesture();
-    gestureRef.current.lastMouseClick = null;
-    if (editingRef.current) {
-      const next = draft.trim() || null;
-      if (next !== null && next !== value) onSave(next);
-    }
-    editingRef.current = false;
-    setEditing(false);
-    setError(false);
-    onOpen?.();
-  };
-  const t = (sq, en) => language === 'en' ? en : sq;
-  return nativeCreateElement('span', {
-    'data-home-goal-inline': true,
-    className: `${editing ? 'block w-full min-w-0' : 'min-w-0 max-w-full'} ${wrapperClassName}`,
-    onClick: event => {
-      event.stopPropagation();
-      if (onOpen && gestureRef.current.type === 'mouse' && event.detail > 0) gestureRef.current.lastMouseClick = { at: Date.now(), x: event.clientX, y: event.clientY };
-    },
-    onPointerDownCapture: event => {
-      if (!onOpen || event.pointerType !== 'mouse' || event.button !== 0) return;
-      const last = gestureRef.current.lastMouseClick;
-      if (editingRef.current && last && Date.now() - last.at <= 350 && Math.abs(event.clientX - last.x) <= 24 && Math.abs(event.clientY - last.y) <= 24) {
-        event.preventDefault();
-        event.stopPropagation();
-        openDetails();
-      }
-    },
-    onPointerUp: () => {
-      if (editingRef.current) inputRef.current?.focus({ preventScroll: true });
-    }
-  }, editing ? nativeCreateElement(React.Fragment, null, nativeCreateElement(multiline ? 'textarea' : 'input', {
-    ref: inputRef,
-    type: multiline ? undefined : 'text',
-    rows: multiline ? 2 : undefined,
-    value: draft,
-    maxLength,
-    'aria-label': label,
-    'aria-invalid': error || undefined,
-    title: t('Enter për të ruajtur · Escape për të anuluar', 'Enter to save · Escape to cancel'),
-    onChange: event => { setDraft(event.target.value); setError(false); },
-    onBlur: () => finish(true),
-    onKeyDown: event => {
-      event.stopPropagation();
-      if (event.nativeEvent?.isComposing) return;
-      if (onOpen && event.altKey && event.key === 'Enter') {
-        event.preventDefault();
-        openDetails();
-        return;
-      }
-      if ((event.key === 'Enter' && (!multiline || !event.shiftKey)) || event.key === 'Escape') {
-        event.preventDefault();
-        finish(event.key === 'Enter', true);
-      }
-    },
-    className: `block w-full max-w-full min-w-0 text-primary input-bg rounded-md border px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${error ? 'border-rose-500' : 'border-brand-500'} ${editorClassName}`
-  }),
-  error && nativeCreateElement('span', { role: 'alert', className: 'block mt-1 text-[10px] leading-snug text-rose-600 dark:text-rose-400' }, t('Shkruaj tekst para se ta ruash.', 'Enter text before saving.')))
-  : nativeCreateElement('button', {
-    ref: titleRef,
-    type: 'button',
-    title: `${label} · ${onOpen ? t('Maus: një klikim për editim, dy për detaje. Telefon: dy prekje për editim, mbajtje për detaje. Alt+Enter: detaje.', 'Mouse: click to edit, double-click for details. Touch: tap twice to edit, hold for details. Alt+Enter: details.') : t('Kliko për editim. Në telefon: dy prekje ose mbaje të shtypur.', 'Click to edit. On touch: tap twice or press and hold.')}`,
-    'aria-keyshortcuts': onOpen ? 'Alt+Enter' : undefined,
-    onKeyDown: event => {
-      if (onOpen && event.altKey && event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        openDetails();
-      }
-    },
-    onClick: event => {
-      event.stopPropagation();
-      event.preventDefault();
-      if (onOpen && gestureRef.current.type === 'mouse' && event.detail > 0) gestureRef.current.lastMouseClick = { at: Date.now(), x: event.clientX, y: event.clientY };
-      if (event.detail === 0 || gestureRef.current.type === 'mouse') begin();
-    },
-    onPointerDown: event => {
-      gestureRef.current.type = event.pointerType || 'mouse';
-      if (gestureRef.current.type === 'mouse' || event.isPrimary === false) return;
-      clearHold();
-      gestureRef.current.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
-      gestureRef.current.timer = setTimeout(onOpen ? openDetails : begin, 550);
-    },
-    onPointerMove: event => {
-      const pointer = gestureRef.current.pointer;
-      if (pointer && (Math.abs(event.clientX - pointer.x) > 12 || Math.abs(event.clientY - pointer.y) > 12)) cancelGesture();
-    },
-    onPointerUp: event => {
-      const gesture = gestureRef.current;
-      const pointer = gesture.pointer;
-      clearHold();
-      gesture.pointer = null;
-      if (!pointer || pointer.id !== event.pointerId) return;
-      const now = Date.now();
-      const last = gesture.lastTap;
-      if (last && now - last.at <= 350 && Math.abs(pointer.x - last.x) <= 24 && Math.abs(pointer.y - last.y) <= 24) begin();
-      else gesture.lastTap = { at: now, x: pointer.x, y: pointer.y };
-    },
-    onPointerCancel: cancelGesture,
-    onPointerLeave: clearHold,
-    onContextMenu: event => {
-      if (gestureRef.current.type !== 'mouse') event.preventDefault();
-    },
-    className: `${className} max-w-full text-left cursor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30`,
-    style: { touchAction: 'manipulation', WebkitTouchCallout: 'none' }
-  }, children ?? String(value ?? '')));
-}
 
 function DailyRoutineInlineTitle({ routine, onSave, language, isDone }) {
   const [editing, setEditing] = useState(false);
@@ -9401,21 +9243,6 @@ function DailyRoutineInlineTitle({ routine, onSave, language, isDone }) {
   }, routine.title));
 }
 
-function HomeGoalInline({ value, onSave, onOpen, language }) {
-  const text = useMemo(() => {
-    const el = document.createElement('span');
-    el.innerHTML = safeUserHtml(value).replace(/<br\s*\/?\s*>/gi, '\n');
-    return (el.textContent || '').trim();
-  }, [value]);
-  return React.createElement(HomeGoalInlineEditor, {
-    value: text, onSave, onOpen, language,
-    label: language === 'en' ? 'My academic goal' : 'Synimi im akademik',
-    multiline: true, maxLength: 1000,
-    wrapperClassName: 'block max-w-xl mb-3',
-    editorClassName: 'text-[11px] sm:text-xs leading-relaxed',
-    className: 'max-w-xl px-3 py-2 rounded-xl bg-white/55 dark:bg-white/[0.05] border border-brand-100 dark:border-white/10 text-left text-[11px] sm:text-xs text-secondary hover:bg-white/75 dark:hover:bg-white/[0.08] transition-colors backdrop-blur-sm'
-  }, React.createElement('span', { dangerouslySetInnerHTML: { __html: safeUserHtml(value) } }));
-}
 
 /* ──────── LUAJTËSI I VIDEOVE (kontrollet poshtë videos, jo mbi të) ──────── */
 /* ── Mësimi hap pas hapi: ndan kapitullin në hapa të shkurtër + një pyetje e shpejtë ── */
@@ -10743,11 +10570,6 @@ function AcademyApp({
 
   // Student-friendly power states
   const [speakingChapterId, setSpeakingChapterId] = useState(null);
-  const [studentGoal, setStudentGoal] = useState(() => localStorage.getItem('u_student_goal') || 'Dua të përfundoj vitin me sukses të lartë dhe të fitoj bursën universitare.');
-  const [goalDraft, setGoalDraft] = useState(() => localStorage.getItem('u_student_goal') || '');
-  const [showGoalOnHome, setShowGoalOnHome] = useState(() => localStorage.getItem('u_goal_visible_home') !== 'false');
-  const [goalHtmlDraft, setGoalHtmlDraft] = useState('');
-  const [goalTextLength, setGoalTextLength] = useState(0);
 
   const [isMobileChromeHidden, setIsMobileChromeHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -10844,29 +10666,6 @@ function AcademyApp({
     };
   }, []);
   
-  const [academicGoals, setAcademicGoals] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('u_academic_goals') || '[]');
-      if (Array.isArray(saved) && saved.length) return saved;
-      const legacyGoal = localStorage.getItem('u_student_goal');
-      return legacyGoal ? [{
-        id: `goal_${Date.now()}`,
-        title: legacyGoal,
-        courseId: '',
-        remindDaily: true,
-        completed: false,
-        createdAt: new Date().toISOString()
-      }] : [];
-    } catch {
-      return [];
-    }
-  });
-  const [academicGoalDraft, setAcademicGoalDraft] = useState({
-    title: '',
-    courseId: '',
-    remindDaily: true
-  });
-  const [goalsModalOpen, setGoalsModalOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [notificationTab, setNotificationTab] = useState('all');
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
@@ -10883,7 +10682,6 @@ function AcademyApp({
   const [premiumFeature, setPremiumFeature] = useState('Mjetet e avancuara të studimit');
   const [isPremiumUser, setIsPremiumUser] = useState(() => localStorage.getItem('u_is_premium') === 'true');
 
-  const FREE_GOAL_LIMIT = 3;
   const PREMIUM_FEATURES = {
     membership: {
       label: 'Plani i anëtarësimit',
@@ -10896,10 +10694,6 @@ function AcademyApp({
     advancedReports: {
       label: 'Raporte të avancuara',
       description: 'Hap analizën e pjesëmarrjes sipas javës, muajit, semestrit dhe lëndës.'
-    },
-    unlimitedGoals: {
-      label: 'Synime pa kufi',
-      description: `Plani Falas lejon deri në ${FREE_GOAL_LIMIT} synime aktive; Premium i heq kufijtë.`
     },
     scientificArchive: {
       label: 'Arkiv shkencor',
@@ -10915,50 +10709,6 @@ function AcademyApp({
     }
   };
 
-  const persistAcademicGoals = nextGoals => {
-    setAcademicGoals(nextGoals);
-    localStorage.setItem('u_academic_goals', JSON.stringify(nextGoals));
-  };
-  const addAcademicGoal = event => {
-    event?.preventDefault?.();
-    const title = academicGoalDraft.title.trim();
-    if (!title) return showToast('Shkruaje synimin që dëshiron ta arrish.', '🎯');
-    const activeGoals = academicGoals.filter(goal => !goal.completed).length;
-    if (!isPremiumUser && activeGoals >= FREE_GOAL_LIMIT) {
-      return openPremiumFeature('unlimitedGoals');
-    }
-    const nextGoal = {
-      id: `goal_${Date.now()}`,
-      title,
-      courseId: academicGoalDraft.courseId,
-      remindDaily: academicGoalDraft.remindDaily,
-      completed: false,
-      createdAt: new Date().toISOString()
-    };
-    persistAcademicGoals([...academicGoals, nextGoal]);
-    setAcademicGoalDraft({ title: '', courseId: '', remindDaily: true });
-    showToast('Synimi u shtua dhe u rendit në listë.', '🎯');
-  };
-  const toggleAcademicGoal = goalId => {
-    const nextGoals = academicGoals.map(goal => goal.id === goalId ? {
-      ...goal,
-      completed: !goal.completed,
-      completedAt: !goal.completed ? new Date().toISOString() : ''
-    } : goal);
-    persistAcademicGoals(nextGoals);
-  };
-  const moveAcademicGoal = (goalId, direction) => {
-    const currentIndex = academicGoals.findIndex(goal => goal.id === goalId);
-    const nextIndex = currentIndex + direction;
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= academicGoals.length) return;
-    const nextGoals = [...academicGoals];
-    [nextGoals[currentIndex], nextGoals[nextIndex]] = [nextGoals[nextIndex], nextGoals[currentIndex]];
-    persistAcademicGoals(nextGoals);
-  };
-  const removeAcademicGoal = goalId => {
-    persistAcademicGoals(academicGoals.filter(goal => goal.id !== goalId));
-    showToast('Synimi u largua.', '✓');
-  };
   const openPremiumFeature = feature => {
     const resolvedFeature = PREMIUM_FEATURES[feature] || Object.values(PREMIUM_FEATURES).find(item => item.label === feature);
     setPremiumFeature(resolvedFeature?.label || feature);
@@ -10996,46 +10746,7 @@ function AcademyApp({
     '🏆 Diplomim me sukses të lartë'
   ];
 
-  const handleSaveGoal = (customVal) => {
-    const val = (typeof customVal === 'string' ? customVal : goalDraft).trim();
-    setStudentGoal(val);
-    setGoalDraft(val);
-    if (val) {
-      localStorage.setItem('u_student_goal', val);
-      const primaryGoal = academicGoals[0];
-      const nextGoals = primaryGoal ? academicGoals.map((goal, index) => index === 0 ? {
-        ...goal,
-        title: val,
-        remindDaily: true
-      } : goal) : [{
-        id: `goal_${Date.now()}`,
-        title: val,
-        courseId: '',
-        remindDaily: true,
-        completed: false,
-        createdAt: new Date().toISOString()
-      }];
-      persistAcademicGoals(nextGoals);
-    } else {
-      localStorage.removeItem('u_student_goal');
-    }
-  };
 
-  const handleRemoveGoal = () => {
-    const removedTitle = studentGoal;
-    setStudentGoal('');
-    setGoalDraft('');
-    localStorage.removeItem('u_student_goal');
-    if (removedTitle) persistAcademicGoals(academicGoals.filter((goal, index) => !(index === 0 && goal.title === removedTitle)));
-  };
-  const toggleGoalOnHome = () => {
-    setShowGoalOnHome(previous => {
-      const next = !previous;
-      localStorage.setItem('u_goal_visible_home', next ? 'true' : 'false');
-      showToast(next ? 'Synimi u shfaq në Kreu.' : 'Synimi u fsheh nga Kreu, por mbetet i ruajtur në Profil.', next ? '◉' : '○');
-      return next;
-    });
-  };
 
   const streakDays = useMemo(() => {
     try {
@@ -11202,7 +10913,6 @@ function AcademyApp({
         setSearchOpen(false);
         setSidebarOpen(false);
         setPremiumModalOpen(false);
-        setGoalsModalOpen(false);
         setNotificationCenterOpen(false);
         setSelectedLibraryItem(null);
         setScheduleInsightsOpen(false);
@@ -14073,92 +13783,6 @@ function AcademyApp({
     );
   };
 
-  const renderAcademicGoalsManager = () => {
-    const activeGoalCount = academicGoals.filter(goal => !goal.completed).length;
-    const freeLimitReached = !isPremiumUser && activeGoalCount >= FREE_GOAL_LIMIT;
-    return /*#__PURE__*/React.createElement("details", {
-      className: "rounded-2xl input-bg border border-default overflow-hidden"
-    }, /*#__PURE__*/React.createElement("summary", {
-      className: "px-3.5 py-3 cursor-pointer flex items-center justify-between gap-3 list-none"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "min-w-0"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "block text-xs font-semibold text-primary"
-    }, "Menaxho synimet ditore"), /*#__PURE__*/React.createElement("span", {
-      className: "block text-[9px] text-secondary mt-0.5"
-    }, "Renditi synimet që dëshiron t’i shohësh si rikujtime.")), /*#__PURE__*/React.createElement("span", {
-      className: "shrink-0 flex items-center gap-1.5"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: `px-2 py-1 rounded-lg text-[9px] font-bold ${isPremiumUser ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400' : 'bg-slate-500/10 text-secondary'}`
-    }, isPremiumUser ? `${activeGoalCount} aktive · Fakulteti Pro` : `${activeGoalCount}/${FREE_GOAL_LIMIT} · Falas`), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs text-secondary",
-      "aria-hidden": "true"
-    }, "⌄"))), /*#__PURE__*/React.createElement("div", {
-      className: "px-3.5 pb-3.5 pt-1 border-t border-default space-y-3"
-    }, academicGoals.length ? /*#__PURE__*/React.createElement("div", {
-      className: "space-y-2"
-    }, academicGoals.map((goal, index) => {
-      const linkedCourse = allCourses.find(item => item.id === goal.courseId);
-      return /*#__PURE__*/React.createElement("div", {
-        key: goal.id,
-        className: `p-3 rounded-xl card-surface border border-default flex items-start gap-2.5 ${goal.completed ? 'opacity-60' : ''}`
-      }, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => toggleAcademicGoal(goal.id),
-        "aria-label": goal.completed ? "Rihape synimin" : "Shënoje synimin si të kryer",
-        className: `w-8 h-8 rounded-xl border shrink-0 flex items-center justify-center text-xs transition-colors ${goal.completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'input-bg border-default text-secondary hover:border-emerald-400'}`
-      }, goal.completed ? "✓" : "○"), /*#__PURE__*/React.createElement("span", {
-        className: "min-w-0 flex-1"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: `block text-xs font-medium text-primary ${goal.completed ? 'line-through' : ''}`
-      }, goal.title), /*#__PURE__*/React.createElement("span", {
-        className: "flex flex-wrap items-center gap-1.5 mt-1 text-[9px] text-secondary"
-      }, index === 0 && /*#__PURE__*/React.createElement("span", {
-        className: "px-1.5 py-0.5 rounded-md active-surface text-brand-600 dark:text-brand-400 font-bold"
-      }, "Kryesor"), linkedCourse && /*#__PURE__*/React.createElement("span", null, linkedCourse.title), goal.remindDaily && /*#__PURE__*/React.createElement("span", null, "· Rikujtim ditor"))), /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => index === 0 && goal.title === studentGoal ? handleRemoveGoal() : removeAcademicGoal(goal.id),
-        "aria-label": "Largo synimin",
-        className: "w-8 h-8 rounded-xl text-secondary hover:text-red-500 hover:bg-red-500/10 shrink-0"
-      }, "×"));
-    })) : /*#__PURE__*/React.createElement("p", {
-      className: "text-[10px] text-secondary py-2"
-    }, "Ende nuk ke synime aktive."), /*#__PURE__*/React.createElement("form", {
-      onSubmit: addAcademicGoal,
-      className: "space-y-2 pt-1"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      value: academicGoalDraft.title,
-      onChange: event => setAcademicGoalDraft(previous => ({ ...previous, title: event.target.value })),
-      placeholder: "P.sh. Përfundo kapitullin 3 deri të premten",
-      className: "w-full p-3 rounded-xl card-surface border border-default text-xs text-primary outline-none focus:border-brand-400"
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2"
-    }, /*#__PURE__*/React.createElement("select", {
-      value: academicGoalDraft.courseId,
-      onChange: event => setAcademicGoalDraft(previous => ({ ...previous, courseId: event.target.value })),
-      className: "w-full p-2.5 rounded-xl card-surface border border-default text-xs text-primary"
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, "Pa lëndë të caktuar"), enrolledCourses.map(item => /*#__PURE__*/React.createElement("option", {
-      key: item.id,
-      value: item.id
-    }, item.title))), /*#__PURE__*/React.createElement("label", {
-      className: "min-h-10 px-3 rounded-xl card-surface border border-default text-[10px] text-secondary flex items-center gap-2 cursor-pointer"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "checkbox",
-      checked: academicGoalDraft.remindDaily,
-      onChange: event => setAcademicGoalDraft(previous => ({ ...previous, remindDaily: event.target.checked })),
-      className: "accent-brand-600"
-    }), "Çdo ditë"), /*#__PURE__*/React.createElement("button", {
-      type: "submit",
-      className: `min-h-10 px-4 rounded-xl text-xs font-bold ${freeLimitReached ? 'input-bg border border-brand-200 dark:border-brand-800 text-brand-600 dark:text-brand-400' : 'bg-brand-600 text-white'}`
-    }, freeLimitReached ? "🔒 Premium" : "Shto"))), !isPremiumUser && /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => openPremiumFeature('unlimitedGoals'),
-      className: "w-full text-left text-[9px] text-secondary hover:text-brand-600 transition-colors"
-    }, `Plani Falas lejon ${FREE_GOAL_LIMIT} synime aktive · Premium i lejon pa kufi →`)));
-  };
 
   /* ──────── PROFILI MINIMAL (pamja e re) ──────── */
   const renderMinimalProfile = () => {
@@ -15757,7 +15381,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const endsAt = startsAt + Math.max(5, Number(routine.minutes) || 25);
     return routineClockMinutes >= startsAt && routineClockMinutes < endsAt;
   }) || null;
-  const activeGoalReminders = academicGoals.filter(goal => !goal.completed && goal.remindDaily);
   const appNotifications = [
     todayPriorities.length ? {
       id: `schedule_${today}`,
@@ -15778,16 +15401,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         setView('home');
       }
     },
-    activeGoalReminders.length ? {
-      id: `goals_${today}`,
-      icon: '🎯',
-      title: `${activeGoalReminders.length} ${activeGoalReminders.length === 1 ? 'synim aktiv' : 'synime aktive'}`,
-      detail: activeGoalReminders[0].title,
-      action: () => {
-        setNotificationCenterOpen(false);
-        setGoalsModalOpen(true);
-      }
-    } : null,
     reminderDeadlines.length ? {
       id: `deadlines_${today}`,
       icon: '⏳',
@@ -18146,7 +17759,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       selectedCourse: nextCourse,
       eyebrow: 'Hapi i radhës',
       title: nextCourse?.title || 'Zgjidh lëndën e parë',
-      reason: 'Vazhdo aty ku e ke lënë mësimin.',
+      reason: '',
       buttonLabel: 'Vazhdo mësimin'
     };
   })();
@@ -18226,6 +17839,28 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     buttonLabel: 'Fillo detyrën',
     item: { kind: 'study', taskId: activeTimedTask.id, courseId: activeTimedTask.courseId, title: activeTimedTask.title }
   } : homeNextAction;
+
+  // Profesori / asistenti i lëndës për kartën kryesore të Kreut.
+  const renderHomeInstructor = (name, role, extraClass = 'mb-4') => {
+    const raw = String(name || '').trim();
+    if (!raw || /sipas caktimit|^[-–—?\s]+$|^tbd$/i.test(raw)) return null;
+    const parts = raw.split(/\s+/).filter(w => !/^(prof\.?|dr\.?|asoc\.?|ass\.?|msc\.?|ma\.?|phd\.?|mr\.?|mr\.?sc\.?)$/i.test(w) && !/^\W+$/.test(w));
+    const initials = (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] || raw).slice(0, 2)).toUpperCase();
+    return React.createElement('div', { className: `flex items-center gap-3 ${extraClass}`, 'data-home-instructor': 'true' },
+      React.createElement('span', {
+        className: 'w-10 h-10 rounded-full active-surface border border-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold tracking-wide flex items-center justify-center shrink-0',
+        'aria-hidden': 'true'
+      }, initials),
+      React.createElement('div', { className: 'min-w-0 leading-tight' },
+        React.createElement('div', { className: 'text-[10px] font-bold uppercase tracking-[0.14em] text-tertiary' }, role),
+        React.createElement('div', { className: 'text-sm font-semibold text-primary truncate' }, raw)));
+  };
+  const homeHeroInstructorRaw = activeFacultySession
+    ? (dailyInstructorName ? { name: dailyInstructorName, role: dailyInstructorRole === 'Asistent' ? 'Asistenti' : dailyInstructorRole === 'Profesor' ? 'Profesori' : dailyInstructorRole } : null)
+    : (!activeTimedRoutine && !activeTimedTask && homeNextAction.kind === 'course' && homeNextAction.selectedCourse
+      ? { name: (!/sipas caktimit/i.test(homeNextAction.selectedCourse.prof || '') && homeNextAction.selectedCourse.prof) || (scopedSchedule.find(item => item.courseId === homeNextAction.selectedCourse.id && item.type !== 'exercise' && item.staffName) || {}).staffName || '', role: 'Profesori i lëndës' } : null);
+
+  const homeHeroInstructor = homeHeroInstructorRaw && homeHeroInstructorRaw.name && !/sipas caktimit/i.test(homeHeroInstructorRaw.name) ? homeHeroInstructorRaw : null;
 
   const openDailyHomeAction = () => {
     if (dailyHomeAction.item) {
@@ -21812,7 +21447,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           ce("div", { className: "flex items-center gap-2 text-xs text-secondary mt-1 flex-wrap" },
             ce("span", { className: "font-semibold text-primary tabular-nums" }, `${activeInClassItem.start} \u2013 ${activeInClassItem.end}`),
             ce("span", null, "\u00B7"),
-            ce("span", { className: "px-1.5 py-0.5 rounded input-bg border border-default text-[10px] font-semibold text-primary" }, activeInClassItem.room || 'Pa sall\u00EB'))),
+            ce("span", { className: "px-1.5 py-0.5 rounded input-bg border border-default text-[10px] font-semibold text-primary" }, activeInClassItem.room || 'Pa sall\u00EB')),
+          renderHomeInstructor(activeInClassItem.staffName || activeInClassCourse.prof, activeInClassItem.staffRole || (activeInClassItem.type === 'exercise' ? 'Asistenti' : 'Profesori'), 'mt-3 mb-0')),
         ce("button", {
           type: "button",
           onClick: () => setInClassDismissedId(`${activeInClassItem.id}_${today}`),
@@ -30179,6 +29815,40 @@ Nënshkrimi: _____________________`;
   };
 
 
+  // Kartela "Sot në fakultet" në Kreu (në vend të "Orari në fakultet").
+  const renderHomeTodayFacultyCard = () => {
+    const h = React.createElement;
+    const homeDayId = new Date(`${today}T12:00:00`).getDay();
+    const homeSessions = homeDayId >= 1 && homeDayId <= 5 ? scheduleMinDaySessions(homeDayId) : [];
+    const homeNow = new Date();
+    const homeNowMin = homeNow.getHours() * 60 + homeNow.getMinutes();
+    const rows = homeSessions.map(item => {
+      const course = allCourses.find(c => c.id === item.courseId);
+      const isPast = scheduleMinToMinutes(item.end) <= homeNowMin;
+      const isExercise = item.type === 'exercise';
+      return h('button', {
+        key: item.id, type: 'button', onClick: () => openAcademicSession(item, today),
+        className: 'w-full flex items-center gap-2.5 py-[11px] text-left cursor-pointer border-b border-default last:border-b-0'
+      },
+        h('span', { className: `w-[42px] shrink-0 text-[14px] tabular-nums ${isPast ? 'font-semibold text-secondary' : 'font-bold text-primary'}` }, item.start),
+        h('span', { className: `flex-1 min-w-0 text-[15px] ${isPast ? 'text-secondary' : 'font-semibold text-primary'}` }, (course && course.title) || 'Lënda'),
+        h('span', { className: `shrink-0 px-2 py-1 rounded-full text-[11px] font-semibold ${isPast ? 'bg-slate-500/10 text-secondary' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300'}` }, isExercise ? 'Ushtrime' : 'Ligjëratë'));
+    });
+    return h('section', {
+      'data-home-section': 'schedule',
+      className: 'card-surface border border-default rounded-3xl shadow-2xs select-none relative px-[18px] pt-[18px] pb-2'
+    },
+      h('div', { className: 'flex items-center justify-between mb-1.5' },
+        h('h2', { className: 'text-base font-[650] tracking-tight text-primary' }, 'Sot në fakultet'),
+        h('button', {
+          type: 'button', className: 'text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer',
+          onClick: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(null); setView('week'); }
+        }, 'Orari →')),
+      rows.length
+        ? h('div', null, rows)
+        : h('p', { className: 'py-[11px] text-[15px] text-secondary' }, 'Sot nuk ke orë në fakultet.'));
+  };
+
   const renderNewHome = () => {
     const lastOpenedCourseId = typeof localStorage !== 'undefined' ? localStorage.getItem('u_last_course') : '';
     const homeContinueCourse = enrolledCourses.find(item => item.id === lastOpenedCourseId) || enrolledCourses.find(item => !done.includes(item.id)) || enrolledCourses[0] || null;
@@ -30287,25 +29957,13 @@ Nënshkrimi: _____________________`;
         className: "psychology-brain-art"
       }), /*#__PURE__*/React.createElement("div", {
         className: "relative z-10 w-full"
-      }, liveHomeCard ? liveHomeCard : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      }, liveHomeCard ? liveHomeCard : /*#__PURE__*/React.createElement(React.Fragment, null, dailyHomeAction.eyebrow && dailyHomeAction.eyebrow !== 'Hapi i radhës' ? /*#__PURE__*/React.createElement("div", {
         className: "text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-300 mb-1.5"
-      }, dailyHomeAction.eyebrow), /*#__PURE__*/React.createElement("h1", {
-        className: "text-xl sm:text-3xl font-extrabold tracking-tight mb-2 leading-tight max-w-3xl"
-      }, dailyHomeAction.title), /*#__PURE__*/React.createElement("p", {
+      }, dailyHomeAction.eyebrow) : null, /*#__PURE__*/React.createElement("h1", {
+        className: `text-xl sm:text-3xl font-extrabold tracking-tight leading-tight max-w-3xl ${homeHeroInstructor ? 'mb-3' : dailyHomeAction.reason ? 'mb-2' : 'mb-4'}`
+      }, dailyHomeAction.title), homeHeroInstructor ? renderHomeInstructor(homeHeroInstructor.name, homeHeroInstructor.role, dailyHomeAction.reason ? 'mb-3' : 'mb-4') : null, dailyHomeAction.reason ? /*#__PURE__*/React.createElement("p", {
         className: "text-xs sm:text-sm text-secondary max-w-xl mb-4 leading-relaxed"
-      }, dailyHomeAction.reason), showGoalOnHome && studentGoal && /*#__PURE__*/React.createElement(HomeGoalInline, {
-        value: studentGoal, language: uiLanguage,
-        onSave: value => {
-          const html = escapeHtml(value).replace(/\n/g, '<br>');
-          setStudentGoal(html);
-          setGoalDraft(value);
-          localStorage.setItem('u_student_goal', html);
-        },
-        onOpen: () => {
-          setGoalHtmlDraft(studentGoal);
-          setGoalsModalOpen(true);
-        }
-      }), /*#__PURE__*/React.createElement("button", {
+      }, dailyHomeAction.reason) : null, /*#__PURE__*/React.createElement("button", {
         type: "button",
         onClick: openDailyHomeAction,
         className: "hero-action w-full sm:w-auto min-h-12 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -30315,7 +29973,7 @@ Nënshkrimi: _____________________`;
       /* 2.5 VIDEO MËSIMORE (MENJËHERË MBI ORARI NË FAKULTET - SERIOZE, ZERO EMOJIS) */
       /*#__PURE__*/React.createElement("section", {
         "data-home-section": "videos",
-        className: "home-videos-minimal card-surface rounded-[18px] border border-default px-4 sm:px-5 py-3.5 select-none relative"
+        className: "home-videos-minimal px-0 py-1 select-none relative"
       },
         /* Rrathët (si Stories): rreth indigo = pa parë, gri = e parë */
         /*#__PURE__*/React.createElement("div", {
@@ -30390,7 +30048,7 @@ Nënshkrimi: _____________________`;
       ),
 
       /* 2. TODAY FIRST */
-      renderPreviousTodaySchedule(),
+      renderHomeTodayFacultyCard(),
 
       /* 4. ONE CLEAR CONTINUE-LEARNING ACTION */
       homeContinueCourse ? /*#__PURE__*/React.createElement("section", {
@@ -33370,353 +33028,9 @@ Nënshkrimi: _____________________`;
       className: "block text-[9px] font-extrabold uppercase tracking-wider text-brand-200"
     }, isPremiumUser ? "Fakulteti Pro aktiv" : "Fakulteti Pro"), /*#__PURE__*/React.createElement("span", {
       className: "block text-sm font-bold mt-1"
-    }, isPremiumUser ? "Përdori mjetet e avancuara" : "7 mjete të avancuara në një vend")), /*#__PURE__*/React.createElement("span", {
+    }, isPremiumUser ? "Përdori mjetet e avancuara" : "5 mjete të avancuara në një vend")), /*#__PURE__*/React.createElement("span", {
       className: "w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center"
     }, isPremiumUser ? "✓" : "🔒")));
-  };
-  const renderGoalsModal = () => {
-    if (!goalsModalOpen) return null;
-
-    const MOTTO_PRESETS = [
-      "Dua të përfundoj vitin me sukses të lartë dhe të fitoj bursën universitare.",
-      "Përkushtim i plotë, fokus dhe disiplinë çdo ditë.",
-      "Çdo ditë 1 hap më afër të bërit një ekspert i shquar.",
-      "Zotërim i çdo teme mësimore dhe tejkalim i vetvetes."
-    ];
-
-    const cleanTrimHtml = (rawHtml) => {
-      if (!rawHtml) return '';
-      let str = String(rawHtml);
-      str = str.replace(/^(\s|&nbsp;|<br\s*\/?>)+/gi, '');
-      str = str.replace(/(\s|&nbsp;|<br\s*\/?>)+$/gi, '');
-      return str.trim();
-    };
-
-    const execWordCmd = (cmd, val = null) => {
-      const el = document.getElementById('rich-motto-input');
-      if (!el) return;
-      el.focus();
-      const sel = window.getSelection();
-      const isNoSelection = !sel || sel.isCollapsed || sel.rangeCount === 0 || !el.contains(sel.anchorNode);
-
-      if (isNoSelection) {
-        // If nothing is selected, apply to entire text
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-
-      document.execCommand(cmd, false, val);
-
-      if (isNoSelection) {
-        // Move cursor back to end of text
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-
-      const text = (el.innerText || el.textContent || '').trim();
-      setGoalTextLength(text.length);
-    };
-
-    return /*#__PURE__*/React.createElement("div", {
-      className: "fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-5",
-      role: "dialog",
-      "aria-modal": "true",
-      "aria-labelledby": "goals-modal-title"
-    },
-      /* Backdrop */
-      /*#__PURE__*/React.createElement("div", {
-        className: "absolute inset-0 bg-slate-950/60 backdrop-blur-sm",
-        onClick: () => setGoalsModalOpen(false)
-      }),
-
-      /* Dialog Card */
-      /*#__PURE__*/React.createElement("section", {
-        className: "relative w-full max-w-md modal-bg card-surface rounded-3xl overflow-hidden shadow-2xl anim-zoom-in flex flex-col p-5 sm:p-6 space-y-4 border border-default select-none my-auto max-h-[92svh] overflow-y-auto no-scrollbar"
-      },
-        /* Header */
-        /*#__PURE__*/React.createElement("div", {
-          className: "flex items-start justify-between gap-3 pb-3 border-b border-default"
-        },
-          /* Info */
-          /*#__PURE__*/React.createElement("div", { className: "flex items-center gap-2.5" },
-            /* Icon */
-            /*#__PURE__*/React.createElement("div", {
-              className: "w-9 h-9 rounded-xl active-surface text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 shadow-2xs"
-            }, /*#__PURE__*/React.createElement(TaskIcons.Edit, { className: "w-4 h-4" })),
-            /* Text */
-            /*#__PURE__*/React.createElement("div", null,
-              /*#__PURE__*/React.createElement("h2", {
-                id: "goals-modal-title",
-                className: "text-sm sm:text-base font-black text-primary"
-              }, "Fjalia Jote Motivuese"),
-              /*#__PURE__*/React.createElement("p", {
-                className: "text-[10px] sm:text-[11px] text-secondary font-medium"
-              }, "Formato fjalë të veçanta ose gjithë fjalinë")
-            )
-          ),
-          /* Close Button */
-          /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => setGoalsModalOpen(false),
-            className: "w-8 h-8 rounded-xl input-bg border border-default text-secondary hover:text-primary flex items-center justify-center text-sm font-bold cursor-pointer transition-colors"
-          }, "×")
-        ),
-
-        /* Premium Clean Formatting Toolbar - Compact Edition */
-        /*#__PURE__*/React.createElement("div", {
-          className: "p-1.5 rounded-xl input-bg border border-default space-y-1.5 select-none"
-        },
-          /* Row 1: Typography & Color Controls */
-          /*#__PURE__*/React.createElement("div", {
-            className: "grid grid-cols-2 sm:grid-cols-12 gap-1"
-          },
-            /* Font Selector */
-            /*#__PURE__*/React.createElement("div", { className: "col-span-1 sm:col-span-6 relative" },
-              /*#__PURE__*/React.createElement("select", {
-                onChange: e => execWordCmd('fontName', e.target.value),
-                className: "w-full h-6 pl-2 pr-5 rounded-lg card-surface border border-default text-[10px] font-bold text-primary outline-none cursor-pointer appearance-none shadow-2xs hover:border-brand-400 transition-colors truncate"
-              },
-                /*#__PURE__*/React.createElement("option", { value: "inherit" }, "Font: Standard"),
-                /*#__PURE__*/React.createElement("option", { value: "Georgia, serif" }, "Serif (Klasik)"),
-                /*#__PURE__*/React.createElement("option", { value: "monospace" }, "Monospace"),
-                /*#__PURE__*/React.createElement("option", { value: "Calibri, Candara, sans-serif" }, "Calibri (Word)"),
-                /*#__PURE__*/React.createElement("option", { value: "Arial, Helvetica, sans-serif" }, "Arial"),
-                /*#__PURE__*/React.createElement("option", { value: "'Times New Roman', Times, serif" }, "Times New Roman"),
-                /*#__PURE__*/React.createElement("option", { value: "Garamond, Baskerville, serif" }, "Garamond"),
-                /*#__PURE__*/React.createElement("option", { value: "Roboto, sans-serif" }, "Roboto"),
-                /*#__PURE__*/React.createElement("option", { value: "'Helvetica Neue', Helvetica, sans-serif" }, "Helvetica"),
-                /*#__PURE__*/React.createElement("option", { value: "'Playfair Display', Georgia, serif" }, "Playfair Display"),
-                /*#__PURE__*/React.createElement("option", { value: "'Courier New', Courier, monospace" }, "Courier New")
-              ),
-              /* Dropdown Indicator */
-              /*#__PURE__*/React.createElement("span", {
-                className: "pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] text-secondary"
-              }, "▾")
-            ),
-
-            /* Named Color Selector */
-            /*#__PURE__*/React.createElement("div", { className: "col-span-1 sm:col-span-4 relative" },
-              /*#__PURE__*/React.createElement("select", {
-                onChange: e => execWordCmd('foreColor', e.target.value),
-                className: "w-full h-6 pl-2 pr-5 rounded-lg card-surface border border-default text-[10px] font-bold text-primary outline-none cursor-pointer appearance-none shadow-2xs hover:border-brand-400 transition-colors truncate"
-              },
-                /*#__PURE__*/React.createElement("option", { value: "inherit" }, "🎨 Standarde"),
-                /*#__PURE__*/React.createElement("option", { value: "#4f46e5" }, "🔵 E Kaltër"),
-                /*#__PURE__*/React.createElement("option", { value: "#10b981" }, "🟢 E Gjelbër"),
-                /*#__PURE__*/React.createElement("option", { value: "#ef4444" }, "🔴 E Kuqe"),
-                /*#__PURE__*/React.createElement("option", { value: "#f59e0b" }, "🟡 E Artë"),
-                /*#__PURE__*/React.createElement("option", { value: "#8b5cf6" }, "🟣 Vjollcë"),
-                /*#__PURE__*/React.createElement("option", { value: "#06b6d4" }, "🌊 Cian"),
-                /*#__PURE__*/React.createElement("option", { value: "#ec4899" }, "🌸 Rozë"),
-                /*#__PURE__*/React.createElement("option", { value: "#0f172a" }, "⚫ E Zezë"),
-                /*#__PURE__*/React.createElement("option", { value: "#f8fafc" }, "⚪ E Bardhë")
-              ),
-              /* Dropdown Indicator */
-              /*#__PURE__*/React.createElement("span", {
-                className: "pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] text-secondary"
-              }, "▾")
-            ),
-
-            /* RGB Custom Color Picker */
-            /*#__PURE__*/React.createElement("label", {
-              title: "Zgjidh me paletë RGB",
-              className: "col-span-2 sm:col-span-2 relative h-6 px-1.5 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 card-surface border border-default text-primary hover:border-brand-400 active:scale-95 shadow-2xs overflow-hidden"
-            },
-              /* Hidden Native Color Input */
-              /*#__PURE__*/React.createElement("input", {
-                id: "custom-motto-color-picker",
-                type: "color",
-                defaultValue: "#4f46e5",
-                onChange: e => execWordCmd('foreColor', e.target.value),
-                className: "absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              }),
-              /* Indicator Dot */
-              /*#__PURE__*/React.createElement("span", {
-                className: "w-2 h-2 rounded-full bg-gradient-to-tr from-pink-500 via-indigo-500 to-amber-400 inline-block shrink-0 shadow-2xs"
-              }),
-              "RGB"
-            )
-          ),
-
-          /* Row 2: Text Styling Buttons & Reset Action */
-          /*#__PURE__*/React.createElement("div", {
-            className: "flex items-center justify-between gap-1 pt-1 border-t border-default/50"
-          },
-            /* Fast Styles (B, I, U) */
-            /*#__PURE__*/React.createElement("div", { className: "flex items-center gap-1" },
-              /* [ B ] Bold Button */
-              /*#__PURE__*/React.createElement("button", {
-                type: "button",
-                title: "Bëj të theksuar (Bold)",
-                onMouseDown: e => { e.preventDefault(); execWordCmd('bold'); },
-                className: "w-6 h-6 rounded-lg text-[10.5px] font-black transition-all cursor-pointer flex items-center justify-center card-surface border border-default text-primary hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 shadow-2xs"
-              }, "B"),
-
-              /* [ I ] Italic Button */
-              /*#__PURE__*/React.createElement("button", {
-                type: "button",
-                title: "Bëj kursiv (Italic)",
-                onMouseDown: e => { e.preventDefault(); execWordCmd('italic'); },
-                className: "w-6 h-6 rounded-lg text-[10.5px] italic font-serif font-black transition-all cursor-pointer flex items-center justify-center card-surface border border-default text-primary hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 shadow-2xs"
-              }, "I"),
-
-              /* [ U ] Underline Button */
-              /*#__PURE__*/React.createElement("button", {
-                type: "button",
-                title: "Nënvizo (Underline)",
-                onMouseDown: e => { e.preventDefault(); execWordCmd('underline'); },
-                className: "w-6 h-6 rounded-lg text-[10.5px] underline font-bold transition-all cursor-pointer flex items-center justify-center card-surface border border-default text-primary hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 shadow-2xs"
-              }, "U")
-            ),
-
-            /* Clear Formatting Action */
-            /*#__PURE__*/React.createElement("button", {
-              type: "button",
-              title: "Pastro formatimin e selektuar",
-              onMouseDown: e => { e.preventDefault(); execWordCmd('removeFormat'); },
-              className: "h-6 px-2 rounded-lg text-[9.5px] font-semibold transition-all cursor-pointer flex items-center gap-1 card-surface border border-default text-secondary hover:text-primary hover:border-brand-400 active:scale-95 shadow-2xs"
-            }, "⟲ Pastro Stilin")
-          )
-        ),
-
-        /* Real-Time Per-Word Rich Text Editable Box */
-        /*#__PURE__*/React.createElement("div", { className: "space-y-1.5" },
-          /* ContentEditable Container without React DOM re-render conflicts */
-          /*#__PURE__*/React.createElement("div", {
-            id: "rich-motto-input",
-            contentEditable: true,
-            spellCheck: false,
-            autoCorrect: "off",
-            autoCapitalize: "off",
-            autoComplete: "off",
-            "data-gramm": "false",
-            "data-gramm_editor": "false",
-            "data-enable-grammarly": "false",
-            ref: (el) => {
-              if (el && el.dataset.loaded !== '1') {
-                el.dataset.loaded = '1';
-                const initial = cleanTrimHtml(studentGoal || "Dua të përfundoj vitin me sukses të lartë dhe të fitoj bursën universitare.");
-                el.innerHTML = initial;
-                setGoalTextLength((el.innerText || el.textContent || '').trim().length);
-              }
-            },
-            onKeyDown: e => {
-              const el = e.currentTarget;
-              const cleanText = (el.innerText || el.textContent || '').trim();
-              const allowedKeys = [
-                'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-                'Home', 'End', 'Tab', 'Escape', 'Enter'
-              ];
-              if (e.ctrlKey || e.metaKey || e.altKey) return;
-              if (allowedKeys.includes(e.key)) return;
-
-              const sel = window.getSelection();
-              const hasSelection = sel && sel.toString().length > 0;
-              if (cleanText.length >= 100 && !hasSelection) {
-                e.preventDefault();
-              }
-            },
-            onPaste: e => {
-              e.preventDefault();
-              const pasted = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
-              const el = e.currentTarget;
-              const cleanText = (el.innerText || el.textContent || '').trim();
-              const remaining = Math.max(0, 100 - cleanText.length);
-              if (remaining > 0) {
-                document.execCommand('insertText', false, pasted.slice(0, remaining));
-              }
-              const updated = (el.innerText || el.textContent || '').trim();
-              setGoalTextLength(updated.length);
-            },
-            onInput: e => {
-              const el = e.currentTarget;
-              const cleanText = (el.innerText || el.textContent || '').trim();
-              setGoalTextLength(cleanText.length);
-            },
-            className: "w-full min-h-[76px] p-3.5 rounded-2xl input-bg border border-default text-sm text-primary outline-none focus:border-brand-500 transition-all shadow-inner leading-relaxed overflow-y-auto select-text"
-          }),
-          /* Counter & Limit Notice */
-          /*#__PURE__*/React.createElement("div", {
-            className: "flex items-center justify-between text-[10px]"
-          },
-            /* Left Notice */
-            /*#__PURE__*/React.createElement("span", {
-              className: goalTextLength >= 100 ? "text-amber-600 dark:text-amber-400 font-bold" : "text-tertiary"
-            },
-              goalTextLength >= 100
-                ? "⚠️ U arrit limiti maksimal prej 100 karakteresh."
-                : "💡 Selekto fjalë të veçanta ose kliko për gjithë fjalinë."
-            ),
-            /* Right Counter */
-            /*#__PURE__*/React.createElement("span", {
-              className: `tabular-nums font-bold ${goalTextLength >= 100 ? 'text-amber-600 dark:text-amber-400' : 'text-tertiary'}`
-            },
-              `${Math.min(100, goalTextLength)}/100 karaktere`
-            )
-          )
-        ),
-
-        /* Clean Immutable Inspiration Presets */
-        /*#__PURE__*/React.createElement("div", { className: "space-y-1.5" },
-          /* Label */
-          /*#__PURE__*/React.createElement("div", {
-            className: "text-[9px] uppercase font-extrabold text-secondary tracking-wider"
-          }, "Shembuj të shpejtë:"),
-          /* Presets */
-          /*#__PURE__*/React.createElement("div", { className: "space-y-1" },
-            MOTTO_PRESETS.map((preset, idx) => /*#__PURE__*/React.createElement("button", {
-              key: idx,
-              type: "button",
-              onClick: () => {
-                const cleanPreset = String(preset).trim();
-                const el = document.getElementById('rich-motto-input');
-                if (el) {
-                  el.innerHTML = cleanPreset;
-                  setGoalTextLength(cleanPreset.length);
-                }
-              },
-              className: "w-full p-2 rounded-xl solid-box border border-default hover:border-brand-400 text-left text-[10.5px] font-medium text-secondary hover:text-primary transition-all cursor-pointer flex items-center justify-between gap-2"
-            },
-              /* Quote */
-              /*#__PURE__*/React.createElement("span", { className: "truncate" }, preset),
-              /* Pick */
-              /*#__PURE__*/React.createElement("span", { className: "text-[9px] font-bold text-brand-600 shrink-0" }, "Zgjidh")
-            ))
-          )
-        ),
-
-        /* Action Buttons */
-        /*#__PURE__*/React.createElement("div", {
-          className: "pt-2 flex items-center justify-end gap-2 border-t border-default"
-        },
-          /* Cancel */
-          /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => setGoalsModalOpen(false),
-            className: "px-3.5 py-1.5 rounded-xl input-bg border border-default text-xs font-bold text-secondary hover:text-primary transition-colors cursor-pointer"
-          }, "Anulo"),
-          /* Save */
-          /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => {
-              const el = document.getElementById('rich-motto-input');
-              const raw = el ? el.innerHTML : studentGoal;
-              const trimmed = cleanTrimHtml(raw) || "Dua të përfundoj vitin me sukses të lartë dhe të fitoj bursën universitare.";
-              setStudentGoal(trimmed);
-              localStorage.setItem('u_student_goal', trimmed);
-              setGoalsModalOpen(false);
-              showToast('Fjalia dhe formatimi u ruajtën!', '🎯');
-            },
-            className: "px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-md shadow-brand-500/25 active:scale-95 transition-all cursor-pointer"
-          }, "Ruaj Fjalinë")
-        )
-      )
-    );
   };
 
   /* ══ KËRKIMI · NJOFTIMET · KARTELA DIGJITALE (sipas pamjeve 10–12 te "Minimal") ══ */
@@ -35243,10 +34557,6 @@ Nënshkrimi: _____________________`;
         setScheduleInsightsOpen(true);
       }
     }, {
-      id: 'unlimitedGoals',
-      icon: '🎯',
-      action: () => setView('settings')
-    }, {
       id: 'scientificArchive',
       icon: '🔬',
       action: () => {
@@ -35272,7 +34582,7 @@ Nënshkrimi: _____________________`;
       label: premiumFeature,
       description: 'Ky funksion është pjesë e mjeteve të avancuara të planit Premium.'
     };
-    const freeBenefits = ['Lëndët, syllabus-i dhe videot', 'Orari, detyrat dhe pjesëmarrja bazë', `Deri në ${FREE_GOAL_LIMIT} synime aktive dhe teste bazë`];
+    const freeBenefits = ['Lëndët, syllabus-i dhe videot', 'Orari, detyrat dhe pjesëmarrja bazë', 'Teste bazë'];
     const launchTool = tool => {
       if (!isPremiumUser) return setPremiumFeature(tool.label);
       setPremiumModalOpen(false);
@@ -35341,7 +34651,7 @@ Nënshkrimi: _____________________`;
       className: "px-2 py-1 rounded-lg bg-white/10 text-[9px] font-bold text-brand-100"
     }, isPremiumUser ? "Aktiv" : "Shton")), /*#__PURE__*/React.createElement("div", {
       className: "mt-3 space-y-2"
-    }, ['Gjenerim automatik nga shënimet', 'Analiza javore, mujore dhe e provimeve', 'Synime pa kufi dhe arkiv i plotë', 'Raporte të formatuara për eksport'].map(item => /*#__PURE__*/React.createElement("div", {
+    }, ['Gjenerim automatik nga shënimet', 'Analiza javore, mujore dhe e provimeve', 'Arkiv i plotë', 'Raporte të formatuara për eksport'].map(item => /*#__PURE__*/React.createElement("div", {
       key: item,
       className: "flex items-start gap-2 text-[10px] text-white/70"
     }, /*#__PURE__*/React.createElement("span", {
@@ -38581,7 +37891,7 @@ Nënshkrimi: _____________________`;
     hubComposeTitle: pollFormOpen ? 'Sondazh i ri' : (colloquiumDraft.label === 'Provim' ? 'Provim i ri' : 'Kolokfium i ri'),
     onComposeClose: () => { setColloquiumFormOpen(false); setPollFormOpen(false); setPollPicker(null); setPublishedInfo(null); setColNoteOpen(false); },
     onClose: () => setGroupMessagesOpen(false)
-  }), renderGoalsModal(), renderNotificationCenter(), renderStudentCard(), transferHostOpen && React.createElement(UnitTransferHost, { onClose: () => setTransferHostOpen(false), language: uiLanguage }), renderPremiumModal(), renderLibraryReader(), scheduleInsightsOpen && renderScheduleInsightsModal(), searchOpen && renderSearchPage(), materialDraft && (() => {
+  }), renderNotificationCenter(), renderStudentCard(), transferHostOpen && React.createElement(UnitTransferHost, { onClose: () => setTransferHostOpen(false), language: uiLanguage }), renderPremiumModal(), renderLibraryReader(), scheduleInsightsOpen && renderScheduleInsightsModal(), searchOpen && renderSearchPage(), materialDraft && (() => {
     const selectedCourse = allCourses.find(c => c.id === materialDraft.courseId);
     const courseSessions = academicSchedule.filter(item => item.courseId === materialDraft.courseId).sort((a, b) => Number(a.dayOfWeek) - Number(b.dayOfWeek) || a.start.localeCompare(b.start));
     const resources = getCourseResources(selectedCourse);
