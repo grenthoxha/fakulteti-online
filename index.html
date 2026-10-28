@@ -14829,7 +14829,38 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setEnrollmentEditorOpen(true);
   };
   const toggleEnrollmentDraft = courseId => {
-    setEnrollmentDraft(previous => previous.includes(courseId) ? previous.filter(id => id !== courseId) : [...previous, courseId]);
+    if (actualRole !== 'student') return;
+    const base = enrollmentDraft.length ? enrollmentDraft : enrolledCourseIds;
+    const removing = base.includes(courseId);
+    let next = removing ? base.filter(id => id !== courseId) : [...base, courseId];
+    if (!removing) {
+      const semOfCourse = (yr?.semesters || []).find(sem => (sem.courses || []).some(c => c.id === courseId));
+      const picked = semOfCourse && semOfCourse.courses.find(c => c.id === courseId);
+      if (picked && picked.status === 'Z') {
+        const otherElectives = semOfCourse.courses.filter(c => c.status === 'Z' && c.id !== courseId).map(c => c.id);
+        next = next.filter(id => !otherElectives.includes(id));
+      }
+    }
+    if (!next.length) {
+      showToast('Duhet të mbetet të paktën një lëndë.', 'ℹ️');
+      return;
+    }
+    setEnrollmentDraft(next);
+    setEnrolledCoursesByScope(previous => ({ ...previous, [enrollmentScopeKey]: next }));
+    if (removing) {
+      if (deadlineDraft.courseId === courseId) setDeadlineDraft(previous => ({ ...previous, courseId: '' }));
+      setSelectedCaseId(null);
+      setArenaPlaying(false);
+      setArenaCurrentQ(null);
+      setArenaTime(60);
+      setDuelActive(false);
+      setDuelFinished(false);
+    }
+  };
+  const getEnrollmentEditorSemesterId = () => {
+    const key = String(coursesSemesterId || '');
+    const sem = (yr && yr.semesters || []).find(item => key === `${yr.id}:${item.id}`);
+    return sem ? sem.id : activeSemesterId;
   };
   const packageSemesterArchiveSnapshot = (customLabel) => {
     const semLabel = customLabel || `${yr?.label || 'Viti I'} · ${activeSemesterObj?.label || 'Semestri 1'}`;
@@ -32600,24 +32631,30 @@ Nënshkrimi: _____________________`;
     const dueFor = item => (item.cards || []).length ? getFlashcardReviewQueue(item.cards, (fcReviews.courses || {})[item.id] || {}, 'due', Date.now()).dueEntries.length : 0;
     const examFor = item => sortedDeadlines.find(d => d.courseId === item.id && daysUntil(d.date) >= 0);
     const row = (s, i) => {
-      const { item, chapters, read, examPassed, pct } = s;
+      const { item, examPassed, pct } = s;
       const exam = examPassed ? null : examFor(item);
       const left = exam ? daysUntil(exam.date) : null;
       const examText = exam ? `${exam.type === 'exam' ? 'Provimi' : (exam.title || 'Afati')} ${left === 0 ? 'sot' : left === 1 ? 'nesër' : `pas ${left} ditësh`}` : '';
+      const pillCls = left !== null && left <= 7 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300';
       return ce("button", {
         key: item.id,
         type: "button",
         onClick: () => openCourse(item),
-        className: `w-full flex items-center gap-3.5 py-[15px] text-left cursor-pointer ${i ? 'border-t border-black/5 dark:border-white/10' : ''}`
+        className: "card-surface border border-default rounded-[20px] p-3.5 min-h-[150px] flex flex-col gap-2.5 text-left cursor-pointer"
       },
-        ring(pct),
-        ce("span", { className: "flex-1 min-w-0" },
-          ce("span", { className: "block text-[15px] font-semibold text-primary leading-snug" }, item.title),
-          ce("span", { className: "block text-[13px] text-tertiary mt-0.5" }, [item.ects ? `${item.ects} ECTS` : 'Rotacion klinik', chapters.length ? `${read}/${chapters.length}` : null].filter(Boolean).join(' · ')),
-          exam && ce("span", { className: "flex flex-wrap gap-1.5 mt-2" },
-            ce("span", { className: "px-2 py-0.5 rounded-md bg-black/[0.05] dark:bg-white/[0.07] text-secondary text-[11.5px] font-semibold" }, examText))),
-        unitUiIcon(UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0"));
+        ce("span", { className: "flex items-start justify-between" },
+          ring(pct),
+          unitUiIcon(UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0")),
+        ce("span", { className: "block text-[14.5px] font-[650] text-primary leading-[19px]" }, item.title),
+        exam && ce("span", { className: `mt-auto self-start px-2 py-1 rounded-full text-[11px] font-semibold ${pillCls}` }, examText));
     };
+    const fullSem = !selectedIsPast ? ((yr && yr.semesters) || []).find(sem => sem.id === selected.id) : null;
+    const canAddCourse = Boolean(fullSem && (fullSem.courses || []).some(c => !enrolledCourseIds.includes(c.id) && (c.status !== 'Z' || !(fullSem.courses || []).some(o => o.status === 'Z' && enrolledCourseIds.includes(o.id)))));
+    const addTile = () => ce("button", {
+      type: "button",
+      onClick: () => enrollmentEditorOpen ? setEnrollmentEditorOpen(false) : openEnrollmentEditor(),
+      className: "rounded-[20px] min-h-[150px] border border-dashed border-black/15 dark:border-white/15 flex items-center justify-center text-[14px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer"
+    }, "+ Shto lëndë");
     const groups = [
       { id: 'O', label: 'Obligative', items: stats.filter(s => s.item.status !== 'Z') },
       { id: 'Z', label: 'Zgjedhore', items: stats.filter(s => s.item.status === 'Z') }
@@ -32652,7 +32689,7 @@ Nënshkrimi: _____________________`;
             className: `w-full text-left px-3 py-2.5 rounded-lg text-sm cursor-pointer ${keyOf(sem) === keyOf(selected) ? 'font-semibold text-brand-600 dark:text-brand-300 bg-brand-500/10' : 'font-medium text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`
           }, coursesSemesterLabel(sem))))),
       selectedIsPast && ce("div", { className: "text-[13px] font-semibold text-tertiary -mb-1" }, coursesSemesterLabel(selected)),
-      totalChapters > 0 && ce("div", { className: "card-surface border border-default rounded-[18px] px-4 py-3.5 space-y-2.5" },
+      false && totalChapters > 0 && ce("div", { className: "card-surface border border-default rounded-[18px] px-4 py-3.5 space-y-2.5" },
         ce("div", { className: "flex items-baseline justify-between gap-3" },
           ce("span", { className: "text-sm font-semibold text-primary" }, "Progresi i semestrit"),
           ce("span", { className: "text-[13px] text-tertiary tabular-nums" }, `${totalRead} nga ${totalChapters} kapituj`)),
@@ -32662,7 +32699,7 @@ Nënshkrimi: _____________________`;
         ce("div", { className: "flex items-center justify-between min-h-[28px]" },
           ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, g.label),
           gi === 0 ? renderCoursesManageButton() : null),
-        ce("div", { className: "card-surface border border-default rounded-[18px] px-4" }, g.items.map(row)))),
+        ce("div", { className: "grid grid-cols-2 gap-2.5" }, g.items.map(row), gi === groups.length - 1 && actualRole === 'student' && canAddCourse ? addTile() : null))),
       ce("section", { className: "space-y-2.5" },
         Materials && nativeCreateElement(Materials, { key: `materials:${selected.yearId}:${selected.id}`, semester: selected, courses, language: uiLanguage })));
   };
@@ -32694,6 +32731,11 @@ Nënshkrimi: _____________________`;
           onClick: () => openEdit(exam),
           className: "w-full min-h-10 px-3 rounded-lg text-left text-sm font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer text-primary"
         }, "Ndrysho provimin"),
+        ce("button", {
+          type: "button",
+          onClick: () => { setExamSelect({ on: true, ids: [exam.id] }); },
+          className: "w-full min-h-10 px-3 rounded-lg text-left text-sm font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer text-primary"
+        }, "Zgjidh më shumë"),
         ce("button", {
           type: "button",
           onClick: () => removeDeadline(exam.id),
@@ -32966,6 +33008,7 @@ Nënshkrimi: _____________________`;
           ce("div", { className: "text-[16px] font-bold text-primary leading-snug" }, nameOf(actionExam)),
           ce("div", { className: "text-[13px] text-tertiary mt-0.5" }, `${dayNumOf(actionExam.date)} ${monthOf(actionExam.date)}${examMeta(actionExam) ? ' · ' + examMeta(actionExam) : ''}`)),
         sheetRow("M4 20h4l10-10-4-4L4 16v4zM13 7l4 4", "Ndrysho", null, () => openEdit(actionExam)),
+        sheetRow("M4 7l2 2 3-3M4 17l2 2 3-3M12 8h8M12 18h8", "Zgjidh më shumë", null, () => { setExamActionId(null); setExamSwipeId(null); setExamSelect({ on: true, ids: [actionExam.id] }); }),
         sheetRow("M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3", "Fshi provimin", null, () => { removeDeadline(actionExam.id); setExamActionId(null); }, 'danger')));
 
     const chooserSheet = examAddMenu && sheetShell("Shto provim", () => setExamAddMenu(false),
@@ -33058,14 +33101,12 @@ Nënshkrimi: _____________________`;
       addForm, actionSheet, chooserSheet, importSheet, selectBar,
       next && ce("section", { className: `${cardCls} px-[18px] py-1.5 overflow-hidden` },
         examDeadlines.map(row)),
-      next && !examSelect.on && ce("div", { className: "flex justify-center -mt-2" },
-        ce("button", { type: "button", onClick: () => { setExamSwipeId(null); setExamSelect({ on: true, ids: [] }); }, className: "px-3.5 py-2 rounded-full bg-brand-600/10 dark:bg-brand-400/15 text-[13px] font-semibold text-brand-700 dark:text-brand-300 cursor-pointer" }, "Zgjidh")),
+
       !next && !deadlineDraft.isExamModalOpen && ce("section", { className: `${cardCls} px-5 py-8 text-center` },
         ce("div", { className: "text-[15px] font-semibold text-primary" }, "Nuk ke provime të shënuara"),
         ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Shto lëndën dhe datën, e ne të tregojmë sa ditë të kanë mbetur."),
         ce("button", { type: "button", onClick: () => setExamAddMenu(true), className: "mt-4 h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto provimin")),
       ce("section", { className: "space-y-3" },
-        label("Mjete"),
         ce("div", { className: "grid grid-cols-2 gap-2.5" },
           tools.map(tool => {
             const expandable = tool.id !== 'archive';
@@ -34990,7 +35031,7 @@ Nënshkrimi: _____________________`;
 
     className: "space-y-4"
 
-  }, (yr?.semesters || []).map(sem => /*#__PURE__*/React.createElement("div", {
+  }, (yr?.semesters || []).filter(sem => sem.id === getEnrollmentEditorSemesterId()).map(sem => /*#__PURE__*/React.createElement("div", {
 
     key: sem.id
 
@@ -35038,23 +35079,7 @@ Nënshkrimi: _____________________`;
 
     }, item.ects ? `${item.ects} ECTS` : 'Rotacion klinik', item.status === 'Z' ? ' · Zgjedhore' : ' · Obligative')));
 
-  }))))), /*#__PURE__*/React.createElement("div", {
-
-    className: "flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1"
-
-  }, /*#__PURE__*/React.createElement("button", {
-
-    onClick: () => setEnrollmentEditorOpen(false),
-
-    className: "min-h-11 px-4 rounded-xl input-bg border border-default text-xs font-bold text-secondary"
-
-  }, "Anulo"), /*#__PURE__*/React.createElement("button", {
-
-    onClick: saveEnrollment,
-
-    className: "min-h-11 px-4 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-sm"
-
-  }, "Ruaj regjistrimin"))), 
+  })))))), 
 
 
 
