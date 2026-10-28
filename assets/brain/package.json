@@ -1,0 +1,8 @@
+{
+  "name": "unit-academy-brain",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": { "build": "node build.cjs" },
+  "dependencies": { "three": "0.180.0" },
+  "devDependencies": { "esbuild": "0.25.10" }
+}

@@ -1,0 +1,113 @@
+{
+  "source": "https://brainder.org/research/brain-for-blender/",
+  "license": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "author": "Anderson Winkler",
+  "transformation": "OBJ to Float32 positions and Uint32 indices; no decimation or smoothing; lossless gzip. Viewer rotates RAS to Y-up without mirroring.",
+  "meshes": [
+    {
+      "id": "left",
+      "file": "pial_Full_obj/lh.pial.obj",
+      "vertices": 144490,
+      "triangles": 288976,
+      "bounds": [
+        [
+          -69.701225,
+          2.782177
+        ],
+        [
+          -99.889786,
+          69.479324
+        ],
+        [
+          -56.470917,
+          60.284389
+        ]
+      ],
+      "sha256": "e48056ddf5087eb9a7fe9a75d6c6775ffb853e0a2f4115e31aff5c39467e6ecf"
+    },
+    {
+      "id": "right",
+      "file": "pial_Full_obj/rh.pial.obj",
+      "vertices": 145071,
+      "triangles": 290138,
+      "bounds": [
+        [
+          -3.113171,
+          68.920235
+        ],
+        [
+          -96.69445,
+          70.159729
+        ],
+        [
+          -58.919209,
+          59.497002
+        ]
+      ],
+      "sha256": "f6de3057c426f613fa012729e3c193465ca5b332cd45aadbe22288d51dff69d5"
+    },
+    {
+      "id": "cerebellum-left",
+      "file": "subcortical_obj/Left-Cerebellum-Cortex.obj",
+      "vertices": 30422,
+      "triangles": 60940,
+      "bounds": [
+        [
+          -62.125378,
+          -0.226956
+        ],
+        [
+          -98.190887,
+          -33.985287
+        ],
+        [
+          -61.320923,
+          -5.124006
+        ]
+      ],
+      "sha256": "c9b5437ecaa4cd3782e39c27f59cfdacaea7a87a1d9634642ea6af6d1663ddb6"
+    },
+    {
+      "id": "cerebellum-right",
+      "file": "subcortical_obj/Right-Cerebellum-Cortex.obj",
+      "vertices": 27672,
+      "triangles": 55400,
+      "bounds": [
+        [
+          -3.980872,
+          57.130749
+        ],
+        [
+          -97.25692,
+          -31.663263
+        ],
+        [
+          -63.168182,
+          -6.212907
+        ]
+      ],
+      "sha256": "4aa418ce044b79d6b314a66b2a87a799ac0510b2e781ef58da8eb024112c72a2"
+    },
+    {
+      "id": "brainstem",
+      "file": "subcortical_obj/Brain-Stem.obj",
+      "vertices": 8724,
+      "triangles": 17452,
+      "bounds": [
+        [
+          -19.291945,
+          18.131298
+        ],
+        [
+          -57.622108,
+          -18.191463
+        ],
+        [
+          -63.843964,
+          -8.314903
+        ]
+      ],
+      "sha256": "219b361254c23070865dc1cf4d4b161fe24550a9c448ac7c475473dc35dbb221"
+    }
+  ]
+}
