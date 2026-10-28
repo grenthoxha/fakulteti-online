@@ -246,6 +246,53 @@
     /* Fotoja e sfondit të fillimit shtrihet edhe mbi rreshtin e videove */
     .home-section-list .home-hero-integrated { overflow-x: clip !important; overflow-y: visible !important; }
     .home-section-list .home-hero-integrated .psychology-brain-art { top: calc(100% + 1rem); }
+    /* Në telefon: pa fotot e trurit në sfondin e Kreut */
+    @media (max-width: 639px) { .psychology-brain-art { display: none !important; } }
+    /* ORARI · dizajni F: header blu (ngjyra e website-it + toni i logos) dhe fletë e bardhë */
+    .schedule-min .sch-hero { position: relative; color: #fff; padding: 14px 16px 44px; background: linear-gradient(180deg, #4a55df 0%, #3e46c2 100%); }
+    .dark .schedule-min .sch-hero { background: linear-gradient(180deg, #343b9d 0%, #30377d 100%); }
+    .schedule-min .sch-sheet { position: relative; margin-top: -28px !important; border-radius: 28px 28px 0 0; background: var(--surface); padding: 18px 16px 24px; }
+    .dark .schedule-min .sch-sheet { background: var(--surface); }
+    .schedule-min .sch-circle { width: 44px; height: 44px; border-radius: 9999px; border: 0; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; background: rgba(255,255,255,.18); color: #fff; transition: background-color .2s ease, transform .15s ease; }
+    .schedule-min .sch-circle:hover { background: rgba(255,255,255,.26); }
+    .schedule-min .sch-circle:active { transform: scale(.95); }
+    .schedule-min .sch-circle.is-solid { background: #fff; color: #3e46c2; }
+    .schedule-min .sch-circle:focus-visible, .schedule-min .sch-day:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .schedule-min .sch-day { position: relative; height: 72px; border: 0; border-radius: 22px; background: rgba(255,255,255,.16); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
+    .schedule-min .sch-day:hover { background: rgba(255,255,255,.22); }
+    .schedule-min .sch-day.is-sel { background: #fff; color: #3e46c2; }
+    .schedule-min .sch-day-lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #e3e6ff; max-width: 100%; white-space: nowrap; }
+    .schedule-min .sch-day.is-sel .sch-day-lbl { color: #3e46c2; font-weight: 800; }
+    .schedule-min .sch-day-num { font-size: 20px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .schedule-min .sch-day.is-today:not(.is-sel) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
+    .schedule-min .sch-card { background: #f6f7fc; border-radius: 22px; padding: 14px; }
+    .dark .schedule-min .sch-card { background: var(--surface-muted); }
+    .schedule-min .sch-card.is-upcoming { background: transparent; box-shadow: inset 0 0 0 1.5px #e1e3f0; }
+    .dark .schedule-min .sch-card.is-upcoming { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.12); }
+    .schedule-min .sch-card.is-live { box-shadow: inset 0 0 0 1.5px rgba(74,85,223,.55); }
+    .schedule-min .sch-att { height: 44px; border-radius: 14px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; border: 1.5px solid #dcdfec; background: #fff; color: #3a3f4f; transition: transform .15s ease; }
+    .schedule-min .sch-att:active { transform: scale(.97); }
+    .dark .schedule-min .sch-att { background: transparent; border-color: rgba(255,255,255,.14); color: #d5d9e6; }
+    .schedule-min .sch-att.is-yes { background: #12805c; border-color: #12805c; color: #fff; font-weight: 700; }
+    .schedule-min .sch-att.is-no { background: #d92d20; border-color: #d92d20; color: #fff; font-weight: 700; }
+    @media (max-width: 1023px) {
+      .schedule-page > .schedule-min { max-width: none; width: auto; margin-left: -.75rem; margin-right: -.75rem; }
+      .schedule-page > .schedule-min:first-child { margin-top: -.75rem; }
+      .schedule-min .sch-sheet { margin-bottom: -6rem; padding-bottom: 7rem; min-height: calc(100svh - 14rem); }
+    }
+    @media (min-width: 640px) and (max-width: 1023px) {
+      .schedule-page > .schedule-min { margin-left: -1rem; margin-right: -1rem; }
+      .schedule-page > .schedule-min:first-child { margin-top: -1rem; }
+    }
+    @media (min-width: 1024px) {
+      .schedule-min .sch-hero { border-radius: 28px 28px 0 0; padding: 18px 24px 44px; }
+      .schedule-min .sch-sheet { border-radius: 28px; padding: 22px 24px 28px; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
+    }
+    @media (max-width: 420px) { .schedule-min .sch-day-lbl { font-size: 10.5px; letter-spacing: .02em; } }
+    @media (max-width: 359px) {
+      .schedule-min .sch-hero { padding-left: 12px; padding-right: 12px; }
+      .schedule-min .sch-day-lbl { font-size: 9.5px; letter-spacing: 0; }
+    }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -423,7 +470,7 @@
     .pomo-floating.is-paused .pomo-dot { opacity: .45; animation: none; }
     @keyframes pomoPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
     @media (max-width: 1023px) {
-      .pomo-floating { right: 1rem; bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); }
+      .pomo-floating { right: 1rem; bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); height: 2.75rem; padding: 0 .875rem; border-radius: 9999px; font-size: .8125rem; }
       .pomo-floating.with-msg { right: 4.75rem; }
       .pomo-floating.is-hidden { opacity: 0; pointer-events: none; transform: translateY(.5rem); }
     }
@@ -21436,7 +21483,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const ce = React.createElement;
     return ce("section", {
       "data-live-class": "true",
-      className: "card-surface rounded-2xl border-2 border-brand-500/40 dark:border-brand-500/50 p-4 sm:p-5 shadow-lg anim-fade-up bg-gradient-to-br from-brand-500/[0.04] via-transparent to-emerald-500/[0.03]"
+      className: "card-surface rounded-3xl border border-default p-4 sm:p-5 shadow-2xs anim-fade-up"
     },
       ce("div", { className: "flex items-start justify-between gap-3" },
         ce("div", { className: "min-w-0" },
@@ -21455,7 +21502,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           title: "Mbyll p\u00EBr sot", "aria-label": "Mbyll kart\u00EBn",
           className: "w-8 h-8 shrink-0 flex items-center justify-center rounded-lg input-bg border border-default hover:border-red-300 text-secondary hover:text-red-600 transition-colors text-xs font-bold cursor-pointer"
         }, "\u2715")),
-      ce("div", { className: "grid grid-cols-2 gap-2 mt-3.5 sm:max-w-md" },
+      nowMinuteClock >= inClassStartMin - 10 && ce("div", { className: "grid grid-cols-2 gap-2 mt-3.5 sm:max-w-md" },
         ce("button", {
           type: "button",
           onClick: () => {
@@ -29944,18 +29991,6 @@ Nënshkrimi: _____________________`;
         "data-home-section": "intro",
         className: "home-hero-integrated text-primary relative overflow-hidden"
       }, /*#__PURE__*/React.createElement("div", {
-        className: "absolute top-0 right-0 w-72 h-72 bg-white/[0.07] rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"
-      }), branchId === 'mjekesi' && /*#__PURE__*/React.createElement("img", {
-        src: "./assets/medicine-anatomy-v1.png",
-        alt: "",
-        "aria-hidden": "true",
-        className: "medicine-anatomy-art"
-      }), branchId === 'psikologji' && /*#__PURE__*/React.createElement("img", {
-        src: "./assets/psychology-brain-v1.png",
-        alt: "",
-        "aria-hidden": "true",
-        className: "psychology-brain-art"
-      }), /*#__PURE__*/React.createElement("div", {
         className: "relative z-10 w-full"
       }, liveHomeCard ? liveHomeCard : /*#__PURE__*/React.createElement(React.Fragment, null, dailyHomeAction.eyebrow && dailyHomeAction.eyebrow !== 'Hapi i radhës' ? /*#__PURE__*/React.createElement("div", {
         className: "text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-300 mb-1.5"
@@ -29977,7 +30012,7 @@ Nënshkrimi: _____________________`;
       },
         /* Rrathët (si Stories): rreth indigo = pa parë, gri = e parë */
         /*#__PURE__*/React.createElement("div", {
-          className: "flex items-start gap-3.5 sm:gap-[18px] overflow-x-auto scrollbar-none snap-x -mx-1 px-1",
+          className: "flex items-start gap-3.5 sm:gap-[18px] overflow-x-auto scrollbar-none snap-x -mx-4 px-4 scroll-px-4 sm:-mx-6 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8",
           style: { scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }
         },
           (courseVideoFeed.slice(0, 8)).map((vid, vIdx) => {
@@ -34066,7 +34101,9 @@ Nënshkrimi: _____________________`;
     const fullView = pomoFull || locked || landPhone;
     const wide = fullView && vp.w > vp.h * 1.05;
     const phoneW = vp.w < 640;
+    const tsz = phoneW ? 44 : 40;
     const cw = fullView ? vp.w : (phoneW ? vp.w : 420);
+    const narrow = cw < 380;
     const ch = fullView ? vp.h : (phoneW ? Math.round(vp.h * 0.94) : Math.round(Math.min(vp.h * 0.9, 820)));
     const sideW = wide ? 112 : 0;
     const contentW = cw - sideW;
@@ -34176,25 +34213,25 @@ Nënshkrimi: _____________________`;
     /* ---------- kontrollet ---------- */
     const headerText = `${phaseLabel} · ${counterLabel}${wide && taskText ? ' · ' + taskText : ''}`;
     const header = locked ? null : wide
-      ? abs({ left: 36, top: 26, right: sideW + 24, fontSize: 12.5, letterSpacing: '0.2em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }, headerText, 'hdr')
-      : abs({ left: 0, right: 0, top: 'max(18px, env(safe-area-inset-top))', height: 84, padding: '0 24px 0 34px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-        [ce("span", { key: 'l', style: { fontSize: 12.5, letterSpacing: '0.22em', color: muted, fontWeight: 500 } }, (styleId === 'eklipsi' ? 'POMODORO' : `${phaseLabel} · ${counterLabel}`)),
-          ce("div", { key: 'r', style: { display: 'flex', alignItems: 'center', gap: 6 } },
-            roundBtn(P_LOCK, 'Kyç ekranin', pomoLock, { size: 40 }),
-            roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { outline: '#fff', color: '#fff' }),
-            roundBtn(P_CLOSE, 'Mbyll', pomoClose, { size: 40 }))], 'hdr');
-    const taskLine = (!wide && taskText && !locked) ? abs({ left: 24, right: 24, bottom: 'calc(max(34px, env(safe-area-inset-bottom)) + 68px)', textAlign: 'center', fontSize: 15, color: '#8a8a96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, taskText, 'task') : null;
-    const bottomBar = (locked || wide) ? null : abs({ left: 34, right: 34, bottom: 'max(34px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 },
+      ? abs({ left: 'max(36px, env(safe-area-inset-left))', top: 26, right: sideW + 24, fontSize: 12.5, letterSpacing: '0.2em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }, headerText, 'hdr')
+      : abs({ left: 0, right: 0, top: 'max(18px, env(safe-area-inset-top))', height: 84, padding: narrow ? '0 12px 0 20px' : '0 20px 0 34px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+        [ce("span", { key: 'l', style: { fontSize: narrow ? 11.5 : 12.5, letterSpacing: narrow ? '0.12em' : '0.22em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 } }, (styleId === 'eklipsi' ? 'POMODORO' : `${phaseLabel} · ${counterLabel}`)),
+          ce("div", { key: 'r', style: { display: 'flex', alignItems: 'center', gap: narrow ? 2 : 6, flex: 'none' } },
+            roundBtn(P_LOCK, 'Kyç ekranin', pomoLock, { size: tsz }),
+            roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { outline: '#fff', color: '#fff', size: tsz }),
+            roundBtn(P_CLOSE, 'Mbyll', pomoClose, { size: tsz }))], 'hdr');
+    const taskLine = (!wide && taskText && !locked) ? abs({ left: 24, right: 24, bottom: 'calc(max(28px, env(safe-area-inset-bottom)) + 68px)', textAlign: 'center', fontSize: 15, color: '#8a8a96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, taskText, 'task') : null;
+    const bottomBar = (locked || wide) ? null : abs({ left: narrow ? 20 : 34, right: narrow ? 20 : 34, bottom: 'max(28px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 },
       [ce("button", { key: 'go', type: "button", onClick: toggleRun, style: { ...btnReset, flex: 1, height: 52, borderRadius: 26, background: accent, color: ink, fontSize: 17, fontWeight: 600 } }, runLabel),
         roundBtn(P_RESET, 'Rifillo kohëmatësin', pomoReset, { size: 52, bg: '#17171c' }),
         roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true), { size: 52, bg: '#17171c' })], 'bar');
-    const sideCol = (wide && !locked) ? abs({ right: 20, top: 0, bottom: 0, width: sideW - 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 },
+    const sideCol = (wide && !locked) ? abs({ right: 'max(20px, env(safe-area-inset-right))', top: 0, bottom: 0, width: sideW - 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 },
       [roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { key: 'f', outline: '#fff', color: '#fff' }),
         roundBtn(running ? P_PAUSE : P_PLAY, runLabel, toggleRun, { size: 52, outline: accent, color: accent }),
         roundBtn(P_RESET, 'Rifillo kohëmatësin', pomoReset),
         roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true)),
         roundBtn(P_LOCK, 'Kyç ekranin', pomoLock),
-        !landPhone && roundBtn(P_CLOSE, 'Mbyll', pomoClose)].filter(Boolean).map((el, i) => React.cloneElement(el, { key: i })), 'side') : null;
+        roundBtn(P_CLOSE, 'Mbyll', pomoClose)].filter(Boolean).map((el, i) => React.cloneElement(el, { key: i })), 'side') : null;
     const lockBar = locked ? abs({ left: 0, right: 0, bottom: 'max(26px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'center' },
       ce("button", {
         type: "button", "aria-label": "Mbaj shtypur për të zhbllokuar",
@@ -34207,30 +34244,30 @@ Nënshkrimi: _____________________`;
         ce("span", { style: { position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8 } }, icon(P_LOCK, "w-[18px] h-[18px]", '#9a9aa6'), pomoHold ? 'Vazhdo të mbash…' : 'Mbaj shtypur për të zhbllokuar')), 'lock') : null;
 
     /* ---------- cilësimet ---------- */
-    const sBtn = (txt, label, onClick, disabled) => ce("button", { type: "button", "aria-label": label, onClick, disabled, style: { ...btnReset, width: 40, height: 40, borderRadius: 12, background: '#17171c', color: '#fff', fontSize: 20, opacity: disabled ? 0.3 : 1 } }, txt);
+    const sBtn = (txt, label, onClick, disabled) => ce("button", { type: "button", "aria-label": label, onClick, disabled, style: { ...btnReset, width: tsz + 4, height: tsz + 4, borderRadius: 14, background: '#17171c', color: '#fff', fontSize: 22, opacity: disabled ? 0.3 : 1 } }, txt);
     const stepper = (label, key, min, max, chips, note) => ce("div", { key, style: { padding: '16px 0', borderBottom: '1px solid #17171c' } },
       ce("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 } },
         ce("span", { style: { fontSize: 15, color: '#e8e8ee' } }, label),
         ce("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           sBtn('−', `Zvogëlo: ${label}`, () => updatePomoSetting(key, Math.max(min, (Number(s[key]) || min) - 1)), (Number(s[key]) || min) <= min),
-          ce("span", { style: { minWidth: 64, textAlign: 'center', fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' } }, key === 'goal' ? goal : `${s[key]} min`),
+          ce("span", { style: { minWidth: narrow ? 56 : 64, textAlign: 'center', fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' } }, key === 'goal' ? goal : `${s[key]} min`),
           sBtn('+', `Rrite: ${label}`, () => updatePomoSetting(key, Math.min(max, (Number(s[key]) || min) + 1)), (Number(s[key]) || min) >= max))),
       chips && ce("div", { style: { display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' } },
-        chips.map(v => ce("button", { key: v, type: "button", onClick: () => updatePomoSetting(key, v), "aria-pressed": Number(s[key]) === v, style: { ...btnReset, height: 34, padding: '0 14px', borderRadius: 17, fontSize: 13, fontWeight: 600, background: Number(s[key]) === v ? st.accent : '#17171c', color: Number(s[key]) === v ? st.ink : '#9a9aa6' } }, key === 'goal' ? v : `${v} min`))),
+        chips.map(v => ce("button", { key: v, type: "button", onClick: () => updatePomoSetting(key, v), "aria-pressed": Number(s[key]) === v, style: { ...btnReset, height: phoneW ? 40 : 34, padding: '0 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, background: Number(s[key]) === v ? st.accent : '#17171c', color: Number(s[key]) === v ? st.ink : '#9a9aa6' } }, key === 'goal' ? v : `${v} min`))),
       note && ce("div", { style: { marginTop: 8, fontSize: 12.5, color: muted } }, note));
     const totalMin = goal * Number(s.focus) + (goal - 1) * Number(s.short);
     const totalTxt = totalMin >= 60 ? `${Math.floor(totalMin / 60)} orë${totalMin % 60 ? ' ' + (totalMin % 60) + ' min' : ''}` : `${totalMin} min`;
-    const settingsPanel = pomoSetOpen && !locked ? abs({ inset: 0, background: '#000', overflowY: 'auto', overscrollBehavior: 'contain', padding: 'max(18px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom))', zIndex: 5 },
+    const settingsPanel = pomoSetOpen && !locked ? abs({ inset: 0, background: '#000', overflowY: 'auto', overscrollBehavior: 'contain', padding: 'max(18px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom))', zIndex: 5, WebkitOverflowScrolling: 'touch' },
       ce("div", { className: "pomo-fade", style: { maxWidth: 440, margin: '0 auto', padding: '0 24px' } },
         ce("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 } },
           ce("span", { style: { fontSize: 17, fontWeight: 600 } }, 'Pomodoro'),
-          roundBtn(P_CLOSE, 'Mbyll cilësimet', () => setPomoSetOpen(false), { size: 40 })),
+          roundBtn(P_CLOSE, 'Mbyll cilësimet', () => setPomoSetOpen(false), { size: tsz })),
         stepper('Pomodoro', 'focus', 1, 180, [15, 25, 50, 90]),
         stepper('Pushimi', 'short', 1, 60, [3, 5, 10, 15]),
         stepper('Sa pomodoro', 'goal', 1, 12, [2, 4, 6, 8], `Gjithsej rreth ${totalTxt} me pushime`),
         ce("div", { style: { padding: '16px 0', borderBottom: '1px solid #17171c' } },
           ce("label", { htmlFor: "pomo-task", style: { display: 'block', fontSize: 15, color: '#e8e8ee', marginBottom: 10 } }, 'Po punoj te'),
-          ce("select", { id: "pomo-task", value: taskValue, onChange: e => { const v = e.target.value; setPomo(p => ({ ...p, taskId: v })); }, style: { width: '100%', height: 46, padding: '0 12px', borderRadius: 12, background: '#111114', border: '1px solid #2a2a32', color: '#f1f1f5', fontSize: 15, outline: 'none' } },
+          ce("select", { id: "pomo-task", value: taskValue, onChange: e => { const v = e.target.value; setPomo(p => ({ ...p, taskId: v })); }, style: { width: '100%', height: 48, padding: '0 12px', borderRadius: 12, background: '#111114', border: '1px solid #2a2a32', color: '#f1f1f5', fontSize: 16, outline: 'none' } },
             ce("option", { value: "" }, "Pa detyrë të caktuar"),
             openTasks.map(r => ce("option", { key: r.id, value: r.id }, r.title + (r.time ? ` · ${r.time}` : ''))))),
         ce("div", { style: { padding: '16px 0' } },
@@ -34244,7 +34281,7 @@ Nënshkrimi: _____________________`;
     return ce(ModalPortal, null,
       ce("div", {
         className: "fixed inset-0 z-[999999] anim-fade-in",
-        style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100dvh", zIndex: 999999, background: fullView ? '#000' : 'rgba(0,0,0,0.72)', backdropFilter: fullView ? 'none' : 'blur(6px)', display: 'flex', alignItems: (phoneW && !fullView) ? 'flex-end' : 'center', justifyContent: 'center', overflow: 'hidden', touchAction: locked ? 'none' : 'auto' },
+        style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100dvh", zIndex: 999999, background: fullView ? '#000' : 'rgba(0,0,0,0.72)', backdropFilter: fullView ? 'none' : 'blur(6px)', display: 'flex', alignItems: (phoneW && !fullView) ? 'flex-end' : 'center', justifyContent: 'center', overflow: 'hidden', overscrollBehavior: 'none', touchAction: locked ? 'none' : 'manipulation' },
         "aria-label": "Pomodoro",
         onClick: e => { if (e.target === e.currentTarget && !fullView && !locked) pomoClose(); }
       },
@@ -34422,15 +34459,19 @@ Nënshkrimi: _____________________`;
       type: "button", onClick, "aria-label": label, title: label,
       className: `w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer shrink-0 ${extra || 'bg-black/[0.04] dark:bg-white/[0.06] text-secondary hover:text-primary'}`
     }, unitUiIcon(d, "w-[18px] h-[18px]"));
-    return ce(React.Fragment, null,
-      ce("div", { className: "pt-1" },
-       ce("div", { className: "flex items-center justify-between gap-3 min-h-10" },
-        ce("span", { className: "text-[13px] font-medium text-tertiary truncate" }, String(academicWeekRangeLabel || "").replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase() + w.slice(1))),
-        ce("div", { className: "flex items-center gap-1.5 shrink-0" },
-          ctrl("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
-          ctrl("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
-          ctrl("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'bg-brand-600 hover:bg-brand-500 text-white')))),
-      !isPastAcademicWeek && ce("div", { className: "grid grid-cols-5 gap-1.5", role: "tablist", "aria-label": "Ditët e javës" },
+    const cap = txt => String(txt || "").replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase() + w.slice(1));
+    const circle = (label, d, onClick, extra = '') => ce("button", {
+      type: "button", onClick, "aria-label": label, title: label, className: `sch-circle ${extra}`
+    }, unitUiIcon(d, "w-5 h-5"));
+    return ce("header", { className: "sch-hero" },
+      ce("div", { className: "flex items-center justify-between gap-3" },
+        ce("div", { className: "min-w-0" },
+          ce("h1", { className: "text-[22px] leading-[1.15] font-extrabold tracking-[-0.02em] truncate" }, cap(academicWeekRangeLabel))),
+        ce("div", { className: "flex items-center gap-2 shrink-0" },
+          circle("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
+          circle("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
+          circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
+      !isPastAcademicWeek && ce("div", { className: "grid grid-cols-5 gap-2 mt-3.5", role: "tablist", "aria-label": "Ditët e javës" },
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
@@ -34439,12 +34480,11 @@ Nënshkrimi: _____________________`;
             key: day.key, type: "button", role: "tab", "aria-selected": isSel,
             "aria-label": `${day.label}, ${formatDateSq(day.key, { day: 'numeric', month: 'long' })}${count ? `, ${count} orë` : ''}`,
             onClick: () => setScheduleSelectedDayKey(day.key),
-            className: `relative h-16 rounded-[14px] flex flex-col items-center justify-center gap-px cursor-pointer border ${isSel ? 'bg-brand-600 border-brand-600 text-white' : `card-surface border-default text-primary ${isToday ? 'ring-[1.5px] ring-brand-500 ring-inset' : ''}`}`
+            className: `sch-day ${isSel ? 'is-sel' : ''} ${isToday ? 'is-today' : ''}`
           },
-            ce("span", { className: `text-[11px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/75' : 'text-tertiary'}` }, SHORT[day.id] || day.label.slice(0, 3)),
-            ce("span", { className: "text-[19px] font-bold tabular-nums leading-tight" }, formatDateSq(day.key, { day: 'numeric' })),
-            count > 0 && ce("span", { className: "absolute bottom-[7px] flex gap-[3px]", "aria-hidden": true },
-              Array.from({ length: Math.min(count, 4) }, (_, i) => ce("span", { key: i, className: `w-1 h-1 rounded-full ${isSel ? 'bg-white/80' : 'bg-brand-400/70'}` }))));
+            ce("span", { className: "sch-day-lbl" }, SHORT[day.id] || day.label.slice(0, 3)),
+            ce("span", { className: "sch-day-num" }, formatDateSq(day.key, { day: 'numeric' })),
+            null);
         })));
   };
   const renderScheduleMinDay = () => {
@@ -34475,8 +34515,8 @@ Nënshkrimi: _____________________`;
       const endMin = scheduleMinToMinutes(item.end);
       const isLive = isToday && nowMin >= startMin && nowMin < endMin;
       if (isToday && i === nowLineBefore && !isLive) {
-        rows.push(ce("div", { key: 'now', className: `flex items-center gap-2 py-2 text-xs font-bold text-red-600 dark:text-red-400 ${rows.length ? line : ''}`, "aria-label": `Tani ${nowLabel}` },
-          ce("span", { className: "w-2 h-2 rounded-full bg-red-500 shrink-0" }), `Tani · ${nowLabel}`, ce("span", { className: "flex-1 h-[1.5px] bg-red-500/50" })));
+        rows.push(ce("div", { key: 'now', className: "flex items-center gap-2.5 px-0.5", "aria-label": `Tani ${nowLabel}` },
+          ce("span", { className: "text-xs font-extrabold text-white px-[11px] py-[5px] rounded-full", style: { background: '#d92d20' } }, `Tani · ${nowLabel}`), ce("span", { className: "flex-1 h-[1.5px]", style: { background: '#f0c2be' } })));
       }
       const course = allCourses.find(c => c.id === item.courseId);
       const isExercise = item.type === 'exercise';
@@ -34484,17 +34524,11 @@ Nënshkrimi: _____________________`;
 
       const untilStart = startMin - nowMin;
       const untilText = untilStart >= 60 ? `${Math.floor(untilStart / 60)} orë${untilStart % 60 ? ` e ${untilStart % 60} min` : ''}` : `${untilStart} min`;
-      const typeCls = isExercise ? 'text-violet-700 dark:text-violet-400' : 'text-brand-600 dark:text-brand-300';
-      const cardCls = isLive
-        ? 'card-surface rounded-2xl border-2 border-brand-500/40 dark:border-brand-500/50 p-4 shadow-lg bg-gradient-to-br from-brand-500/[0.04] via-transparent to-emerald-500/[0.03]'
-        : 'card-surface rounded-2xl border border-default p-4 shadow-sm';
+      const isUpcoming = isToday ? startMin > nowMin : day.key > today;
+      const cardCls = `sch-card ${isLive ? 'is-live' : isUpcoming ? 'is-upcoming' : ''}`;
       const answered = status === 'attended' || status === 'absent';
-      const yesCls = status === 'attended'
-        ? 'bg-emerald-600 text-white shadow-sm'
-        : 'input-bg border border-default text-secondary';
-      const noCls = status === 'absent'
-        ? 'bg-red-600 text-white shadow-sm'
-        : 'input-bg border border-default text-secondary';
+      const yesCls = status === 'attended' ? 'is-yes' : '';
+      const noCls = status === 'absent' ? 'is-no' : '';
       rows.push(ce("div", { key: item.id, className: cardCls },
         ce("div", { className: "flex items-start justify-between gap-3" },
           ce("div", { className: "flex-1 min-w-0" },
@@ -34502,14 +34536,9 @@ Nënshkrimi: _____________________`;
               ce("span", { className: "px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs" },
                 ce("span", { className: "w-2 h-2 rounded-full bg-red-500 animate-pulse" }), "LIVE NË SALLË")),
             ce("button", { type: "button", onClick: () => openAcademicSession(item, day.key), className: "block w-full text-left cursor-pointer" },
-              ce("span", { className: "block text-base font-extrabold text-primary leading-tight" }, (course && course.title) || 'Lënda'),
-              ce("span", { className: "flex items-center gap-2 text-xs text-secondary mt-1 flex-wrap" },
-                ce("span", { className: "font-semibold text-primary tabular-nums" }, `${item.start} – ${item.end}`),
-                ce("span", null, "·"),
-                ce("span", { className: "px-1.5 py-0.5 rounded input-bg border border-default text-[10px] font-semibold text-primary" }, item.room || 'Pa sallë'),
-                ce("span", null, "·"),
-                ce("span", { className: `font-semibold ${typeCls}` }, isExercise ? 'Ushtrime' : 'Ligjëratë'))),
-            i === nextIdx && !isLive && untilStart > 0 && ce("span", { className: "block mt-1.5 text-xs text-tertiary" }, `Fillon pas ${untilText}`)),
+              ce("span", { className: "block text-base font-bold tracking-[-0.01em] text-primary leading-tight" }, (course && course.title) || 'Lënda'),
+              ce("span", { className: "block text-[13px] font-medium text-secondary mt-0.5 tabular-nums" }, `${item.start} – ${item.end} · ${item.room || 'Pa sallë'} · ${isExercise ? 'Ushtrime' : 'Ligjëratë'}`)),
+            i === nextIdx && !isLive && untilStart > 0 && ce("span", { className: "block mt-2 text-[13px] font-bold text-brand-700 dark:text-brand-300" }, `Fillon pas ${untilText}`)),
           ce("details", { className: "relative shrink-0 self-start" },
             ce("summary", { className: "list-none [&::-webkit-details-marker]:hidden w-9 h-9 -mr-2 -mt-2 rounded-lg flex items-center justify-center text-tertiary hover:text-primary cursor-pointer", "aria-label": `Veprimet për: ${(course && course.title) || 'lëndën'}` },
               unitUiIcon("M5 12h.01M12 12h.01M19 12h.01", "w-5 h-5")),
@@ -34518,24 +34547,26 @@ Nënshkrimi: _____________________`;
               course && menuItem("Materialet e lëndës", () => openCourse(course)),
               !isPastAcademicWeek && menuItem("Ndrysho", () => { editScheduleItem(item); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }),
               !isPastAcademicWeek && menuItem("Largo nga orari", () => removeScheduleItem(item.id), 'text-red-700 dark:text-red-400')))),
-        canMarkAttendance && !isPastAcademicWeek && ce("div", { className: "grid grid-cols-2 gap-2 mt-3.5 sm:max-w-md" },
+        canMarkAttendance && !isPastAcademicWeek && (!isToday || nowMin >= startMin - 10) && ce("div", { className: "grid grid-cols-2 gap-2 mt-3 sm:max-w-md" },
           ce("button", {
             type: "button", onClick: () => setSessionScheduleAttendance(day.key, item.id, status === 'attended' ? null : 'attended'), "aria-pressed": status === 'attended',
-            className: `py-2.5 px-2 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer active:scale-95 ${yesCls}`
+            className: `sch-att ${yesCls}`
           }, isLive ? "✓ Jam në sallë" : "✓ Mora pjesë"),
           ce("button", {
             type: "button", onClick: () => setSessionScheduleAttendance(day.key, item.id, status === 'absent' ? null : 'absent'), "aria-pressed": status === 'absent',
-            className: `py-2.5 px-2 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer active:scale-95 ${noCls}`
+            className: `sch-att ${noCls}`
           }, isLive ? "× Mungoj" : "× Mungova"))));
     });
     if (isToday && sessions.length && nowLineBefore === -1) {
-      rows.push(ce("div", { key: 'now-end', className: `flex items-center gap-2 py-2 text-xs font-bold text-red-600 dark:text-red-400 ${line}` },
-        ce("span", { className: "w-2 h-2 rounded-full bg-red-500 shrink-0" }), `Tani · ${nowLabel} · mësimi i sotëm mbaroi`, ce("span", { className: "flex-1 h-[1.5px] bg-red-500/50" })));
+      rows.push(ce("div", { key: 'now-end', className: "flex items-center gap-2.5 px-0.5" },
+        ce("span", { className: "text-xs font-extrabold text-white px-[11px] py-[5px] rounded-full", style: { background: '#d92d20' } }, `Tani · ${nowLabel} · mësimi i sotëm mbaroi`), ce("span", { className: "flex-1 h-[1.5px]", style: { background: '#f0c2be' } })));
     }
+    const dayWd = String(formatDateSq(day.key, { weekday: 'long' }) || '');
+    const dayTitle = `${dayWd.charAt(0).toUpperCase()}${dayWd.slice(1)}, ${String(formatDateSq(day.key, { day: 'numeric', month: 'long' }) || '').replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase() + w.slice(1))}`;
     return ce("section", { className: "space-y-2.5", "data-today": isToday ? "true" : "false" },
       sessions.length
-        ? ce("div", { className: "space-y-3" }, rows)
-        : ce("div", { className: "card-surface border border-default rounded-[18px] px-5 py-8 text-center" },
+        ? ce("div", { className: "space-y-2.5" }, rows)
+        : ce("div", { className: "sch-card px-5 py-8 text-center" },
             ce("div", { className: "text-[15px] font-semibold text-primary" }, "Nuk ke mësim këtë ditë"),
             ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Zgjidh një ditë tjetër ose shto një orë me +.")));
   };
@@ -36157,7 +36188,7 @@ Nënshkrimi: _____________________`;
   }, renderScheduleMinHeader(),
   null,
   null,
-  isPastAcademicWeek ? /*#__PURE__*/React.createElement("section", {
+  /*#__PURE__*/React.createElement("div", { className: "sch-sheet" }, isPastAcademicWeek ? /*#__PURE__*/React.createElement("section", {
     className: "schedule-archive card-surface rounded-2xl p-5 sm:p-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "schedule-archive-head flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-default"
@@ -36247,7 +36278,7 @@ Nënshkrimi: _____________________`;
     className: "text-[10px] text-red-600 dark:text-red-400 font-bold tabular-nums mt-0.5"
   }, item.start, "–", item.end))))) : /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-4 text-[10px] text-tertiary"
-  }, "Nuk ka mungesa në këtë kategori."))))) ) : renderScheduleMinDay())) : view === 'session' ? selectedScheduleItem && selectedSessionCourse ? /*#__PURE__*/React.createElement("div", {
+  }, "Nuk ka mungesa në këtë kategori."))))) ) : renderScheduleMinDay()))) : view === 'session' ? selectedScheduleItem && selectedSessionCourse ? /*#__PURE__*/React.createElement("div", {
     className: "p-4 sm:p-6 lg:p-8 w-full max-w-6xl mx-auto space-y-5 anim-zoom-in pb-24 lg:pb-12"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => goBackOr(() => openCourse(selectedSessionCourse, true)),
