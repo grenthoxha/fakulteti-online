@@ -462,6 +462,11 @@
       .home-messages-floating:focus-visible { outline: 2px solid rgb(var(--brand-rgb)); outline-offset: 3px; }
       .home-messages-floating.is-hidden { opacity: 0; pointer-events: none; transform: translateY(.5rem); }
     }
+    .exam-add-floating { position: fixed; z-index: 20; right: 1rem; bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid rgba(255,255,255,.18); border-radius: 9999px; background: rgb(var(--brand-rgb)); color: #fff; box-shadow: 0 6px 18px rgba(var(--brand-rgb), .24); cursor: pointer; transition: transform .2s ease, opacity .2s ease; }
+    .exam-add-floating:hover { transform: translateY(-2px); }
+    .exam-add-floating:focus-visible { outline: 2px solid rgb(var(--brand-rgb)); outline-offset: 3px; }
+    .exam-add-floating.is-hidden { opacity: 0; pointer-events: none; transform: translateY(.5rem); }
+    @media (min-width: 1024px) { .exam-add-floating { right: 1.5rem; bottom: 1.5rem; } }
     .pomo-floating { position: fixed; z-index: 21; right: 1.5rem; bottom: 1.5rem; display: inline-flex; align-items: center; gap: .5rem; height: 3rem; padding: 0 1rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,.18); background: rgb(var(--brand-rgb)); color: #fff; font-size: .875rem; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px rgba(var(--brand-rgb), .24); cursor: pointer; transition: transform .2s ease, opacity .2s ease; }
     .pomo-floating:hover { transform: translateY(-2px); }
     .pomo-floating:focus-visible { outline: 2px solid rgb(var(--brand-rgb)); outline-offset: 3px; }
@@ -2125,6 +2130,177 @@ const ensureConfetti = () => loadExternalScript(EXTERNAL_LIBRARIES.confetti, 'co
 const launchConfetti = options => ensureConfetti().then(run => {
   if (typeof run === 'function') run(options);
 }).catch(() => {});
+
+/* ══ Importi i provimeve nga linku zyrtar / skedari ══ */
+const EXAM_MONTHS_SQ = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nentor', 'dhjetor'];
+const examNorm = value => String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const EXAM_STOP_WORDS = new Set(['dhe', 'per', 'tek', 'nga', 'me', 'te', 'se', 'si', 'ne', 'e', 'i', 'a', 'o']);
+const EXAM_ROMAN = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6 };
+const examTokens = value => examNorm(value).split(/[^a-z0-9]+/).filter(Boolean);
+const examTokenMatch = (a, b) => {
+  if (a === b) return true;
+  const min = Math.min(a.length, b.length);
+  if (min < 5) return false;
+  let k = 0;
+  while (k < min && a[k] === b[k]) k++;
+  return k >= Math.max(5, Math.ceil(min * 0.8));
+};
+const examNumeral = tokens => { for (const t of tokens) { if (EXAM_ROMAN[t]) return EXAM_ROMAN[t]; } return 0; };
+const examCourseMatches = (course, lineTokens, lineNumeral) => {
+  const tokens = examTokens(course.title);
+  const key = tokens.filter(t => t.length >= 3 && !EXAM_STOP_WORDS.has(t) && !EXAM_ROMAN[t] && !/^\d+$/.test(t));
+  if (!key.length) return false;
+  const hit = key.filter(t => lineTokens.some(l => examTokenMatch(t, l))).length;
+  if (hit / key.length < 0.66 || (key.length > 1 && hit < 2)) return false;
+  const need = examNumeral(tokens.slice(-2));
+  if (need > 1 && lineNumeral !== need) return false;
+  if (need === 1 && lineNumeral > 1) return false;
+  if (!need && lineNumeral > 1) return false;
+  return true;
+};
+const examPad = n => String(n).padStart(2, '0');
+const examDateKey = (y, m, d) => {
+  const date = new Date(y, m - 1, d);
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return '';
+  return `${y}-${examPad(m)}-${examPad(d)}`;
+};
+const examFindDates = (norm, todayKey) => {
+  const found = [];
+  const ty = Number(todayKey.slice(0, 4));
+  const push = (y, m, d) => { const key = examDateKey(y, m, d); if (key) found.push(key); };
+  let m;
+  const iso = /\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g;
+  while ((m = iso.exec(norm))) push(Number(m[1]), Number(m[2]), Number(m[3]));
+  const num = /\b(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4}|\d{2})\b/g;
+  while ((m = num.exec(norm))) push(m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]), Number(m[2]), Number(m[1]));
+  const word = new RegExp(`\\b(\\d{1,2})\\s*[.\\-]?\\s*(${EXAM_MONTHS_SQ.join('|')})[a-z]*\\.?,?\\s*(20\\d{2})?`, 'g');
+  while ((m = word.exec(norm))) {
+    const month = EXAM_MONTHS_SQ.indexOf(m[2]) + 1;
+    if (m[3]) push(Number(m[3]), month, Number(m[1]));
+    else {
+      let key = examDateKey(ty, month, Number(m[1]));
+      if (key && key < todayKey) key = examDateKey(ty + 1, month, Number(m[1]));
+      if (key) found.push(key);
+    }
+  }
+  return found;
+};
+const examStripDates = norm => norm
+  .replace(/\b\d{1,2}\s*[./-]\s*\d{1,2}\s*[./-]\s*(\d{4}|\d{2})\b/g, ' ')
+  .replace(/\b20\d{2}-\d{1,2}-\d{1,2}\b/g, ' ');
+const examFindTime = norm => {
+  const clean = examStripDates(norm);
+  let m = clean.match(/\b([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)\b/);
+  if (m) return `${examPad(Number(m[1]))}:${m[2]}`;
+  m = clean.match(/\bora\s*:?\s*([01]?\d|2[0-3])\b(?!\s*[:.]?\d)/);
+  return m ? `${examPad(Number(m[1]))}:00` : '';
+};
+const examFindRoom = norm => {
+  const m = norm.match(/\b(?:salla|sala|salle|room|auditori|aud)\b\s*\.?\s*:?\s*([a-z0-9][a-z0-9\-/]{0,11})/);
+  return m ? m[1].toUpperCase() : '';
+};
+const parseExamSchedule = (text, courses, todayKey) => {
+  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/[|\t]+/g, ' | ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const limit = new Date(`${todayKey}T12:00:00`); limit.setDate(limit.getDate() + 540);
+  const maxKey = `${limit.getFullYear()}-${examPad(limit.getMonth() + 1)}-${examPad(limit.getDate())}`;
+  const valid = key => key && key >= todayKey && key <= maxKey;
+  const norms = lines.map(examNorm);
+  const toks = norms.map(examTokens);
+  const nums = toks.map(examNumeral);
+  const best = new Map();
+  let ctx = null;
+  for (let i = 0; i < lines.length; i++) {
+    const anyDates = examFindDates(norms[i], todayKey);
+    const own = anyDates.filter(valid);
+    const matched = courses.filter(c => examCourseMatches(c, toks[i], nums[i]));
+    if (ctx && !anyDates.length) ctx.age++;
+    if (!matched.length) {
+      if (own.length) ctx = { date: own[0], time: examFindTime(norms[i]), room: examFindRoom(norms[i]), age: 0 };
+      continue;
+    }
+    for (const course of matched) {
+      if (anyDates.length && !own.length) continue;
+      let date = own[0] || '';
+      let time = examFindTime(norms[i]);
+      let room = examFindRoom(norms[i]);
+      if (!date && ctx && ctx.age <= 8) { date = ctx.date; time = time || ctx.time; room = room || ctx.room; }
+      if (!date) {
+        for (let j = i + 1; j <= Math.min(lines.length - 1, i + 2) && !date; j++) {
+          const nextDates = examFindDates(norms[j], todayKey).filter(valid);
+          if (nextDates.length && !courses.some(c => examCourseMatches(c, toks[j], nums[j]))) {
+            date = nextDates[0]; time = time || examFindTime(norms[j]); room = room || examFindRoom(norms[j]);
+          }
+        }
+      }
+      if (!date) continue;
+      if (!time) for (let j = i + 1; j <= Math.min(lines.length - 1, i + 2) && !time; j++) time = examFindTime(norms[j]);
+      const prev = best.get(course.id);
+      if (!prev || date < prev.date) best.set(course.id, { courseId: course.id, title: course.title, date, time, room });
+    }
+    if (own.length) ctx = { date: own[0], time: examFindTime(norms[i]), room: examFindRoom(norms[i]), age: 0 };
+  }
+  return [...best.values()].sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+};
+const examHtmlToText = html => {
+  const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  doc.querySelectorAll('script,style,noscript').forEach(el => el.remove());
+  doc.querySelectorAll('td,th').forEach(el => el.append(' | '));
+  doc.querySelectorAll('br,p,div,li,tr,h1,h2,h3,h4,h5,h6,table,section').forEach(el => el.append('\n'));
+  return doc.body ? doc.body.textContent : '';
+};
+const examPdfToText = async buffer => {
+  const lib = await ensurePdfJs();
+  const pdf = await lib.getDocument({ data: buffer }).promise;
+  const out = [];
+  for (let p = 1; p <= Math.min(pdf.numPages, 80); p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const rows = new Map();
+    content.items.forEach(item => {
+      if (!item.str || !item.str.trim()) return;
+      const y = Math.round(item.transform[5] / 3);
+      if (!rows.has(y)) rows.set(y, []);
+      rows.get(y).push({ x: item.transform[4], w: item.width || 0, s: item.str });
+    });
+    [...rows.entries()].sort((a, b) => b[0] - a[0]).forEach(([, cells]) => {
+      cells.sort((a, b) => a.x - b.x);
+      let line = '';
+      let end = null;
+      cells.forEach(cell => { line += (end !== null && cell.x - end > 12 ? ' | ' : (line ? ' ' : '')) + cell.s; end = cell.x + cell.w; });
+      out.push(line);
+    });
+    out.push('');
+  }
+  return out.join('\n');
+};
+const examSourceToText = async source => {
+  if (typeof File !== 'undefined' && source instanceof File) {
+    const name = source.name.toLowerCase();
+    if (name.endsWith('.pdf')) return examPdfToText(await source.arrayBuffer());
+    if (/\.(xlsx|xls|xlsm)$/.test(name)) {
+      const lib = await ensureXlsx();
+      const book = lib.read(await source.arrayBuffer(), { type: 'array', cellDates: false });
+      return book.SheetNames.map(n => lib.utils.sheet_to_csv(book.Sheets[n], { FS: ' | ', blankrows: false })).join('\n');
+    }
+    const raw = await source.text();
+    return /<(html|table|body)/i.test(raw.slice(0, 3000)) ? examHtmlToText(raw) : raw;
+  }
+  let url = String(source || '').trim();
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  const attempt = async target => {
+    const res = await fetch(target);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const type = (res.headers.get('content-type') || '').toLowerCase();
+    if (type.includes('pdf') || (/\.pdf(\?|#|$)/i.test(target) && !target.includes('r.jina.ai'))) return examPdfToText(await res.arrayBuffer());
+    const raw = await res.text();
+    return type.includes('html') || /<(html|table|body)/i.test(raw.slice(0, 3000)) ? examHtmlToText(raw) : raw;
+  };
+  try { return await attempt(url); } catch (direct) {
+    try { return await attempt(`https://r.jina.ai/${url}`); } catch (proxy) {
+      throw new Error('Linku nuk u lexua. Kontrolloje linkun ose ngarko skedarin (PDF ose Excel).');
+    }
+  }
+};
 
 /* PDF blobs live in IndexedDB; localStorage keeps only small metadata. */
 const PDF_DB_NAME = 'unit-academy-documents';
@@ -10721,6 +10897,12 @@ function AcademyApp({
   const [studentCardOpen, setStudentCardOpen] = useState(false);
   const [transferHostOpen, setTransferHostOpen] = useState(false);
   const [examToolOpen, setExamToolOpen] = useState(null);
+  const [openExamId, setOpenExamId] = useState(null);
+  const [examActionId, setExamActionId] = useState(null);
+  const [examSwipeId, setExamSwipeId] = useState(null);
+  const [examSelect, setExamSelect] = useState({ on: false, ids: [] });
+  const [examAddMenu, setExamAddMenu] = useState(false);
+  const [examImport, setExamImport] = useState({ open: false, url: '', status: 'idle', items: [], error: '' });
   const [planSectionOpen, setPlanSectionOpen] = useState(null);
   const [studentCardSide, setStudentCardSide] = useState('front');
   const [contentTab, setContentTab] = useState('course');
@@ -15280,7 +15462,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       courseId: item.courseId,
       date: item.date,
       title: item.title,
-      reason: `${selectedCourse?.title || 'Provim'} · ${deadlineLabel(item.date)}`,
+      reason: `${selectedCourse?.title || 'Provim'} · Sot`,
       actionLabel: 'Përgatitu'
     });
   });
@@ -17269,11 +17451,28 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }
     const c = allCourses.find(c => c.id === deadlineDraft.courseId);
     const generatedTitle = "Provimi: " + (c ? c.title : "Lënda");
+    if (deadlineDraft.editId) {
+      const editId = deadlineDraft.editId;
+      setDeadlines(prev => prev.map(item => item.id === editId ? {
+        ...item,
+        title: item.courseId === deadlineDraft.courseId && item.title ? item.title : generatedTitle,
+        courseId: deadlineDraft.courseId,
+        date: deadlineDraft.date,
+        time: deadlineDraft.examTime || '',
+        room: (deadlineDraft.examRoom || '').trim(),
+        source: item.source === 'kryetar' ? 'manual' : item.source
+      } : item));
+      setDeadlineDraft({ title: '', courseId: '', date: '', type: 'task', isExamModalOpen: false });
+      showToast('Provimi u ndryshua.', '✅');
+      return;
+    }
     const newDeadline = {
       id: 'deadline_' + Date.now(),
       title: generatedTitle,
       courseId: deadlineDraft.courseId,
       date: deadlineDraft.date,
+      time: deadlineDraft.examTime || '',
+      room: (deadlineDraft.examRoom || '').trim(),
       type: 'exam',
       branchId,
       yearId
@@ -28902,8 +29101,19 @@ Nënshkrimi: _____________________`;
       },
         /* Rrathët (si Stories): rreth indigo = pa parë, gri = e parë */
         /*#__PURE__*/React.createElement("div", {
-          className: "flex items-start gap-3.5 sm:gap-[18px] overflow-x-auto scrollbar-none snap-x -mx-4 px-4 scroll-px-4 sm:-mx-6 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8",
-          style: { scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }
+          className: "flex items-start gap-3.5 sm:gap-[18px] overflow-x-auto overscroll-x-contain scrollbar-none snap-x -mx-4 px-4 scroll-px-4 sm:-mx-6 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8",
+          style: { scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' },
+          /* rrota e miut: lëvizja vertikale e rrotës e lëviz rreshtin horizontalisht (jo faqen) */
+          ref: el => {
+            if (!el || el.__wheelBound) return;
+            el.__wheelBound = true;
+            el.addEventListener('wheel', e => {
+              if (el.scrollWidth <= el.clientWidth + 1) return;
+              if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+              e.preventDefault();
+              el.scrollBy({ left: e.deltaY * (e.deltaMode === 1 ? 16 : 1), behavior: 'auto' });
+            }, { passive: false });
+          }
         },
           (courseVideoFeed.slice(0, 8)).map((vid, vIdx) => {
             const shortTitle = vid.topicTitle || vid.title || 'Leksion';
@@ -32457,6 +32667,7 @@ Nënshkrimi: _____________________`;
         Materials && nativeCreateElement(Materials, { key: `materials:${selected.yearId}:${selected.id}`, semester: selected, courses, language: uiLanguage })));
   };
   /* ══ PROVIMET · pamja minimale (skeda e parë) ══ */
+  const openExamAdd = () => { const d = new Date(`${today}T12:00:00`); d.setDate(d.getDate() + 7); setDeadlineDraft({ title: '', courseId: '', date: dateKey(d), examTime: '', examRoom: '', pick: '', type: 'exam', isExamModalOpen: true }); };
   const renderExamsMinimal = () => {
     const ce = React.createElement;
     const courseOf = exam => allCourses.find(c => c.id === exam.courseId);
@@ -32468,12 +32679,21 @@ Nënshkrimi: _____________________`;
       const read = chapters.filter((ch, idx) => Boolean(readChapters[`${item.id}_${(ch && ch.id) || idx}`])).length;
       return { read, total: chapters.length, pct: Math.round((read / chapters.length) * 100) };
     };
-    const openAdd = () => setDeadlineDraft({ title: '', courseId: '', date: '', type: 'exam', isExamModalOpen: true });
+    const openAdd = openExamAdd;
+    const openEdit = exam => {
+      setExamActionId(null);
+      setDeadlineDraft({ title: '', courseId: exam.courseId, date: exam.date, examTime: exam.time || '', examRoom: exam.room || '', pick: '', type: 'exam', isExamModalOpen: true, editId: exam.id });
+    };
     const closeAdd = () => setDeadlineDraft(prev => ({ ...prev, isExamModalOpen: false }));
     const examMenu = exam => ce("details", { className: "relative shrink-0 self-start" },
       ce("summary", { className: "list-none [&::-webkit-details-marker]:hidden w-9 h-9 -mr-2 rounded-lg flex items-center justify-center text-tertiary hover:text-primary cursor-pointer", "aria-label": `Veprimet për provimin: ${nameOf(exam)}` },
         unitUiIcon("M5 12h.01M12 12h.01M19 12h.01", "w-5 h-5")),
       ce("div", { className: "absolute right-0 top-full z-40 mt-1 w-48 p-1.5 rounded-xl modal-bg border border-default shadow-xl" },
+        ce("button", {
+          type: "button",
+          onClick: () => openEdit(exam),
+          className: "w-full min-h-10 px-3 rounded-lg text-left text-sm font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer text-primary"
+        }, "Ndrysho provimin"),
         ce("button", {
           type: "button",
           onClick: () => removeDeadline(exam.id),
@@ -32484,82 +32704,337 @@ Nënshkrimi: _____________________`;
     const later = examDeadlines.slice(1);
     const label = txt => ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, txt);
 
+    const examMeta = exam => [exam && exam.time, exam && exam.room ? `Salla ${exam.room}` : ''].filter(Boolean).join(' · ');
     const dayFull = date => `${capFirst(formatDateSq(date, { weekday: 'long' }))}, ${formatDateSq(date, { day: 'numeric' })} ${capFirst(formatDateSq(date, { month: 'long' }))}`;
-    const hero = next && (() => {
-      const item = courseOf(next);
-      const d = daysUntil(next.date);
+    const monthOf = date => capFirst(formatDateSq(date, { month: 'long' }));
+    const weekdayOf = date => capFirst(formatDateSq(date, { weekday: 'long' }));
+    const dayNumOf = date => formatDateSq(date, { day: 'numeric' });
+    const cardCls = "card-surface border border-default rounded-3xl shadow-2xs";
+    const detailBody = exam => {
+      const item = courseOf(exam);
+      const d = daysUntil(exam.date);
       const ready = readinessOf(item);
-      const R = 40, C = 2 * Math.PI * R;
-      const fill = Math.max(0.06, Math.min(1, (30 - d) / 30));
-      return ce("section", { className: "relative card-surface border border-default rounded-[20px] shadow-sm" },
-        ce("div", { className: "flex items-center gap-4 p-5 pb-4 pr-10" },
-          ce("div", { className: "relative w-[84px] h-[84px] shrink-0", "aria-hidden": true },
-            ce("svg", { width: 84, height: 84, viewBox: "0 0 92 92", className: "-rotate-90" },
-              ce("circle", { cx: 46, cy: 46, r: R, fill: "none", strokeWidth: 7, className: "stroke-black/[0.07] dark:stroke-white/10" }),
-              ce("circle", { cx: 46, cy: 46, r: R, fill: "none", strokeWidth: 7, strokeLinecap: "round", strokeDasharray: `${fill * C} ${C}`, className: "stroke-brand-600 dark:stroke-brand-300" })),
-            ce("div", { className: "absolute inset-0 flex flex-col items-center justify-center" },
-              ce("span", { className: "text-[28px] leading-none font-bold text-primary tabular-nums tracking-tight" }, d === 0 ? 'Sot' : d),
-              d === 0 ? null : ce("span", { className: "text-[12px] text-tertiary font-medium mt-0.5" }, d === 1 ? 'ditë' : 'ditë'))),
-          ce("div", { className: "min-w-0 flex-1" },
-            ce("div", { className: "text-[12px] font-semibold text-brand-600 dark:text-brand-300" }, "Provimi i radhës"),
-            ce("h3", { className: "text-[16px] font-bold text-primary leading-snug mt-1" }, nameOf(next)),
-            ce("p", { className: "text-[13px] text-tertiary mt-1" }, dayFull(next.date))),
-          ce("div", { className: "absolute top-2 right-2" }, examMenu(next))),
-        ce("div", { className: "px-5 pb-5" },
+      const fill = Math.max(0.05, Math.min(1, (30 - d) / 30));
+      const fact = (labelText, value, cls) => ce("div", { className: `px-[18px] py-3 min-w-0 ${cls || ''}` },
+        ce("div", { className: "text-[11px] font-semibold text-tertiary" }, labelText),
+        ce("div", { className: `mt-0.5 text-[15px] font-[650] truncate ${value ? 'text-primary' : 'text-tertiary'}` }, value || '—'));
+      return ce(React.Fragment, null,
+        ce("div", { className: "-mx-[18px] grid grid-cols-[1.25fr_1fr_1fr] border-y border-default" },
+          fact("Data", `${dayNumOf(exam.date)} ${monthOf(exam.date)}`),
+          fact("Ora", exam.time, "border-l border-default"),
+          fact("Salla", exam.room, "border-l border-default")),
+        ce("div", { className: "mt-4 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden", "aria-hidden": true },
+          ce("div", { className: "h-full rounded-full bg-brand-600 dark:bg-brand-300", style: { width: `${Math.round(fill * 100)}%` } })),
+        ce("div", { className: "mt-2 flex items-center justify-between text-[12.5px] text-tertiary" },
+          ce("span", null, weekdayOf(exam.date)),
+          ce("span", null, d === 0 ? ce("b", { className: "font-[650] text-primary" }, "Sot") : d === 1 ? ce("b", { className: "font-[650] text-primary" }, "Nesër") : [ce("b", { key: 'n', className: "font-[650] text-primary" }, `${d} ditë`), " mbeten"])),
+        ce("button", {
+          type: "button",
+          disabled: !item,
+          onClick: () => { if (item) openCourse(item); },
+          "aria-label": `${ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu'}: ${nameOf(exam)}`,
+          className: "mt-4 w-full h-12 rounded-[14px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold inline-flex items-center justify-center cursor-pointer disabled:opacity-60 disabled:cursor-default"
+        }, ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu'));
+    };
+    const addForm = deadlineDraft.isExamModalOpen && (() => {
+      const draftCourse = enrolledCourses.find(c => c.id === deadlineDraft.courseId);
+      const freeCourses = enrolledCourses.filter(c => !examDeadlines.some(e => e.courseId === c.id && e.id !== deadlineDraft.editId));
+      const draftDate = deadlineDraft.date || dateKey();
+      const pick = deadlineDraft.pick || '';
+      const patch = fields => setDeadlineDraft(prev => ({ ...prev, type: 'exam', ...fields }));
+      const togglePick = name => {
+        if (pick === name) return patch({ pick: '' });
+        patch(name === 'time' && !deadlineDraft.examTime ? { pick: name, examTime: '10:00' } : { pick: name });
+      };
+      const chev = open => unitUiIcon(open ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6", "w-4 h-4 text-tertiary shrink-0");
+      const fieldRow = (name, labelText, valueText, muted) => ce("button", {
+        type: "button", onClick: () => togglePick(name), "aria-expanded": pick === name,
+        className: "w-full flex items-center justify-between gap-4 h-14 text-left cursor-pointer"
+      },
+        ce("span", { className: "text-[14px] font-medium text-tertiary shrink-0" }, labelText),
+        ce("span", { className: `flex items-center gap-2 min-w-0 text-[16px] font-semibold ${muted ? 'text-tertiary' : 'text-primary'}` },
+          ce("span", { className: "truncate" }, valueText), chev(pick === name)));
+      const divider = "border-b border-black/5 dark:border-white/10";
+      /* rrota (scroll-snap) pa gjendje shtesë: pozita lexohet nga scrollTop */
+      const ROW = 50;
+      const wheels = window.__examWheels || (window.__examWheels = { els: {}, timers: {} });
+      const snapTo = (id, idx, smooth) => { const el = wheels.els[id]; if (el) el.scrollTo({ top: idx * ROW, behavior: smooth ? 'smooth' : 'auto' }); };
+      const wheel = (id, items, selIdx, onPick, flex) => ce("div", {
+        key: id, className: `relative ${flex || 'flex-1'} h-[250px] overflow-y-scroll snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`,
+        style: { paddingTop: ROW * 2, paddingBottom: ROW * 2, overscrollBehavior: 'contain' },
+        role: "listbox", "aria-label": id,
+        ref: el => { if (!el) { delete wheels.els[id]; return; } wheels.els[id] = el; if (!el.__init) { el.__init = true; const go = () => { el.scrollTop = selIdx * ROW; }; go(); if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => { go(); setTimeout(go, 60); }); } },
+        onScroll: e => {
+          const el = e.currentTarget;
+          clearTimeout(wheels.timers[id]);
+          wheels.timers[id] = setTimeout(() => {
+            const idx = Math.max(0, Math.min(items.length - 1, Math.round(el.scrollTop / ROW)));
+            if (idx !== selIdx) onPick(idx);
+          }, 90);
+        }
+      }, items.map((label, i) => ce("div", {
+        key: i, role: "option", "aria-selected": i === selIdx,
+        className: `h-[50px] snap-center flex items-center justify-center tabular-nums ${i === selIdx ? 'text-[21px] font-bold text-brand-600 dark:text-brand-300' : 'text-[19px] font-semibold text-tertiary'}`
+      }, label)));
+      const wheelBox = cols => ce("div", { className: "relative flex mb-3 select-none" },
+        ce("div", { className: "absolute left-0 right-0 top-[100px] h-[50px] rounded-xl bg-brand-600/10 dark:bg-brand-400/15 pointer-events-none", "aria-hidden": true }),
+        cols,
+        ce("div", { className: "absolute left-0 right-0 top-0 h-[70px] pointer-events-none bg-gradient-to-b from-[var(--surface)] to-transparent", "aria-hidden": true }),
+        ce("div", { className: "absolute left-0 right-0 bottom-0 h-[70px] pointer-events-none bg-gradient-to-t from-[var(--surface)] to-transparent", "aria-hidden": true }));
+      /* data */
+      const MONTHS = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
+      const nowY = Number(today.slice(0, 4));
+      const YEARS = [nowY, nowY + 1, nowY + 2];
+      const dY = Number(draftDate.slice(0, 4)), dM = Number(draftDate.slice(5, 7)), dD = Number(draftDate.slice(8, 10));
+      const dim = (y, m) => new Date(y, m, 0).getDate();
+      const setYMD = (y, m, d) => {
+        d = Math.min(d, dim(y, m));
+        let key = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (key < today) key = today;
+        const ny = Number(key.slice(0, 4)), nm = Number(key.slice(5, 7)), nd = Number(key.slice(8, 10));
+        patch({ date: key });
+        setTimeout(() => { snapTo('Dita', nd - 1, true); snapTo('Muaji', nm - 1, true); snapTo('Viti', YEARS.indexOf(ny), true); }, 30);
+      };
+      const dateWheel = wheelBox([
+        wheel('Dita', Array.from({ length: dim(dY, dM) }, (_, i) => String(i + 1)), dD - 1, i => setYMD(dY, dM, i + 1), 'flex-[0.8]'),
+        wheel('Muaji', MONTHS, dM - 1, i => setYMD(dY, i + 1, dD), 'flex-[1.5]'),
+        wheel('Viti', YEARS.map(String), Math.max(0, YEARS.indexOf(dY)), i => setYMD(YEARS[i], dM, dD), 'flex-1')
+      ]);
+      /* ora */
+      const HOURS = Array.from({ length: 16 }, (_, i) => String(i + 7).padStart(2, '0'));
+      const MINS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+      const tm = deadlineDraft.examTime || '10:00';
+      const tH = Math.max(0, Math.min(15, Number(tm.slice(0, 2)) - 7)), tMi = Math.max(0, Math.min(11, Math.round(Number(tm.slice(3, 5)) / 5)));
+      const setTime = (h, mi) => patch({ examTime: `${HOURS[h]}:${MINS[mi]}` });
+      const timeWheel = ce("div", null,
+        wheelBox([
+          wheel('Ora', HOURS, tH, i => setTime(i, tMi)),
+          wheel('Minuta', MINS, tMi, i => setTime(tH, i))
+        ]),
+        deadlineDraft.examTime ? ce("button", { type: "button", onClick: () => patch({ examTime: '', pick: '' }), className: "mb-3 text-[13px] font-semibold text-tertiary cursor-pointer" }, "Pa orë") : null);
+      const sheet = ce("div", {
+        className: "fixed inset-0 z-[70] flex flex-col justify-end",
+        role: "dialog", "aria-modal": "true", "aria-label": deadlineDraft.editId ? "Ndrysho provimin" : "Provim i ri",
+        onKeyDown: e => { if (e.key === 'Escape') { e.preventDefault(); closeAdd(); } }
+      },
+        ce("button", { type: "button", "aria-label": "Mbyll", tabIndex: -1, onClick: closeAdd, className: "absolute inset-0 bg-slate-900/45 dark:bg-black/60 cursor-default anim-fade-up" }),
+        ce("form", {
+          onSubmit: handleAddExam,
+          className: "relative w-full max-w-xl mx-auto max-h-[92vh] overflow-y-auto bg-[var(--surface)] rounded-t-[24px] px-5 pt-2.5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl anim-fade-up"
+        },
+          ce("div", { className: "w-9 h-1 rounded-full bg-black/10 dark:bg-white/15 mx-auto mb-3" }),
+          deadlineDraft.editId && ce("div", { className: "text-[17px] font-bold text-primary mb-1" }, "Ndrysho provimin"),
+          ce("div", { className: divider },
+            fieldRow('course', "Lënda", draftCourse ? draftCourse.title : "Zgjidh lëndën", !draftCourse),
+            pick === 'course' && ce("div", { className: "max-h-[34vh] overflow-y-auto pb-2 -mx-1", role: "radiogroup", "aria-label": "Lënda" },
+              freeCourses.length === 0 ? ce("p", { className: "px-1 py-3 text-[14px] text-tertiary" }, "Të gjitha lëndët kanë provim të caktuar.") : freeCourses.map(c => {
+                const on = deadlineDraft.courseId === c.id;
+                return ce("button", {
+                  key: c.id, type: "button", role: "radio", "aria-checked": on,
+                  onClick: () => patch({ courseId: c.id, pick: '' }),
+                  className: `w-full flex items-center justify-between gap-3 px-1 min-h-11 text-left text-[15px] font-semibold cursor-pointer ${on ? 'text-brand-600 dark:text-brand-300' : 'text-primary'}`
+                }, ce("span", { className: "min-w-0" }, c.title), on ? unitUiIcon("M5 12.5l4.5 4.5L19 7.5", "w-4 h-4 shrink-0") : null);
+              }))),
+          ce("div", { className: divider },
+            fieldRow('date', "Data", dayFull(draftDate), false),
+            pick === 'date' && dateWheel),
+          ce("div", { className: divider },
+            fieldRow('time', "Ora", deadlineDraft.examTime || "Zgjidh orën", !deadlineDraft.examTime),
+            pick === 'time' && timeWheel),
+          ce("label", { className: "flex items-center justify-between gap-4 h-14" },
+            ce("span", { className: "text-[14px] font-medium text-tertiary shrink-0" }, "Salla"),
+            ce("input", {
+              type: "text", value: deadlineDraft.examRoom || '', maxLength: 24, placeholder: "p.sh. A12", autoComplete: "off", "aria-label": "Salla",
+              onFocus: () => { if (pick) patch({ pick: '' }); },
+              onChange: e => patch({ examRoom: e.target.value }),
+              className: "min-w-0 flex-1 bg-transparent text-right text-[16px] font-semibold text-primary placeholder:text-tertiary placeholder:font-medium outline-none"
+            })),
           ce("button", {
-            type: "button",
-            disabled: !item,
-            onClick: () => { if (item) openCourse(item); },
-            "aria-label": `${ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu'}: ${nameOf(next)}`,
-            className: "w-full h-12 rounded-[13px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-default"
-          }, ready && ready.read ? 'Vazhdo përgatitjen' : 'Përgatitu', unitUiIcon("M5 12h14M13 6l6 6-6 6", "w-4 h-4"))));
+            type: "submit", disabled: !deadlineDraft.courseId,
+            className: "mt-4 w-full h-[50px] rounded-[14px] bg-brand-600 hover:bg-brand-500 text-white text-[16px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default"
+          }, deadlineDraft.editId ? "Ruaj ndryshimet" : "Shto provimin")));
+      return typeof ReactDOM !== 'undefined' && ReactDOM.createPortal && document.body ? ReactDOM.createPortal(sheet, document.body) : sheet;
     })();
 
-    const addForm = deadlineDraft.isExamModalOpen && ce("form", {
-      onSubmit: handleAddExam,
-      onKeyDown: e => { if (e.key === 'Escape') { e.preventDefault(); closeAdd(); } },
-      "aria-label": "Shto provim",
-      className: "card-surface border border-default rounded-[18px] p-4 space-y-3 anim-fade-up"
-    },
-      ce("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" },
-        ce("label", { className: "block min-w-0" },
-          ce("span", { className: "block text-[13px] text-secondary mb-1.5" }, "Lënda"),
-          ce("select", {
-            value: deadlineDraft.courseId,
-            onChange: e => setDeadlineDraft({ ...deadlineDraft, courseId: e.target.value, type: 'exam' }),
-            required: true,
-            className: "w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500"
-          },
-            ce("option", { value: "", disabled: true }, "Zgjidh lëndën"),
-            enrolledCourses.map(c => ce("option", { key: c.id, value: c.id }, c.title)))),
-        ce("label", { className: "block min-w-0" },
-          ce("span", { className: "block text-[13px] text-secondary mb-1.5" }, "Data"),
-          ce("input", {
-            type: "date",
-            min: today,
-            value: deadlineDraft.date,
-            onChange: e => setDeadlineDraft({ ...deadlineDraft, date: e.target.value, type: 'exam' }),
-            required: true,
-            className: "w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500"
-          }))),
-      ce("div", { className: "flex justify-end gap-2" },
-        ce("button", { type: "button", onClick: closeAdd, className: "h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent" }, "Anulo"),
-        ce("button", { type: "submit", className: "h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto")));
-
-    const row = exam => {
+    const OPEN_W = 156;
+    const row = (exam, idx, list) => {
       const d = daysUntil(exam.date);
-      return ce("div", { key: exam.id, className: "relative pb-5 last:pb-0" },
-        ce("span", { className: "absolute -left-[26px] top-[5px] w-3 h-3 rounded-full border-2 border-brand-600 dark:border-brand-300 bg-[var(--page)]", "aria-hidden": true }),
-        ce("div", { className: "text-[12px] font-semibold text-brand-600 dark:text-brand-300" }, dayFull(exam.date)),
-        ce("div", { className: "flex items-start gap-2 mt-0.5" },
-          ce("button", {
-            type: "button",
-            onClick: () => { const item = courseOf(exam); if (item) openCourse(item); },
-            className: "flex-1 min-w-0 text-left text-[15px] font-semibold text-primary leading-snug cursor-pointer"
-          }, nameOf(exam)),
-          ce("span", { className: "text-[13px] font-semibold text-tertiary tabular-nums whitespace-nowrap pt-px" }, d === 0 ? 'Sot' : d === 1 ? 'Nesër' : `${d} ditë`),
-          ce("span", { className: "-my-2 flex" }, examMenu(exam))));
+      const open = openExamId === exam.id;
+      const selecting = examSelect.on;
+      const picked = examSelect.ids.includes(exam.id);
+      const revealed = !selecting && examSwipeId === exam.id;
+      const isLast = idx === list.length - 1;
+      const pillCls = d <= 7 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : d <= 21 ? 'bg-brand-500/10 text-brand-700 dark:text-brand-300' : 'bg-slate-500/10 text-secondary';
+      const press = window.__examPress || (window.__examPress = { fired: false, timer: null, x: 0, y: 0, axis: null, dragging: false, tx: 0, openId: null });
+      press.openId = examSwipeId;
+      const actsOf = el => el.parentElement && el.parentElement.querySelector('[data-swipe-actions]');
+      const startPress = e => {
+        press.fired = false; press.dragging = false; press.axis = null;
+        if (e.pointerType === 'mouse' || selecting) return;
+        clearTimeout(press.timer); press.x = e.clientX; press.y = e.clientY;
+        if (press.openId && press.openId !== exam.id) setExamSwipeId(null);
+        press.timer = setTimeout(() => { press.fired = true; press.timer = null; try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {} setExamActionId(exam.id); }, 450);
+      };
+      const movePress = e => {
+        if (e.pointerType === 'mouse' || selecting) return;
+        const dx = e.clientX - press.x, dy = e.clientY - press.y;
+        if (!press.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { press.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; clearTimeout(press.timer); press.timer = null; }
+        if (press.axis === 'x') {
+          press.dragging = true;
+          const el = e.currentTarget, act = actsOf(el);
+          const base = press.openId === exam.id ? -OPEN_W : 0;
+          const tx = Math.max(-OPEN_W - 24, Math.min(0, base + dx));
+          press.tx = tx;
+          el.style.transition = 'none'; el.style.background = 'var(--surface)'; el.style.transform = `translateX(${tx}px)`;
+          if (act) act.style.visibility = 'visible';
+        }
+      };
+      const endPress = e => {
+        clearTimeout(press.timer); press.timer = null;
+        if (!press.dragging) return;
+        press.dragging = false; press.fired = true;
+        const el = e.currentTarget, act = actsOf(el);
+        const goOpen = press.tx < -OPEN_W / 2;
+        el.style.transition = ''; el.style.transform = `translateX(${goOpen ? -OPEN_W : 0}px)`;
+        if (!goOpen) setTimeout(() => { if (press.openId !== exam.id) { el.style.background = ''; if (act) act.style.visibility = 'hidden'; } }, 260);
+        setExamSwipeId(goOpen ? exam.id : null);
+      };
+      const stopTimer = () => { clearTimeout(press.timer); press.timer = null; };
+      const toggleRow = () => {
+        if (press.fired) { press.fired = false; return; }
+        if (selecting) { setExamSelect(prev => ({ ...prev, ids: prev.ids.includes(exam.id) ? prev.ids.filter(x => x !== exam.id) : [...prev.ids, exam.id] })); return; }
+        if (press.openId) { setExamSwipeId(null); if (press.openId === exam.id) return; }
+        setOpenExamId(open ? null : exam.id);
+      };
+      return ce("div", { key: exam.id, className: "-mx-[18px]" },
+        ce("div", { className: "relative overflow-hidden" },
+          ce("div", { "data-swipe-actions": true, className: "absolute right-0 inset-y-0 flex", style: { visibility: revealed ? 'visible' : 'hidden' } },
+            ce("button", { type: "button", tabIndex: revealed ? 0 : -1, onClick: () => { setExamSwipeId(null); openEdit(exam); }, className: "w-[78px] h-full bg-brand-600 text-white text-[13px] font-semibold cursor-pointer" }, "Ndrysho"),
+            ce("button", { type: "button", tabIndex: revealed ? 0 : -1, onClick: () => { setExamSwipeId(null); removeDeadline(exam.id); }, className: "w-[78px] h-full bg-red-500 text-white text-[13px] font-semibold cursor-pointer" }, "Fshi")),
+          ce("div", {
+            className: "relative flex items-center gap-3 px-[18px] py-3 select-none",
+            style: { WebkitTouchCallout: 'none', touchAction: 'pan-y', transform: `translateX(${revealed ? -OPEN_W : 0}px)`, transition: 'transform .22s ease', background: revealed ? 'var(--surface)' : undefined },
+            onPointerDown: startPress, onPointerMove: movePress, onPointerUp: endPress, onPointerCancel: endPress, onPointerLeave: stopTimer,
+            onContextMenu: e => { if (!selecting && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { e.preventDefault(); setExamActionId(exam.id); } }
+          },
+            ce("button", {
+              type: "button",
+              onClick: toggleRow,
+              "aria-expanded": selecting ? undefined : open,
+              role: selecting ? "checkbox" : undefined,
+              "aria-checked": selecting ? picked : undefined,
+              className: "flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer"
+            },
+              selecting && ce("span", { className: `w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${picked ? 'bg-brand-600 border-brand-600 text-white' : 'border-black/20 dark:border-white/25'}`, "aria-hidden": true }, picked ? unitUiIcon("M5 12.5l4.5 4.5L19 7.5", "w-3 h-3") : null),
+              ce("span", { className: "w-12 shrink-0 text-center" },
+                ce("span", { className: "block text-[17px] leading-5 font-bold text-primary tabular-nums" }, dayNumOf(exam.date)),
+                ce("span", { className: "block text-[11px] leading-[14px] font-semibold text-tertiary" }, monthOf(exam.date))),
+              ce("span", { className: "flex-1 min-w-0" },
+                ce("span", { className: "block text-[15px] font-semibold text-primary leading-5" }, nameOf(exam)),
+                examMeta(exam) ? ce("span", { className: "block text-[12.5px] text-tertiary mt-px" }, examMeta(exam)) : null),
+              !selecting && ce("span", { className: `shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold ${pillCls}` }, d === 0 ? 'Sot' : d === 1 ? 'Nesër' : `${d} ditë`)),
+            !selecting && ce("span", { className: "-mr-2 hidden lg:flex" }, examMenu(exam)))),
+        open && !selecting && ce("div", { className: "px-[18px] pb-4" }, detailBody(exam)),
+        !isLast && ce("div", { className: "mx-[18px] border-b border-default" }));
     };
+
+    const sheetShell = (label, onClose, children) => {
+      const node = ce("div", {
+        className: "fixed inset-0 z-[70] flex flex-col justify-end",
+        role: "dialog", "aria-modal": "true", "aria-label": label,
+        onKeyDown: e => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }
+      },
+        ce("button", { type: "button", "aria-label": "Mbyll", tabIndex: -1, onClick: onClose, className: "absolute inset-0 bg-slate-900/45 dark:bg-black/60 cursor-default anim-fade-up" }),
+        ce("div", { className: "relative w-full max-w-xl mx-auto max-h-[92vh] overflow-y-auto bg-[var(--surface)] rounded-t-[24px] px-5 pt-2.5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl anim-fade-up" },
+          ce("div", { className: "w-9 h-1 rounded-full bg-black/10 dark:bg-white/15 mx-auto mb-3" }),
+          children));
+      return typeof ReactDOM !== 'undefined' && ReactDOM.createPortal && document.body ? ReactDOM.createPortal(node, document.body) : node;
+    };
+    const sheetRow = (icon, title, sub, onClick, tone) => ce("button", {
+      type: "button", onClick,
+      className: `w-full flex items-center gap-3.5 py-3 text-left cursor-pointer ${tone === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-primary'}`
+    },
+      ce("span", { className: `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tone === 'danger' ? 'bg-red-500/10' : 'bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300'}` }, unitUiIcon(icon, "w-5 h-5")),
+      ce("span", { className: "min-w-0" },
+        ce("span", { className: "block text-[16px] font-semibold leading-tight" }, title),
+        sub ? ce("span", { className: "block text-[13px] text-tertiary mt-0.5" }, sub) : null));
+
+    const actionExam = examActionId ? examDeadlines.find(e => e.id === examActionId) : null;
+    const actionSheet = actionExam && sheetShell("Veprimet për provimin", () => setExamActionId(null),
+      ce("div", null,
+        ce("div", { className: "pb-2 mb-1 border-b border-default" },
+          ce("div", { className: "text-[16px] font-bold text-primary leading-snug" }, nameOf(actionExam)),
+          ce("div", { className: "text-[13px] text-tertiary mt-0.5" }, `${dayNumOf(actionExam.date)} ${monthOf(actionExam.date)}${examMeta(actionExam) ? ' · ' + examMeta(actionExam) : ''}`)),
+        sheetRow("M4 20h4l10-10-4-4L4 16v4zM13 7l4 4", "Ndrysho", null, () => openEdit(actionExam)),
+        sheetRow("M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3", "Fshi provimin", null, () => { removeDeadline(actionExam.id); setExamActionId(null); }, 'danger')));
+
+    const chooserSheet = examAddMenu && sheetShell("Shto provim", () => setExamAddMenu(false),
+      ce("div", null,
+        ce("div", { className: "text-[17px] font-bold text-primary mb-1" }, "Shto provim"),
+        sheetRow("M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1", "Nga linku zyrtar", "Ngjite linkun dhe aplikacioni i lexon vetë", () => {
+          let saved = ''; try { saved = localStorage.getItem('u_exam_source_url') || ''; } catch (err) {}
+          setExamAddMenu(false);
+          setExamImport({ open: true, url: saved, status: 'idle', items: [], error: '' });
+        }),
+        sheetRow("M12 5v14M5 12h14", "Me dorë", "Zgjidh lëndën, datën dhe orën", () => { setExamAddMenu(false); openExamAdd(); })));
+
+    const runImport = async source => {
+      setExamImport(prev => ({ ...prev, status: 'loading', error: '', items: [] }));
+      try {
+        if (typeof source === 'string') { try { localStorage.setItem('u_exam_source_url', source.trim()); } catch (err) {} }
+        const text = await examSourceToText(source);
+        const pool = enrolledCourses.filter(c => !examDeadlines.some(e => e.courseId === c.id)).map(c => ({ id: c.id, title: c.title }));
+        const items = parseExamSchedule(text, pool, today);
+        setExamImport(prev => ({ ...prev, status: items.length ? 'done' : 'empty', items: items.map(it => ({ ...it, on: true })) }));
+      } catch (err) {
+        setExamImport(prev => ({ ...prev, status: 'error', error: (err && err.message) || 'Linku nuk u lexua.' }));
+      }
+    };
+    const addImported = () => {
+      const chosen = examImport.items.filter(it => it.on);
+      if (!chosen.length) return;
+      const stamp = Date.now();
+      setDeadlines(prev => [...prev, ...chosen.map((it, i) => ({
+        id: `deadline_${stamp}_${i}`, title: `Provimi: ${it.title}`, courseId: it.courseId, date: it.date, time: it.time || '', room: it.room || '', type: 'exam', source: 'import', branchId, yearId
+      }))]);
+      setExamImport({ open: false, url: examImport.url, status: 'idle', items: [], error: '' });
+      showToast(chosen.length === 1 ? 'Provimi u shtua.' : `${chosen.length} provime u shtuan.`, '✅');
+    };
+    const closeImport = () => setExamImport(prev => ({ ...prev, open: false }));
+    const importSheet = examImport.open && sheetShell("Nga linku zyrtar", closeImport,
+      ce("div", null,
+        ce("div", { className: "text-[17px] font-bold text-primary" }, "Nga linku zyrtar"),
+        ce("p", { className: "text-[13px] text-tertiary mt-1 mb-3" }, "Ngjit linkun e orarit të provimeve. Aplikacioni gjen lëndët e tua dhe shton datën, orën dhe sallën."),
+        ce("form", { onSubmit: e => { e.preventDefault(); if (examImport.url.trim()) runImport(examImport.url); } },
+          ce("input", {
+            type: "text", inputMode: "url", value: examImport.url, autoComplete: "off", autoCapitalize: "off", spellCheck: false, "aria-label": "Linku i provimeve", placeholder: "https://…",
+            onChange: e => setExamImport(prev => ({ ...prev, url: e.target.value, status: prev.status === 'loading' ? prev.status : 'idle' })),
+            className: "w-full h-12 px-4 rounded-xl border border-default bg-transparent text-[15px] text-primary placeholder:text-tertiary outline-none focus:border-brand-500"
+          }),
+          ce("button", {
+            type: "submit", disabled: !examImport.url.trim() || examImport.status === 'loading',
+            className: "mt-3 w-full h-12 rounded-[14px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default"
+          }, examImport.status === 'loading' ? "Po lexohet…" : "Lexo provimet")),
+        ce("label", { className: "mt-3 block text-center text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer" },
+          "ose ngarko skedarin (PDF, Excel)",
+          ce("input", { type: "file", accept: ".pdf,.xlsx,.xls,.csv,.txt,.html,.htm", className: "hidden", onChange: e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) runImport(f); } })),
+        examImport.status === 'error' && ce("p", { className: "mt-4 text-[13px] text-red-600 dark:text-red-400" }, examImport.error),
+        examImport.status === 'empty' && ce("p", { className: "mt-4 text-[13px] text-tertiary" }, "Nuk u gjet asnjë provim për lëndët e tua që s'kanë datë ende. Provo një link tjetër ose shtoji me dorë."),
+        examImport.status === 'done' && ce("div", { className: "mt-4" },
+          ce("div", { className: "text-[13px] font-semibold text-tertiary mb-1" }, `U gjetën ${examImport.items.length} provime`),
+          ce("div", { className: "border-t border-default" }, examImport.items.map((it, idx) => ce("button", {
+            key: it.courseId, type: "button", role: "checkbox", "aria-checked": it.on,
+            onClick: () => setExamImport(prev => ({ ...prev, items: prev.items.map((x, i) => i === idx ? { ...x, on: !x.on } : x) })),
+            className: "w-full flex items-center gap-3 py-3 text-left cursor-pointer border-b border-default"
+          },
+            ce("span", { className: `w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${it.on ? 'bg-brand-600 border-brand-600 text-white' : 'border-black/20 dark:border-white/25'}` }, it.on ? unitUiIcon("M5 12.5l4.5 4.5L19 7.5", "w-3 h-3") : null),
+            ce("span", { className: "min-w-0 flex-1" },
+              ce("span", { className: "block text-[15px] font-semibold text-primary leading-5" }, it.title),
+              ce("span", { className: "block text-[12.5px] text-tertiary mt-px" }, [`${dayNumOf(it.date)} ${monthOf(it.date)}`, it.time, it.room ? `Salla ${it.room}` : ''].filter(Boolean).join(' · ')))))),
+          ce("button", {
+            type: "button", onClick: addImported, disabled: !examImport.items.some(it => it.on),
+            className: "mt-4 w-full h-12 rounded-[14px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default"
+          }, `Shto ${examImport.items.filter(it => it.on).length} provime`))));
 
     const completedYearsList = (branchYears || []).filter(y => Number(y.id) < Number(yearId) || (completedAcademicYears || []).includes(Number(y.id)));
     const archiveYear = completedYearsList[0] || yr;
@@ -32568,22 +33043,27 @@ Nënshkrimi: _____________________`;
       { id: 'archive', title: "Provim nga arkiva", icon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2", hint: completedYearsList.length ? '1 orë' : 'Hapet pas Vitit I' }
     ];
 
-    return ce("div", { className: "exams-minimal w-full max-w-2xl mx-auto space-y-5 anim-fade-up" },
-      hero,
-      ce("section", { className: "space-y-3" },
-        ce("div", { className: "flex items-center justify-between gap-3" },
-          label(next ? (later.length ? "Më pas" : "Provimet") : "Provimet"),
-          !deadlineDraft.isExamModalOpen && ce("button", { type: "button", onClick: openAdd, "aria-label": "Shto provim", className: "h-9 w-9 -mr-2 rounded-lg text-brand-600 dark:text-brand-300 cursor-pointer inline-flex items-center justify-center" },
-            unitUiIcon("M12 5v14M5 12h14", "w-5 h-5"))),
-        addForm,
-        later.length > 0 && ce("div", { className: "relative ml-1.5 pl-[26px] pt-1" },
-          ce("span", { className: "absolute left-[5px] top-4 bottom-3 w-0.5 bg-black/[0.07] dark:bg-white/10", "aria-hidden": true }),
-          later.map(row)),
-        !next && !deadlineDraft.isExamModalOpen && ce("div", { className: "card-surface border border-default rounded-[18px] px-5 py-8 text-center" },
-          ce("div", { className: "text-[15px] font-semibold text-primary" }, "Nuk ke provime të shënuara"),
-          ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Shto lëndën dhe datën, e ne të tregojmë sa ditë të kanë mbetur."),
-          ce("button", { type: "button", onClick: openAdd, className: "mt-4 h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto provimin")),
-        next && !later.length && !deadlineDraft.isExamModalOpen && ce("p", { className: "text-[13px] text-tertiary" }, "Nuk ke provime të tjera të shënuara.")),
+    const selectBar = examSelect.on && (() => {
+      const count = examSelect.ids.length;
+      const node = ce("div", { className: "fixed inset-x-3 z-[65] max-w-md mx-auto bg-[var(--surface)] border border-default rounded-[20px] p-2.5 flex gap-2 shadow-xl", style: { bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' } },
+        ce("button", { type: "button", onClick: () => setExamSelect({ on: false, ids: [] }), className: "flex-1 h-11 rounded-[14px] bg-brand-600/10 dark:bg-brand-400/15 text-brand-700 dark:text-brand-300 text-[14.5px] font-semibold cursor-pointer" }, "Anulo"),
+        ce("button", {
+          type: "button", disabled: !count,
+          onClick: () => { examSelect.ids.forEach(id => removeDeadline(id)); setExamSelect({ on: false, ids: [] }); showToast(count === 1 ? 'Provimi u fshi.' : `${count} provime u fshinë.`, '✓'); },
+          className: "flex-1 h-11 rounded-[14px] bg-red-500 text-white text-[14.5px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default"
+        }, count ? `Fshi (${count})` : 'Fshi'));
+      return typeof ReactDOM !== 'undefined' && ReactDOM.createPortal && document.body ? ReactDOM.createPortal(node, document.body) : node;
+    })();
+    return ce("div", { className: `exams-minimal w-full max-w-2xl mx-auto space-y-5 anim-fade-up ${examSelect.on ? 'pb-24' : ''}` },
+      addForm, actionSheet, chooserSheet, importSheet, selectBar,
+      next && ce("section", { className: `${cardCls} px-[18px] py-1.5 overflow-hidden` },
+        examDeadlines.map(row)),
+      next && !examSelect.on && ce("div", { className: "flex justify-center -mt-2" },
+        ce("button", { type: "button", onClick: () => { setExamSwipeId(null); setExamSelect({ on: true, ids: [] }); }, className: "px-3.5 py-2 rounded-full bg-brand-600/10 dark:bg-brand-400/15 text-[13px] font-semibold text-brand-700 dark:text-brand-300 cursor-pointer" }, "Zgjidh")),
+      !next && !deadlineDraft.isExamModalOpen && ce("section", { className: `${cardCls} px-5 py-8 text-center` },
+        ce("div", { className: "text-[15px] font-semibold text-primary" }, "Nuk ke provime të shënuara"),
+        ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Shto lëndën dhe datën, e ne të tregojmë sa ditë të kanë mbetur."),
+        ce("button", { type: "button", onClick: () => setExamAddMenu(true), className: "mt-4 h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto provimin")),
       ce("section", { className: "space-y-3" },
         label("Mjete"),
         ce("div", { className: "grid grid-cols-2 gap-2.5" },
@@ -35312,7 +35792,7 @@ Nënshkrimi: _____________________`;
       key: item.k,
       type: "button",
       onClick: () => setStudentTab(item.k),
-      className: `w-full sm:w-auto sm:min-w-[116px] min-h-10 sm:min-h-9 px-2 sm:px-3.5 rounded-[10px] text-[14px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center whitespace-nowrap ${isActive ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-secondary hover:text-primary'}`
+      className: `w-full sm:w-auto sm:min-w-[116px] min-h-10 sm:min-h-9 px-2 sm:px-3.5 rounded-[10px] text-[14px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center whitespace-nowrap ${isActive ? 'bg-brand-600 text-white shadow-sm' : 'text-secondary hover:text-primary'}`
     }, item.iconEl, /*#__PURE__*/React.createElement("span", { className: "truncate" }, item.l));
   }))),
 
@@ -36531,9 +37011,17 @@ Nënshkrimi: _____________________`;
     tabIndex: isMobileChromeHidden ? -1 : 0,
     title: "Mesazhet",
     onClick: () => setGroupMessagesOpen(true)
-  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle, { className: "w-6 h-6" })), !isInstructorAccount && !pomoOpen && (pomo.endsAt || pomo.left !== pomo.total) && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle, { className: "w-6 h-6" })), !isInstructorAccount && view === 'student' && studentTab === 'exams' && !deadlineDraft.isExamModalOpen && !examAddMenu && !examImport.open && !examSelect.on && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: `pomo-floating ${view === 'home' ? 'with-msg' : ''} ${pomo.phase === 'focus' ? '' : 'is-break'} ${pomo.endsAt ? '' : 'is-paused'} ${isMobileChromeHidden ? 'is-hidden' : ''}`,
+    className: `exam-add-floating ${isMobileChromeHidden ? 'is-hidden' : ''}`,
+    "aria-label": "Shto provim",
+    "aria-hidden": isMobileChromeHidden || undefined,
+    tabIndex: isMobileChromeHidden ? -1 : 0,
+    title: "Shto provim",
+    onClick: () => setExamAddMenu(true)
+  }, unitUiIcon("M12 5v14M5 12h14", "w-6 h-6")), !isInstructorAccount && !pomoOpen && (pomo.endsAt || pomo.left !== pomo.total) && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: `pomo-floating ${view === 'home' || (view === 'student' && studentTab === 'exams') ? 'with-msg' : ''} ${pomo.phase === 'focus' ? '' : 'is-break'} ${pomo.endsAt ? '' : 'is-paused'} ${isMobileChromeHidden ? 'is-hidden' : ''}`,
     "aria-label": `Pomodoro, ${pomoFmt(pomoLeftSecs())} ${pomo.phase === 'focus' ? 'fokus' : 'pushim'}${pomo.endsAt ? '' : ', në pauzë'}. Hap`,
     "aria-hidden": isMobileChromeHidden || undefined,
     tabIndex: isMobileChromeHidden ? -1 : 0,
