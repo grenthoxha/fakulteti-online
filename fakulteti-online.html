@@ -37539,10 +37539,10 @@ Nënshkrimi: _____________________`;
 }
 
 /* ──────── ROOT ──────── */
-/* ══ TRANSFERIMI I SKEDARËVE · QR + lidhje direkte mes dy pajisjeve (WebRTC) ══
+/* ══ TRANSFERIMI I SKEDARËVE · QR + Kod 4-shifror + lidhje direkte mes dy pajisjeve (WebRTC) ══
    Skedari nuk ruhet në asnjë server: kalon drejtpërdrejt nga një pajisje te tjetra.
    Shërbimi publik PeerJS përdoret vetëm për ta lidhur çiftin në fillim. */
-const UNIT_TRANSFER_BASE_URL = 'https://fakultetionline.com/';
+const UNIT_TRANSFER_BASE_URL = 'https://grenthoxha.github.io/fakulteti-online/';
 const UNIT_TRANSFER_TTL = 300;
 const UNIT_TRANSFER_MAX_BYTES = 100 * 1024 * 1024;
 const UNIT_TRANSFER_CHUNK = 32 * 1024;
@@ -37567,7 +37567,16 @@ const unitLoadPeerJs = () => {
   return unitPeerJsPromise;
 };
 const unitTransferIcon = (path, cls) => React.createElement('svg', { className: cls || 'w-[18px] h-[18px]', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, React.createElement('path', { d: path }));
-const unitPeerOptions = () => window.UNIT_TRANSFER_PEER_OPTIONS || {};
+const unitPeerOptions = () => window.UNIT_TRANSFER_PEER_OPTIONS || {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' }
+    ]
+  }
+};
 const unitRandomText = length => {
   const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
   const values = new Uint32Array(length);
@@ -37579,20 +37588,90 @@ const unitRandomCode = () => {
   crypto.getRandomValues(value);
   return String(1000 + (value[0] % 9000));
 };
+const unitPeerIdForCode = code => `unit-fo-${String(code).trim()}`;
 const unitFormatBytes = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
 const unitTransferLink = (peerId, code, hostSends, hostIsPhone) => {
-  const base = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : UNIT_TRANSFER_BASE_URL;
+  const isPublicHttp = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|fakultetionline\.com)$/i.test(location.hostname);
+  const base = isPublicHttp ? `${location.origin}${location.pathname}` : UNIT_TRANSFER_BASE_URL;
   return `${base}#ut=${peerId}&c=${code}&m=${hostSends ? 's' : 'r'}&h=${hostIsPhone ? 'p' : 'c'}`;
 };
-const unitParseTransferHash = () => {
+const unitParseTransferHash = (rawHash) => {
   try {
-    const match = /^#ut=([a-z0-9-]{6,40})&c=(\d{4})&m=([sr])&h=([pc])$/.exec(location.hash);
-    return match ? { id: match[1], code: match[2], hostSends: match[3] === 's', hostIsPhone: match[4] === 'p' } : null;
+    const str = typeof rawHash === 'string' ? rawHash.trim() : String(location.hash || '');
+    const hashPart = str.includes('#') ? str.slice(str.indexOf('#')) : str;
+    const match = /^#ut=([a-z0-9-]{6,40})&c=(\d{4})&m=([sr])&h=([pc])$/i.exec(hashPart);
+    return match ? { id: match[1].toLowerCase(), code: match[2], hostSends: match[3].toLowerCase() === 's', hostIsPhone: match[4].toLowerCase() === 'p' } : null;
   } catch { return null; }
 };
 const unitSafeFileName = name => String(name || 'skedar').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 120) || 'skedar';
+const unitSafeSend = (conn, msg) => {
+  if (!conn) return;
+  if (conn.open !== false) {
+    try { conn.send(msg); return; } catch {}
+  }
+  if (typeof conn.once === 'function') {
+    conn.once('open', () => { try { conn.send(msg); } catch {} });
+  } else if (typeof conn.on === 'function') {
+    let sent = false;
+    conn.on('open', () => { if (!sent) { sent = true; try { conn.send(msg); } catch {} } });
+  }
+};
+const unitTriggerDownload = (url, name) => {
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = unitSafeFileName(name);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { a.remove(); } catch {} }, 300);
+  } catch {}
+};
+const unitCreateBroadcastConn = (channelName, localRole) => {
+  if (typeof BroadcastChannel === 'undefined') return null;
+  try {
+    const bc = new BroadcastChannel(channelName);
+    const handlers = { data: [], close: [], open: [] };
+    const conn = {
+      open: true,
+      isBroadcast: true,
+      dataChannel: { bufferedAmount: 0 },
+      on: (ev, fn) => { if (handlers[ev]) handlers[ev].push(fn); },
+      once: (ev, fn) => {
+        if (!handlers[ev]) return;
+        const wrap = (...args) => {
+          handlers[ev] = handlers[ev].filter(f => f !== wrap);
+          fn(...args);
+        };
+        handlers[ev].push(wrap);
+      },
+      send: payload => {
+        try { bc.postMessage({ from: localRole, payload }); } catch {}
+      },
+      close: () => {
+        if (!conn.open) return;
+        conn.open = false;
+        try { bc.postMessage({ from: localRole, __close: true }); } catch {}
+        try { bc.close(); } catch {}
+        handlers.close.forEach(fn => { try { fn(); } catch {} });
+      }
+    };
+    bc.onmessage = ev => {
+      const msg = ev.data;
+      if (!msg || msg.from === localRole) return;
+      if (msg.__close) {
+        conn.open = false;
+        try { bc.close(); } catch {}
+        handlers.close.forEach(fn => { try { fn(); } catch {} });
+        return;
+      }
+      handlers.data.forEach(fn => { try { fn(msg.payload); } catch {} });
+    };
+    return conn;
+  } catch { return null; }
+};
 const unitSendFile = async (conn, file, onProgress, isCancelled) => {
-  conn.send({ t: 'meta', name: file.name, size: file.size, type: file.type });
+  unitSafeSend(conn, { t: 'meta', name: file.name, size: file.size, type: file.type || 'application/octet-stream' });
   for (let offset = 0; offset < file.size; offset += UNIT_TRANSFER_CHUNK) {
     if (isCancelled()) return false;
     const part = await file.slice(offset, offset + UNIT_TRANSFER_CHUNK).arrayBuffer();
@@ -37603,7 +37682,8 @@ const unitSendFile = async (conn, file, onProgress, isCancelled) => {
     conn.send(part);
     onProgress(Math.min(offset + UNIT_TRANSFER_CHUNK, file.size), file.size);
   }
-  conn.send({ t: 'end' });
+  if (file.size === 0) onProgress(0, 0);
+  unitSafeSend(conn, { t: 'end' });
   return true;
 };
 const unitCreateReceiver = ({ onMeta, onProgress, onComplete, onError }) => {
@@ -37624,12 +37704,20 @@ const unitCreateReceiver = ({ onMeta, onProgress, onComplete, onError }) => {
       onComplete(new Blob(chunks, { type: meta.type }), meta);
       return { t: 'done' };
     }
-    if (meta && (data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
-      const part = data instanceof ArrayBuffer ? data : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-      received += part.byteLength;
-      if (received > meta.size) { onError('incomplete'); return { t: 'fail', why: 'incomplete' }; }
-      chunks.push(part);
-      onProgress(received, meta.size);
+    if (meta) {
+      const raw = (data && data.chunk && (data.chunk instanceof ArrayBuffer || ArrayBuffer.isView(data.chunk) || data.chunk instanceof Blob)) ? data.chunk : data;
+      if (raw instanceof ArrayBuffer || ArrayBuffer.isView(raw)) {
+        const part = raw instanceof ArrayBuffer ? raw : raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
+        received += part.byteLength;
+        if (received > meta.size) { onError('incomplete'); return { t: 'fail', why: 'incomplete' }; }
+        chunks.push(part);
+        onProgress(received, meta.size);
+      } else if (typeof Blob !== 'undefined' && raw instanceof Blob) {
+        received += raw.size;
+        if (received > meta.size) { onError('incomplete'); return { t: 'fail', why: 'incomplete' }; }
+        chunks.push(raw);
+        onProgress(received, meta.size);
+      }
     }
     return null;
   };
@@ -37674,7 +37762,7 @@ const UnitTransferHost = ({ onClose, language }) => {
   const tr = (sq, en) => language === 'en' ? en : sq;
   const S = unitTransferShared(ce, tr);
   const hostIsPhone = Boolean(window.matchMedia && window.matchMedia('(max-width: 767px)').matches);
-  const [hostSends, setHostSends] = useState(false);
+  const [hostSends, setHostSends] = useState(true);
   const [session, setSession] = useState(0);
   const [phase, setPhase] = useState('starting');
   const [info, setInfo] = useState({ peerId: '', code: '' });
@@ -37683,38 +37771,119 @@ const UnitTransferHost = ({ onClose, language }) => {
   const [progress, setProgress] = useState({ name: '', size: 0, done: 0 });
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const R = useRef({ peer: null, conn: null, cancelled: false, file: null, phase: 'starting', helloOk: false, url: '' });
+  const [joinInput, setJoinInput] = useState('');
+  const [guestParams, setGuestParams] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const R = useRef({ peer: null, conn: null, bc: null, cancelled: false, file: null, phase: 'starting', helloOk: false, url: '' });
   const hostSendsRef = useRef(hostSends);
   hostSendsRef.current = hostSends;
   const startSending = conn => {
     const file = R.current.file;
-    if (!file) return;
+    if (!file || !conn || R.current.phase === 'sending') return;
     R.current.phase = 'sending'; setPhase('sending');
     setProgress({ name: file.name, size: file.size, done: 0 });
-    unitSendFile(conn, file, (done, size) => setProgress({ name: file.name, size, done }), () => R.current.cancelled).catch(() => {
+    unitSendFile(conn, file, (done, size) => setProgress({ name: file.name, size, done }), () => R.current.cancelled).then(ok => {
+      if (!ok || R.current.cancelled) return;
+      setTimeout(() => {
+        if (!R.current.cancelled && R.current.phase === 'sending') {
+          setResult({ name: file.name, size: file.size });
+          R.current.phase = 'done';
+          setPhase('done');
+        }
+      }, 600);
+    }).catch(() => {
       R.current.phase = 'error'; setError(tr('Dërgimi u ndërpre.', 'Sending was interrupted.')); setPhase('error');
     });
   };
   useEffect(() => {
+    if (guestParams) return undefined;
     const ref = R.current;
     ref.cancelled = false; ref.conn = null; ref.helloOk = false;
     setError(''); setResult(null); setProgress({ name: '', size: 0, done: 0 }); setSecondsLeft(UNIT_TRANSFER_TTL);
     let alive = true;
     let timer = null;
+    let attempts = 0;
     const go = next => { ref.phase = next; setPhase(next); };
     const fail = message => { if (!alive || ref.phase === 'done') return; setError(message); go('error'); };
-    const closeSoon = () => setTimeout(() => { try { ref.conn && ref.conn.close(); } catch {} try { ref.peer && ref.peer.destroy(); } catch {} }, 1200);
-    const code = unitRandomCode();
-    go('starting');
-    unitLoadPeerJs().then(Peer => {
+    const closeSoon = () => setTimeout(() => { try { ref.conn && ref.conn.close(); } catch {} try { ref.bc && ref.bc.close(); } catch {} try { ref.peer && ref.peer.destroy(); } catch {} }, 1200);
+    const attachConn = (conn, activeCode) => {
+      if (ref.conn && ref.conn !== conn && ref.helloOk) { try { conn.close(); } catch {} return; }
+      ref.conn = conn; ref.helloOk = false;
+      const receiver = unitCreateReceiver({
+        onMeta: meta => { setProgress({ name: meta.name, size: meta.size, done: 0 }); go('receiving'); },
+        onProgress: (done, size) => setProgress(prev => ({ ...prev, size, done })),
+        onComplete: (blob, meta) => {
+          ref.url = URL.createObjectURL(blob);
+          setResult({ url: ref.url, name: meta.name, size: meta.size, blob });
+          go('done');
+          unitTriggerDownload(ref.url, meta.name);
+          closeSoon();
+        },
+        onError: why => fail(why === 'size' ? tr('Skedari është shumë i madh (maksimumi 100 MB).', 'The file is too large (100 MB maximum).') : tr('Skedari nuk u mor i plotë. Provo përsëri.', 'The file did not arrive complete. Try again.'))
+      });
+      conn.on('data', data => {
+        if (data && data.t === 'hello') {
+          if (String(data.code) === activeCode) {
+            const firstHello = !ref.helloOk;
+            ref.helloOk = true;
+            unitSafeSend(conn, { t: 'ok', hostSends: hostSendsRef.current, hostIsPhone });
+            if (firstHello) {
+              go('connected');
+              if (ref.file) {
+                setTimeout(() => { if (alive && !ref.cancelled && ref.conn === conn) startSending(conn); }, 150);
+              }
+            }
+          } else {
+            unitSafeSend(conn, { t: 'bad' });
+            setTimeout(() => { try { conn.close(); } catch {} }, 250);
+            if (ref.conn === conn) ref.conn = null;
+          }
+          return;
+        }
+        if (!ref.helloOk) return;
+        if (data && data.t === 'done') { setResult({ name: ref.file ? ref.file.name : '', size: ref.file ? ref.file.size : 0 }); go('done'); closeSoon(); return; }
+        if (data && data.t === 'fail') { fail(tr('Pajisja tjetër nuk e pranoi skedarin.', 'The other device did not accept the file.')); return; }
+        const reply = receiver(data);
+        if (reply) unitSafeSend(conn, reply);
+      });
+      conn.on('close', () => {
+        if (!alive) return;
+        if (ref.conn !== conn) return;
+        if (ref.phase === 'connected' || ref.phase === 'sending' || ref.phase === 'receiving') fail(tr('Lidhja u ndërpre.', 'The connection was interrupted.'));
+        else if (ref.phase === 'waiting') ref.conn = null;
+      });
+    };
+    const startWithCode = (Peer, code) => {
       if (!alive) return;
-      const peerId = `unit-${unitRandomText(12)}`;
+      const peerId = unitPeerIdForCode(code);
+      if (ref.bc) { try { ref.bc.close(); } catch {} }
+      const bcConn = unitCreateBroadcastConn(`unit-transfer-bc-${code}`, 'host');
+      if (bcConn) {
+        ref.bc = bcConn;
+        bcConn.on('data', data => {
+          if (!ref.conn && data && data.t === 'hello' && String(data.code) === code) {
+            attachConn(bcConn, code);
+            ref.helloOk = true;
+            unitSafeSend(bcConn, { t: 'ok', hostSends: hostSendsRef.current, hostIsPhone });
+            go('connected');
+            if (ref.file) {
+              setTimeout(() => { if (alive && !ref.cancelled && ref.conn === bcConn) startSending(bcConn); }, 120);
+            }
+          }
+        });
+      }
+      if (!Peer) {
+        setInfo({ peerId, code });
+        go('waiting');
+        return;
+      }
       const peer = new Peer(peerId, unitPeerOptions());
       ref.peer = peer;
       peer.on('open', () => {
         if (!alive) return;
         setInfo({ peerId, code });
         go('waiting');
+        clearInterval(timer);
         const end = Date.now() + UNIT_TRANSFER_TTL * 1000;
         timer = setInterval(() => {
           const left = Math.max(0, Math.round((end - Date.now()) / 1000));
@@ -37726,73 +37895,117 @@ const UnitTransferHost = ({ onClose, language }) => {
           }
         }, 500);
       });
-      peer.on('error', () => fail(tr('Lidhja me shërbimin dështoi. Kontrollo internetin dhe provo përsëri.', 'Could not reach the connection service. Check your internet and try again.')));
-      peer.on('connection', conn => {
-        if (ref.conn || ref.phase !== 'waiting') { try { conn.close(); } catch {} return; }
-        ref.conn = conn; ref.helloOk = false;
-        const receiver = unitCreateReceiver({
-          onMeta: meta => { setProgress({ name: meta.name, size: meta.size, done: 0 }); go('receiving'); },
-          onProgress: (done, size) => setProgress(prev => ({ ...prev, size, done })),
-          onComplete: (blob, meta) => { ref.url = URL.createObjectURL(blob); setResult({ url: ref.url, name: meta.name, size: meta.size }); go('done'); closeSoon(); },
-          onError: why => fail(why === 'size' ? tr('Skedari është shumë i madh (maksimumi 100 MB).', 'The file is too large (100 MB maximum).') : tr('Skedari nuk u mor i plotë. Provo përsëri.', 'The file did not arrive complete. Try again.'))
-        });
-        conn.on('data', data => {
-          if (!ref.helloOk) {
-            if (data && data.t === 'hello' && String(data.code) === code) {
-              ref.helloOk = true; go('connected'); conn.send({ t: 'ok' });
-              if (ref.file && hostSendsRef.current) startSending(conn);
-            } else {
-              try { conn.send({ t: 'bad' }); } catch {}
-              setTimeout(() => { try { conn.close(); } catch {} }, 250);
-              ref.conn = null;
-            }
-            return;
-          }
-          if (data && data.t === 'done') { setResult({ name: ref.file ? ref.file.name : '', size: ref.file ? ref.file.size : 0 }); go('done'); closeSoon(); return; }
-          if (data && data.t === 'fail') { fail(tr('Pajisja tjetër nuk e pranoi skedarin.', 'The other device did not accept the file.')); return; }
-          const reply = receiver(data);
-          if (reply) { try { conn.send(reply); } catch {} }
-        });
-        conn.on('close', () => {
-          if (!alive) return;
-          if (ref.phase === 'connected' || ref.phase === 'sending' || ref.phase === 'receiving') fail(tr('Lidhja u ndërpre.', 'The connection was interrupted.'));
-          else if (ref.phase === 'waiting') ref.conn = null;
-        });
+      peer.on('error', err => {
+        if (!alive) return;
+        if (err && err.type === 'unavailable-id' && attempts < 5) {
+          attempts += 1;
+          try { peer.destroy(); } catch {}
+          startWithCode(Peer, unitRandomCode());
+          return;
+        }
+        if (ref.phase === 'starting') {
+          setInfo({ peerId, code });
+          go('waiting');
+        } else if (ref.phase !== 'waiting' || !bcConn) {
+          fail(tr('Lidhja me shërbimin dështoi. Kontrollo internetin dhe provo përsëri.', 'Could not reach the connection service. Check your internet and try again.'));
+        }
       });
-    }).catch(() => fail(tr('Nuk u ngarkua shërbimi i lidhjes. Kontrollo internetin.', 'Could not load the connection service. Check your internet.')));
+      peer.on('connection', conn => {
+        if ((ref.conn && ref.helloOk) || (ref.phase !== 'waiting' && ref.phase !== 'connected')) { try { conn.close(); } catch {} return; }
+        attachConn(conn, code);
+      });
+    };
+    go('starting');
+    const initialCode = unitRandomCode();
+    unitLoadPeerJs().then(Peer => {
+      startWithCode(Peer, initialCode);
+    }).catch(() => {
+      startWithCode(null, initialCode);
+    });
     return () => {
       alive = false; ref.cancelled = true; clearInterval(timer);
       try { ref.conn && ref.conn.close(); } catch {}
+      try { ref.bc && ref.bc.close(); } catch {}
       try { ref.peer && ref.peer.destroy(); } catch {}
-      ref.peer = null; ref.conn = null;
+      ref.peer = null; ref.conn = null; ref.bc = null;
       if (ref.url) { URL.revokeObjectURL(ref.url); ref.url = ''; }
     };
-  }, [hostSends, session]);
-  const pickFile = event => {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = '';
+  }, [session, guestParams]);
+  const handlePickedFileObject = file => {
     if (!file) return;
     if (file.size > UNIT_TRANSFER_MAX_BYTES) { setError(tr('Skedari është shumë i madh (maksimumi 100 MB).', 'The file is too large (100 MB maximum).')); return; }
     setError('');
     R.current.file = file; setPickedFile(file);
+    if (!hostSendsRef.current) { setHostSends(true); hostSendsRef.current = true; }
     if (R.current.phase === 'connected' && R.current.conn) startSending(R.current.conn);
   };
+  const pickFile = event => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    handlePickedFileObject(file);
+  };
+  const handleJoinByCode = event => {
+    if (event) event.preventDefault();
+    const raw = String(joinInput || '').trim();
+    if (!raw) return;
+    const parsedHash = unitParseTransferHash(raw);
+    if (parsedHash) {
+      setGuestParams(parsedHash);
+      return;
+    }
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length !== 4) {
+      setError(tr('Shkruaj kodin 4-shifror që shfaqet në pajisjen tjetër.', 'Enter the 4-digit code shown on the other device.'));
+      return;
+    }
+    if (digits === info.code) {
+      setError(tr('Ky është kodi i kësaj pajisjeje. Shkruaj kodin e pajisjes tjetër.', 'This is this device\'s code. Enter the code from the other device.'));
+      return;
+    }
+    setError('');
+    setGuestParams({
+      id: unitPeerIdForCode(digits),
+      code: digits,
+      hostSends: !hostSends,
+      hostIsPhone: !hostIsPhone
+    });
+  };
+  if (guestParams) {
+    return ce(UnitTransferGuest, {
+      params: guestParams,
+      inlineModal: true,
+      onBackToHost: () => { setGuestParams(null); setJoinInput(''); },
+      onClose,
+      language
+    });
+  }
   const noun = hostIsPhone ? tr('Kompjuteri', 'Computer') : tr('Telefoni', 'Phone');
   const options = hostIsPhone
-    ? [[false, tr('Kompjuter → Telefon', 'Computer → Phone')], [true, tr('Telefon → Kompjuter', 'Phone → Computer')]]
-    : [[false, tr('Telefon → Kompjuter', 'Phone → Computer')], [true, tr('Kompjuter → Telefon', 'Computer → Phone')]];
+    ? [[true, tr('Telefon → Kompjuter', 'Phone → Computer')], [false, tr('Kompjuter → Telefon', 'Computer → Phone')]]
+    : [[true, tr('Kompjuter → Telefon', 'Computer → Phone')], [false, tr('Telefon → Kompjuter', 'Phone → Computer')]];
   const canSwitch = phase === 'starting' || phase === 'waiting' || phase === 'error';
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
   const title = phase === 'receiving' ? tr('Duke marrë skedarin', 'Receiving the file') : phase === 'sending' ? tr('Duke dërguar skedarin', 'Sending the file') : tr('Transfero skedar', 'Transfer a file');
+  const link = info.peerId ? unitTransferLink(info.peerId, info.code, hostSends, hostIsPhone) : '';
+  const copyTransferLink = () => {
+    if (!link) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }).catch(() => {});
+    }
+  };
   let body;
   if (phase === 'done') {
     body = ce('div', { className: 'text-center py-1' },
       S.doneIcon(),
       ce('div', { className: 'text-xl font-bold text-primary tracking-tight mt-3.5' }, result && result.url ? tr('U mor', 'Received') : tr('U dërgua', 'Sent')),
       result && ce('div', { className: 'text-[15px] text-primary mt-2 break-words' }, `${result.name} · ${unitFormatBytes(result.size)}`),
-      ce('div', { className: 'text-[13px] text-tertiary mt-2' }, tr('Lidhja u mbyll', 'Connection closed')),
-      result && result.url ? ce('a', { href: result.url, download: result.name, className: 'mt-5 h-12 rounded-[14px] bg-brand-600 text-white text-[15px] font-semibold flex items-center justify-center cursor-pointer' }, tr('Shkarko', 'Download')) : null,
-      ce('button', { type: 'button', onClick: onClose, className: 'mt-3 w-full h-11 rounded-[14px] text-[15px] font-semibold text-secondary cursor-pointer' }, tr('Mbyll', 'Close')));
+      ce('div', { className: 'text-[13px] text-tertiary mt-2' }, tr('Skedari u transferua me sukses', 'File transferred successfully')),
+      result && result.url ? ce('a', { href: result.url, download: result.name, className: 'mt-5 h-12 rounded-[14px] bg-brand-600 text-white text-[15px] font-semibold flex items-center justify-center cursor-pointer' }, tr('Shkarko skedarin', 'Download file')) : null,
+      ce('button', { type: 'button', onClick: () => { R.current.file = null; setPickedFile(null); setResult(null); setSession(v => v + 1); }, className: 'mt-3 w-full h-11 rounded-[14px] border border-default text-[14.5px] font-semibold text-primary cursor-pointer' }, tr('Transfero skedar tjetër', 'Transfer another file')),
+      ce('button', { type: 'button', onClick: onClose, className: 'mt-2 w-full h-10 rounded-[14px] text-[14px] font-semibold text-secondary cursor-pointer' }, tr('Mbyll', 'Close')));
   } else if (phase === 'receiving' || phase === 'sending') {
     body = ce('div', null,
       ce('div', { className: 'flex items-center gap-2 text-[13.5px] font-semibold text-emerald-600 dark:text-emerald-400 mb-4' }, ce('span', { className: 'w-2 h-2 rounded-full bg-emerald-500' }), tr(`${noun} u lidh`, `${noun} connected`)),
@@ -37802,85 +38015,168 @@ const UnitTransferHost = ({ onClose, language }) => {
       ce('p', { role: 'alert', className: 'text-[15px] text-primary leading-relaxed' }, error),
       ce('button', { type: 'button', onClick: () => setSession(value => value + 1), className: 'mt-5 w-full h-12 rounded-[14px] bg-brand-600 text-white text-[15px] font-semibold cursor-pointer' }, tr('Provo përsëri', 'Try again')));
   } else {
-    const link = info.peerId ? unitTransferLink(info.peerId, info.code, hostSends, hostIsPhone) : '';
     body = ce('div', { className: 'text-center' },
       phase === 'connected'
-        ? ce('div', { className: 'flex items-center justify-center gap-2 text-[14px] font-semibold text-emerald-600 dark:text-emerald-400 py-12' }, ce('span', { className: 'w-2 h-2 rounded-full bg-emerald-500' }), hostSends && !pickedFile ? tr(`${noun} u lidh · zgjidh skedarin`, `${noun} connected · choose a file`) : tr(`${noun} u lidh`, `${noun} connected`))
+        ? ce('div', { className: 'py-6' },
+            ce('div', { className: 'flex items-center justify-center gap-2 text-[15px] font-semibold text-emerald-600 dark:text-emerald-400 mb-4' },
+              ce('span', { className: 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse' }),
+              tr(`${noun} u lidh me sukses`, `${noun} connected successfully`)),
+            ce('p', { className: 'text-[13.5px] text-secondary mb-4' },
+              pickedFile ? tr('Duke nisur dërgimin e skedarit…', 'Starting file transfer…') : tr('Zgjidh një skedar këtu ose dërgoje nga pajisja tjetër.', 'Choose a file here or send it from the other device.')))
         : ce('div', null,
-          ce('div', { className: 'inline-block p-2.5 rounded-2xl border border-default bg-white min-h-[196px] min-w-[196px]' }, link ? ce(UnitQrCode, { text: link, size: 176 }) : ce('div', { className: 'w-[176px] h-[176px] flex items-center justify-center text-[13px] text-slate-400' }, tr('Po përgatitet…', 'Preparing…'))),
-          ce('p', { className: 'text-[14px] text-secondary mt-3' }, hostIsPhone ? tr('Skano QR-në me pajisjen tjetër', 'Scan the QR code with the other device') : tr('Skano me kamerën e telefonit', 'Scan with your phone camera')),
-          info.code && ce('div', { className: 'flex items-center justify-center gap-2.5 mt-3' }, ce('span', { className: 'text-[11.5px] font-bold tracking-[0.12em] text-tertiary uppercase' }, tr('Kodi', 'Code')), S.digits(info.code)),
-          phase === 'waiting' && ce('p', { className: 'text-[12.5px] text-tertiary mt-3 tabular-nums' }, tr(`Lidhja mbyllet pas ${mmss}`, `Link closes in ${mmss}`))),
-      hostSends && phase !== 'starting' && ce('div', { className: 'mt-4' },
-        ce('label', { className: 'h-11 rounded-[14px] border border-default text-[14.5px] font-semibold text-primary flex items-center justify-center gap-2 cursor-pointer px-3' },
-          ce('span', { className: 'truncate' }, pickedFile ? `${pickedFile.name} · ${unitFormatBytes(pickedFile.size)}` : tr('Zgjidh skedarin', 'Choose a file')),
+          ce('div', { className: 'inline-block p-2.5 rounded-2xl border border-default bg-white min-h-[184px] min-w-[184px]' }, link ? ce(UnitQrCode, { text: link, size: 164 }) : ce('div', { className: 'w-[164px] h-[164px] flex items-center justify-center text-[13px] text-slate-400' }, tr('Po përgatitet…', 'Preparing…'))),
+          ce('p', { className: 'text-[13.5px] text-secondary mt-2.5' }, hostIsPhone ? tr('Skano QR-në ose shkruaj kodin në kompjuter', 'Scan QR or enter the code on your computer') : tr('Skano me kamerën e telefonit ose lidhu me kod', 'Scan with phone camera or connect with code')),
+          info.code && ce('div', { className: 'flex items-center justify-center gap-2.5 mt-2.5' },
+            ce('span', { className: 'text-[11.5px] font-bold tracking-[0.12em] text-tertiary uppercase' }, tr('Kodi', 'Code')),
+            S.digits(info.code),
+            link && ce('button', { type: 'button', onClick: copyTransferLink, title: tr('Kopjo linkun e lidhjes', 'Copy connection link'), className: 'h-11 px-2.5 rounded-[10px] border border-default text-[12px] font-semibold text-secondary hover:text-primary flex items-center gap-1 cursor-pointer' },
+              unitTransferIcon(copiedLink ? 'M5 12l5 5 9-10' : 'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z', 'w-4 h-4'),
+              copiedLink ? tr('U kopjua', 'Copied') : tr('Linku', 'Link'))),
+          phase === 'waiting' && ce('p', { className: 'text-[12px] text-tertiary mt-2 tabular-nums' }, tr(`Lidhja mbyllet pas ${mmss}`, `Link closes in ${mmss}`))),
+      phase !== 'starting' && ce('div', { className: 'mt-3.5' },
+        ce('label', { className: `h-11 rounded-[14px] ${pickedFile ? 'bg-brand-500/10 border border-brand-500/30 text-brand-700 dark:text-brand-300' : 'bg-brand-600 text-white'} text-[14.5px] font-semibold flex items-center justify-center gap-2 cursor-pointer px-3 shadow-sm` },
+          unitTransferIcon('M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4', 'w-4 h-4'),
+          ce('span', { className: 'truncate' }, pickedFile ? `${pickedFile.name} · ${unitFormatBytes(pickedFile.size)}` : tr('Zgjidh skedarin për dërgim', 'Choose file to send')),
           ce('input', { type: 'file', className: 'sr-only', onChange: pickFile })),
-        error && ce('p', { role: 'alert', className: 'text-[13px] text-red-600 dark:text-red-400 mt-2' }, error)));
+        pickedFile && phase === 'waiting' && ce('p', { className: 'text-[12px] text-emerald-600 dark:text-emerald-400 mt-1.5 font-medium' }, tr('Skedari është gati — do të dërgohet sapo të lidhet pajisja tjetër.', 'File is ready — it will send as soon as the other device connects.'))),
+      phase === 'waiting' && ce('form', { onSubmit: handleJoinByCode, className: 'mt-3.5 pt-3.5 border-t border-default text-left' },
+        ce('label', { className: 'block text-[12px] font-semibold text-secondary mb-1.5' }, tr('Ke kod nga pajisja tjetër? Lidhu këtu:', 'Have a code from the other device? Connect here:')),
+        ce('div', { className: 'flex items-center gap-2' },
+          ce('input', {
+            type: 'text',
+            inputMode: 'numeric',
+            maxLength: 120,
+            value: joinInput,
+            onChange: e => { setJoinInput(e.target.value); if (error) setError(''); },
+            placeholder: tr('Kodi 4-shifror (p.sh. 4829)', '4-digit code (e.g. 4829)'),
+            className: 'flex-1 min-w-0 h-10 px-3 rounded-[12px] input-bg border border-default text-[14px] font-semibold text-primary tracking-wider tabular-nums focus:outline-none focus:border-brand-500'
+          }),
+          ce('button', {
+            type: 'submit',
+            className: 'h-10 px-4 rounded-[12px] card-surface border border-default text-[13.5px] font-semibold text-brand-600 dark:text-brand-300 hover:bg-brand-500/10 cursor-pointer shrink-0'
+          }, tr('Lidhu', 'Connect')))),
+      error && ce('p', { role: 'alert', className: 'text-[13px] text-red-600 dark:text-red-400 mt-2' }, error));
   }
   return ce(ModalPortal, null, ce('div', { className: 'fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/45', 'aria-label': tr('Transfero skedar', 'Transfer a file'), onClick: onClose },
-    ce('section', { className: 'w-full max-w-[380px] max-h-[92svh] overflow-y-auto modal-bg card-surface rounded-[22px] p-6 shadow-2xl', onClick: event => event.stopPropagation() },
+    ce('section', {
+      className: 'w-full max-w-[390px] max-h-[92svh] overflow-y-auto modal-bg card-surface rounded-[22px] p-5 sm:p-6 shadow-2xl',
+      onClick: event => event.stopPropagation(),
+      onDragOver: event => { event.preventDefault(); },
+      onDrop: event => {
+        event.preventDefault();
+        const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file) handlePickedFileObject(file);
+      }
+    },
       ce('div', { className: 'flex items-center justify-between gap-3' },
         ce('h2', { className: 'text-[19px] font-bold text-primary tracking-tight' }, title),
         ce('button', { type: 'button', onClick: onClose, 'aria-label': tr('Mbyll', 'Close'), className: 'w-9 h-9 -mr-2 rounded-lg text-secondary flex items-center justify-center cursor-pointer' }, unitTransferIcon('M6 6l12 12M18 6L6 18', 'w-5 h-5'))),
-      canSwitch && ce('div', { className: 'grid grid-cols-2 p-[3px] rounded-[14px] bg-black/[0.05] dark:bg-white/[0.06] mt-4 mb-5', role: 'tablist' },
-        options.map(([value, label]) => ce('button', { key: label, type: 'button', role: 'tab', 'aria-selected': hostSends === value, onClick: () => { if (hostSends !== value) { setHostSends(value); setPickedFile(null); R.current.file = null; } }, className: `h-9 rounded-[11px] text-[13px] whitespace-nowrap cursor-pointer ${hostSends === value ? 'card-surface font-semibold text-primary shadow-sm' : 'font-medium text-secondary'}` }, label))),
-      !canSwitch && ce('div', { className: 'h-5' }),
+      canSwitch && ce('div', { className: 'grid grid-cols-2 p-[3px] rounded-[14px] bg-black/[0.05] dark:bg-white/[0.06] mt-3.5 mb-4', role: 'tablist' },
+        options.map(([value, label]) => ce('button', { key: label, type: 'button', role: 'tab', 'aria-selected': hostSends === value, onClick: () => { if (hostSends !== value) { setHostSends(value); hostSendsRef.current = value; } }, className: `h-9 rounded-[11px] text-[13px] whitespace-nowrap cursor-pointer ${hostSends === value ? 'card-surface font-semibold text-primary shadow-sm' : 'font-medium text-secondary'}` }, label))),
+      !canSwitch && ce('div', { className: 'h-4' }),
       body)));
 };
-const UnitTransferGuest = ({ params, onClose, language }) => {
+const UnitTransferGuest = ({ params, onClose, onBackToHost, inlineModal, language }) => {
   const ce = React.createElement;
   const tr = (sq, en) => language === 'en' ? en : sq;
   const S = unitTransferShared(ce, tr);
-  const guestSends = !params.hostSends;
+  const [hostSendsState, setHostSendsState] = useState(Boolean(params.hostSends));
+  const guestSends = !hostSendsState;
   const hostNoun = params.hostIsPhone ? tr('telefoni', 'phone') : tr('kompjuteri', 'computer');
   const [phase, setPhase] = useState('connecting');
   const [progress, setProgress] = useState({ name: '', size: 0, done: 0 });
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [fileError, setFileError] = useState('');
-  const R = useRef({ peer: null, conn: null, cancelled: false, phase: 'connecting', url: '' });
+  const R = useRef({ peer: null, conn: null, bc: null, cancelled: false, phase: 'connecting', url: '' });
   useEffect(() => {
     const ref = R.current;
     ref.cancelled = false;
     let alive = true;
     let openTimer = null;
+    let helloInterval = null;
     const go = next => { ref.phase = next; setPhase(next); };
-    const fail = message => { if (!alive || ref.phase === 'done') return; setError(message); go('error'); };
-    const closeSoon = () => setTimeout(() => { try { ref.conn && ref.conn.close(); } catch {} try { ref.peer && ref.peer.destroy(); } catch {} }, 1200);
+    const fail = message => { if (!alive || ref.phase === 'done') return; clearInterval(helloInterval); setError(message); go('error'); };
+    const closeSoon = () => setTimeout(() => { clearInterval(helloInterval); try { ref.conn && ref.conn.close(); } catch {} try { ref.bc && ref.bc.close(); } catch {} try { ref.peer && ref.peer.destroy(); } catch {} }, 1200);
     const receiver = unitCreateReceiver({
       onMeta: meta => { setProgress({ name: meta.name, size: meta.size, done: 0 }); go('receiving'); },
       onProgress: (done, size) => setProgress(prev => ({ ...prev, size, done })),
-      onComplete: (blob, meta) => { ref.url = URL.createObjectURL(blob); setResult({ url: ref.url, name: meta.name, size: meta.size }); go('done'); closeSoon(); },
+      onComplete: (blob, meta) => {
+        ref.url = URL.createObjectURL(blob);
+        setResult({ url: ref.url, name: meta.name, size: meta.size });
+        go('done');
+        unitTriggerDownload(ref.url, meta.name);
+        closeSoon();
+      },
       onError: why => fail(why === 'size' ? tr('Skedari është shumë i madh (maksimumi 100 MB).', 'The file is too large (100 MB maximum).') : tr('Skedari nuk u mor i plotë. Provo përsëri.', 'The file did not arrive complete. Try again.'))
     });
+    const wireConn = conn => {
+      const sendHello = () => {
+        if (!alive || ref.phase !== 'connecting') return;
+        unitSafeSend(conn, { t: 'hello', code: params.code });
+      };
+      conn.on('open', sendHello);
+      if (conn.open) sendHello();
+      const localHelloTimer = setInterval(() => {
+        if (!alive || ref.phase !== 'connecting') { clearInterval(localHelloTimer); return; }
+        sendHello();
+      }, 650);
+      conn.on('data', data => {
+        if (data && data.t === 'ok') {
+          clearTimeout(openTimer);
+          clearInterval(helloInterval);
+          clearInterval(localHelloTimer);
+          ref.conn = conn;
+          const remoteHostSends = typeof data.hostSends === 'boolean' ? data.hostSends : Boolean(params.hostSends);
+          setHostSendsState(remoteHostSends);
+          go(!remoteHostSends ? 'ready' : 'waiting');
+          return;
+        }
+        if (data && data.t === 'bad') {
+          clearTimeout(openTimer);
+          clearInterval(localHelloTimer);
+          fail(tr('Kodi nuk përputhet. Hap QR-në ose kodin e ri në pajisjen tjetër.', 'The code does not match. Open the new QR code on the other device.'));
+          return;
+        }
+        if (data && data.t === 'done') { setResult(prev => prev || { name: ref.sentName || '', size: ref.sentSize || 0 }); go('done'); closeSoon(); return; }
+        if (data && data.t === 'fail') { fail(tr('Pajisja tjetër nuk e pranoi skedarin.', 'The other device did not accept the file.')); return; }
+        const reply = receiver(data);
+        if (reply) unitSafeSend(conn, reply);
+      });
+      conn.on('close', () => {
+        clearInterval(localHelloTimer);
+        if (!alive || ref.conn !== conn) return;
+        if (['connecting', 'ready', 'waiting', 'sending', 'receiving'].includes(ref.phase)) fail(tr('Lidhja u ndërpre.', 'The connection was interrupted.'));
+      });
+    };
+    openTimer = setTimeout(() => fail(tr('Nuk u lidh. Kontrollo kodin ose internetin dhe provo përsëri.', 'Could not connect. Check the code or your internet and try again.')), 25000);
+    const bcConn = unitCreateBroadcastConn(`unit-transfer-bc-${params.code}`, 'guest');
+    if (bcConn) {
+      ref.bc = bcConn;
+      wireConn(bcConn);
+    }
     unitLoadPeerJs().then(Peer => {
-      if (!alive) return;
+      if (!alive || ref.phase !== 'connecting') return;
       const peer = new Peer(unitPeerOptions());
       ref.peer = peer;
-      openTimer = setTimeout(() => fail(tr('Nuk u lidh. Kontrollo internetin dhe skano QR-në përsëri.', 'Could not connect. Check your internet and scan the QR code again.')), 25000);
-      peer.on('error', () => fail(tr('Nuk u lidh. Kontrollo internetin dhe skano QR-në përsëri.', 'Could not connect. Check your internet and scan the QR code again.')));
-      peer.on('open', () => {
-        if (!alive) return;
-        const conn = peer.connect(params.id, { reliable: true });
-        ref.conn = conn;
-        conn.on('open', () => { try { conn.send({ t: 'hello', code: params.code }); } catch {} });
-        conn.on('data', data => {
-          if (data && data.t === 'ok') { clearTimeout(openTimer); go(guestSends ? 'ready' : 'waiting'); return; }
-          if (data && data.t === 'bad') { clearTimeout(openTimer); fail(tr('Kodi nuk përputhet. Hap QR-në e re në pajisjen tjetër.', 'The code does not match. Open the new QR code on the other device.')); return; }
-          if (data && data.t === 'done') { setResult(prev => prev || { name: ref.sentName || '', size: ref.sentSize || 0 }); go('done'); closeSoon(); return; }
-          if (data && data.t === 'fail') { fail(tr('Pajisja tjetër nuk e pranoi skedarin.', 'The other device did not accept the file.')); return; }
-          const reply = receiver(data);
-          if (reply) { try { conn.send(reply); } catch {} }
-        });
-        conn.on('close', () => {
-          if (!alive) return;
-          if (['connecting', 'ready', 'waiting', 'sending', 'receiving'].includes(ref.phase)) fail(tr('Lidhja u ndërpre.', 'The connection was interrupted.'));
-        });
+      peer.on('error', () => {
+        if (ref.phase === 'connecting' && !ref.conn) {
+          fail(tr('Nuk u lidh. Kontrollo kodin ose internetin dhe provo përsëri.', 'Could not connect. Check the code or your internet and try again.'));
+        }
       });
-    }).catch(() => fail(tr('Nuk u ngarkua shërbimi i lidhjes. Kontrollo internetin.', 'Could not load the connection service. Check your internet.')));
+      peer.on('open', () => {
+        if (!alive || ref.phase !== 'connecting') return;
+        const conn = peer.connect(params.id, { reliable: true });
+        if (!ref.conn) ref.conn = conn;
+        wireConn(conn);
+      });
+    }).catch(() => {
+      if (!bcConn) fail(tr('Nuk u ngarkua shërbimi i lidhjes. Kontrollo internetin.', 'Could not load the connection service. Check your internet.'));
+    });
     return () => {
-      alive = false; ref.cancelled = true; clearTimeout(openTimer);
+      alive = false; ref.cancelled = true; clearTimeout(openTimer); clearInterval(helloInterval);
       try { ref.conn && ref.conn.close(); } catch {}
+      try { ref.bc && ref.bc.close(); } catch {}
       try { ref.peer && ref.peer.destroy(); } catch {}
       if (ref.url) { URL.revokeObjectURL(ref.url); ref.url = ''; }
     };
@@ -37889,37 +38185,67 @@ const UnitTransferGuest = ({ params, onClose, language }) => {
     const file = event.target.files && event.target.files[0];
     event.target.value = '';
     const ref = R.current;
-    if (!file || !ref.conn || ref.phase !== 'ready') return;
+    if (!file || !ref.conn || (ref.phase !== 'ready' && ref.phase !== 'waiting')) return;
     if (file.size > UNIT_TRANSFER_MAX_BYTES) { setFileError(tr('Skedari është shumë i madh (maksimumi 100 MB).', 'The file is too large (100 MB maximum).')); return; }
     setFileError('');
     ref.sentName = file.name; ref.sentSize = file.size;
     ref.phase = 'sending'; setPhase('sending');
     setProgress({ name: file.name, size: file.size, done: 0 });
-    unitSendFile(ref.conn, file, (done, size) => setProgress({ name: file.name, size, done }), () => ref.cancelled).catch(() => {
+    unitSendFile(ref.conn, file, (done, size) => setProgress({ name: file.name, size, done }), () => ref.cancelled).then(ok => {
+      if (!ok || ref.cancelled) return;
+      setTimeout(() => {
+        if (!ref.cancelled && ref.phase === 'sending') {
+          setResult(prev => prev || { name: file.name, size: file.size });
+          ref.phase = 'done';
+          setPhase('done');
+        }
+      }, 600);
+    }).catch(() => {
       ref.phase = 'error'; setError(tr('Dërgimi u ndërpre.', 'Sending was interrupted.')); setPhase('error');
     });
   };
-  const heading = text => ce('h1', { className: 'text-[26px] font-extrabold tracking-tight text-primary leading-tight' }, text);
-  const codeBlock = ce('div', { className: 'my-5' }, ce('p', { className: 'text-[14.5px] text-secondary mb-3' }, tr(`Kontrollo që kodi në ekranin e ${hostNoun === 'telefoni' ? 'telefonit' : 'kompjuterit'} është:`, `Check that the code on the ${hostNoun} screen is:`)), S.digits(params.code));
+  const heading = text => ce('h1', { className: `${inlineModal ? 'text-[20px]' : 'text-[26px]'} font-extrabold tracking-tight text-primary leading-tight` }, text);
+  const codeBlock = ce('div', { className: 'my-4' }, ce('p', { className: 'text-[14px] text-secondary mb-2.5' }, tr(`Lidhur me kodin e ${hostNoun === 'telefoni' ? 'telefonit' : 'kompjuterit'}:`, `Connected with the ${hostNoun} code:`)), S.digits(params.code));
   let body;
   if (phase === 'connecting') body = ce('div', null, heading(tr('Po lidhet…', 'Connecting…')), ce('p', { className: 'text-[14.5px] text-secondary mt-3' }, tr('Prit një çast.', 'One moment.')));
   else if (phase === 'ready') body = ce('div', null,
     heading(tr(`Dërgo skedar te ${hostNoun}`, `Send a file to the ${hostNoun}`)), codeBlock,
-    ce('label', { className: 'h-14 rounded-2xl bg-brand-600 text-white text-base font-semibold flex items-center justify-center cursor-pointer' }, tr('Zgjidh skedarin', 'Choose a file'), ce('input', { type: 'file', className: 'sr-only', onChange: pickFile })),
+    ce('label', { className: 'h-12 sm:h-14 rounded-2xl bg-brand-600 text-white text-[15px] sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer' },
+      unitTransferIcon('M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4', 'w-5 h-5'),
+      tr('Zgjidh skedarin', 'Choose a file'),
+      ce('input', { type: 'file', className: 'sr-only', onChange: pickFile })),
     fileError && ce('p', { role: 'alert', className: 'text-[13px] text-red-600 dark:text-red-400 mt-3' }, fileError),
-    ce('p', { className: 'text-[13px] text-tertiary text-center mt-4' }, tr('Lidhja mbyllet automatikisht pas dërgimit', 'The link closes automatically after sending')));
+    ce('p', { className: 'text-[13px] text-tertiary text-center mt-4' }, tr('Ose dërgo një skedar nga pajisja tjetër', 'Or send a file from the other device')));
   else if (phase === 'waiting') body = ce('div', null,
     heading(tr(`Merr skedar nga ${hostNoun}`, `Receive a file from the ${hostNoun}`)), codeBlock,
-    ce('p', { className: 'text-[14.5px] text-secondary' }, tr(`Duke pritur që ${hostNoun} të zgjedhë skedarin…`, `Waiting for the ${hostNoun} to choose a file…`)));
-  else if (phase === 'sending' || phase === 'receiving') body = ce('div', null, heading(phase === 'sending' ? tr('Duke dërguar…', 'Sending…') : tr('Duke marrë…', 'Receiving…')), ce('div', { className: 'mt-6' }, S.fileRow(progress, tr('Mos e mbyll faqen derisa të mbarojë', 'Keep this page open until it finishes'))));
-  else if (phase === 'done') body = ce('div', { className: 'text-center pt-16' },
-    ce('div', { className: 'w-[72px] h-[72px] mx-auto rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center' }, unitTransferIcon('M5 12l5 5 9-10', 'w-8 h-8')),
-    ce('div', { className: 'text-2xl font-extrabold tracking-tight text-primary mt-5' }, result && result.url ? tr('U mor', 'Received') : tr('U dërgua', 'Sent')),
-    result && ce('p', { className: 'text-[15px] text-secondary mt-3 break-words' }, result.url ? `${result.name} · ${unitFormatBytes(result.size)}` : tr(`${result.name} është te ${hostNoun}`, `${result.name} is on the ${hostNoun}`)),
-    ce('p', { className: 'text-[13px] text-tertiary mt-3' }, tr('Lidhja u mbyll', 'Connection closed')),
-    result && result.url ? ce('a', { href: result.url, download: result.name, className: 'mt-8 h-14 rounded-2xl bg-brand-600 text-white text-base font-semibold flex items-center justify-center cursor-pointer' }, tr('Shkarko', 'Download')) : null,
-    ce('button', { type: 'button', onClick: onClose, className: 'mt-3 w-full h-14 rounded-2xl border border-default text-base font-semibold text-primary cursor-pointer' }, tr('Mbyll', 'Close')));
-  else body = ce('div', null, heading(tr('Nuk u krye', 'Not completed')), ce('p', { role: 'alert', className: 'text-[15px] text-secondary mt-4 leading-relaxed' }, error), ce('button', { type: 'button', onClick: onClose, className: 'mt-8 w-full h-14 rounded-2xl bg-brand-600 text-white text-base font-semibold cursor-pointer' }, tr('Mbyll', 'Close')));
+    ce('p', { className: 'text-[14px] text-secondary mb-4' }, tr(`Duke pritur që ${hostNoun} të dërgojë skedarin…`, `Waiting for the ${hostNoun} to send a file…`)),
+    ce('label', { className: 'h-11 rounded-xl border border-default text-[14px] font-semibold text-primary flex items-center justify-center gap-2 cursor-pointer' },
+      unitTransferIcon('M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4', 'w-4 h-4'),
+      tr('Ose dërgo skedar nga kjo pajisje', 'Or send a file from this device'),
+      ce('input', { type: 'file', className: 'sr-only', onChange: pickFile })),
+    fileError && ce('p', { role: 'alert', className: 'text-[13px] text-red-600 dark:text-red-400 mt-3' }, fileError));
+  else if (phase === 'sending' || phase === 'receiving') body = ce('div', null, heading(phase === 'sending' ? tr('Duke dërguar…', 'Sending…') : tr('Duke marrë…', 'Receiving…')), ce('div', { className: 'mt-5' }, S.fileRow(progress, tr('Mos e mbyll faqen derisa të mbarojë', 'Keep this page open until it finishes'))));
+  else if (phase === 'done') body = ce('div', { className: `text-center ${inlineModal ? 'py-2' : 'pt-12'}` },
+    ce('div', { className: 'w-[64px] h-[64px] mx-auto rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center' }, unitTransferIcon('M5 12l5 5 9-10', 'w-7 h-7')),
+    ce('div', { className: 'text-2xl font-extrabold tracking-tight text-primary mt-4' }, result && result.url ? tr('U mor', 'Received') : tr('U dërgua', 'Sent')),
+    result && ce('p', { className: 'text-[15px] text-secondary mt-2.5 break-words' }, result.url ? `${result.name} · ${unitFormatBytes(result.size)}` : tr(`${result.name} është te ${hostNoun}`, `${result.name} is on the ${hostNoun}`)),
+    ce('p', { className: 'text-[13px] text-tertiary mt-2' }, tr('Skedari u transferua me sukses', 'File transferred successfully')),
+    result && result.url ? ce('a', { href: result.url, download: result.name, className: 'mt-6 h-12 rounded-2xl bg-brand-600 text-white text-[15px] font-semibold flex items-center justify-center cursor-pointer' }, tr('Shkarko skedarin', 'Download file')) : null,
+    onBackToHost && ce('button', { type: 'button', onClick: onBackToHost, className: 'mt-3 w-full h-11 rounded-2xl border border-default text-[14.5px] font-semibold text-primary cursor-pointer' }, tr('Transfero skedar tjetër', 'Transfer another file')),
+    ce('button', { type: 'button', onClick: onClose, className: 'mt-2.5 w-full h-11 rounded-2xl text-[14.5px] font-semibold text-secondary cursor-pointer' }, tr('Mbyll', 'Close')));
+  else body = ce('div', null,
+    heading(tr('Nuk u krye', 'Not completed')),
+    ce('p', { role: 'alert', className: 'text-[15px] text-secondary mt-3 leading-relaxed' }, error),
+    onBackToHost && ce('button', { type: 'button', onClick: onBackToHost, className: 'mt-5 w-full h-12 rounded-2xl bg-brand-600 text-white text-[15px] font-semibold cursor-pointer' }, tr('Kthehu te kodi / QR', 'Back to code / QR')),
+    ce('button', { type: 'button', onClick: onClose, className: 'mt-2.5 w-full h-11 rounded-2xl border border-default text-[14.5px] font-semibold text-primary cursor-pointer' }, tr('Mbyll', 'Close')));
+  if (inlineModal) {
+    return ce(ModalPortal, null, ce('div', { className: 'fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/45', 'aria-label': tr('Transfero skedar', 'Transfer a file'), 'data-unit-transfer-guest': 'true', onClick: onClose },
+      ce('section', { className: 'w-full max-w-[390px] max-h-[92svh] overflow-y-auto modal-bg card-surface rounded-[22px] p-5 sm:p-6 shadow-2xl', onClick: event => event.stopPropagation() },
+        ce('div', { className: 'flex items-center justify-between gap-3 mb-4' },
+          onBackToHost ? ce('button', { type: 'button', onClick: onBackToHost, className: 'text-[13.5px] font-semibold text-secondary hover:text-primary flex items-center gap-1 cursor-pointer' }, '← ', tr('Kthehu', 'Back')) : ce('span', null),
+          ce('button', { type: 'button', onClick: onClose, 'aria-label': tr('Mbyll', 'Close'), className: 'w-9 h-9 -mr-2 rounded-lg text-secondary flex items-center justify-center cursor-pointer' }, unitTransferIcon('M6 6l12 12M18 6L6 18', 'w-5 h-5'))),
+        body)));
+  }
   return ce(ModalPortal, null, ce('div', { className: 'fixed inset-0 z-[400] overflow-y-auto bg-white dark:bg-slate-950', 'aria-label': tr('Transfero skedar', 'Transfer a file'), 'data-unit-transfer-guest': 'true' },
     ce('div', { className: 'max-w-md mx-auto px-6 pt-5 pb-10' },
       ce('div', { className: 'flex items-center gap-2.5 mb-8' },
