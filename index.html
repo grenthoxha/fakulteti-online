@@ -37774,6 +37774,7 @@ const UnitTransferHost = ({ onClose, language }) => {
   const [joinInput, setJoinInput] = useState('');
   const [guestParams, setGuestParams] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [hostNote, setHostNote] = useState('');
   const R = useRef({ peer: null, conn: null, bc: null, cancelled: false, file: null, phase: 'starting', helloOk: false, url: '' });
   const hostSendsRef = useRef(hostSends);
   hostSendsRef.current = hostSends;
@@ -37912,6 +37913,8 @@ const UnitTransferHost = ({ onClose, language }) => {
       });
       peer.on('connection', conn => {
         if ((ref.conn && ref.helloOk) || (ref.phase !== 'waiting' && ref.phase !== 'connected')) { try { conn.close(); } catch {} return; }
+        setHostNote(tr('Pajisja tjetër u gjet, po krijohet kanali…', 'Other device found, opening the channel…'));
+        conn.on('iceStateChanged', s => { if (alive && ref.phase === 'waiting') setHostNote(s === 'failed' ? tr('Rrjeti bllokon lidhjen direkte me pajisjen tjetër.', 'The network blocks the direct link to the other device.') : tr(`Po krijohet kanali (${s})…`, `Opening the channel (${s})…`)); });
         attachConn(conn, code);
       });
     };
@@ -38032,7 +38035,8 @@ const UnitTransferHost = ({ onClose, language }) => {
             link && ce('button', { type: 'button', onClick: copyTransferLink, title: tr('Kopjo linkun e lidhjes', 'Copy connection link'), className: 'h-11 px-2.5 rounded-[10px] border border-default text-[12px] font-semibold text-secondary hover:text-primary flex items-center gap-1 cursor-pointer' },
               unitTransferIcon(copiedLink ? 'M5 12l5 5 9-10' : 'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z', 'w-4 h-4'),
               copiedLink ? tr('U kopjua', 'Copied') : tr('Linku', 'Link'))),
-          phase === 'waiting' && ce('p', { className: 'text-[12px] text-tertiary mt-2 tabular-nums' }, tr(`Lidhja mbyllet pas ${mmss}`, `Link closes in ${mmss}`))),
+          phase === 'waiting' && ce('p', { className: 'text-[12px] text-tertiary mt-2 tabular-nums' }, tr(`Lidhja mbyllet pas ${mmss}`, `Link closes in ${mmss}`)),
+          phase === 'waiting' && hostNote && ce('p', { className: 'text-[12.5px] text-amber-600 dark:text-amber-400 mt-1 font-medium' }, hostNote)),
       phase !== 'starting' && ce('div', { className: 'mt-3.5' },
         ce('label', { className: `h-11 rounded-[14px] ${pickedFile ? 'bg-brand-500/10 border border-brand-500/30 text-brand-700 dark:text-brand-300' : 'bg-brand-600 text-white'} text-[14.5px] font-semibold flex items-center justify-center gap-2 cursor-pointer px-3 shadow-sm` },
           unitTransferIcon('M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4', 'w-4 h-4'),
@@ -38088,6 +38092,7 @@ const UnitTransferGuest = ({ params, onClose, onBackToHost, inlineModal, languag
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [fileError, setFileError] = useState('');
+  const [diag, setDiag] = useState({ server: 'wait', found: 'wait', ice: '' });
   const R = useRef({ peer: null, conn: null, bc: null, cancelled: false, phase: 'connecting', url: '' });
   useEffect(() => {
     const ref = R.current;
@@ -38149,7 +38154,14 @@ const UnitTransferGuest = ({ params, onClose, onBackToHost, inlineModal, languag
         if (['connecting', 'ready', 'waiting', 'sending', 'receiving'].includes(ref.phase)) fail(tr('Lidhja u ndërpre.', 'The connection was interrupted.'));
       });
     };
-    openTimer = setTimeout(() => fail(tr('Nuk u lidh. Kontrollo kodin ose internetin dhe provo përsëri.', 'Could not connect. Check the code or your internet and try again.')), 25000);
+    openTimer = setTimeout(() => {
+      const d = R.current.diag || {};
+      let why;
+      if (d.server !== 'ok') why = tr('Telefoni nuk arrin shërbimin e lidhjes. Kontrollo internetin.', 'This device cannot reach the connection service. Check your internet.');
+      else if (d.ice === 'checking' || d.ice === 'failed' || d.ice === 'disconnected') why = tr('Pajisja tjetër u gjet, por rrjeti bllokon lidhjen direkte (të dyja duhet të jenë në të njëjtin Wi-Fi, pa VPN, dhe Wi-Fi mos të izolojë pajisjet).', 'The other device was found, but the network blocks the direct link (both must be on the same Wi-Fi, no VPN, and Wi-Fi must not isolate devices).');
+      else why = tr('Pajisja tjetër nuk u gjet. Kontrollo kodin dhe që dritarja e transferimit të jetë e hapur atje.', 'The other device was not found. Check the code and that the transfer window is open there.');
+      fail(why);
+    }, 25000);
     const bcConn = unitCreateBroadcastConn(`unit-transfer-bc-${params.code}`, 'guest');
     if (bcConn) {
       ref.bc = bcConn;
@@ -38159,15 +38171,22 @@ const UnitTransferGuest = ({ params, onClose, onBackToHost, inlineModal, languag
       if (!alive || ref.phase !== 'connecting') return;
       const peer = new Peer(unitPeerOptions());
       ref.peer = peer;
-      peer.on('error', () => {
-        if (ref.phase === 'connecting' && !ref.conn) {
-          fail(tr('Nuk u lidh. Kontrollo kodin ose internetin dhe provo përsëri.', 'Could not connect. Check the code or your internet and try again.'));
+      peer.on('error', err => {
+        const type = err && err.type;
+        if (type === 'peer-unavailable') setDiag(d => { const n = { ...d, found: 'no' }; ref.diag = n; return n; });
+        else setDiag(d => { const n = { ...d, server: 'err' }; ref.diag = n; return n; });
+        if (ref.phase === 'connecting' && (!ref.conn || type === 'peer-unavailable')) {
+          fail(type === 'peer-unavailable'
+            ? tr('Pajisja tjetër nuk u gjet. Kontrollo kodin dhe që dritarja e transferimit të jetë e hapur atje.', 'The other device was not found. Check the code and that the transfer window is open there.')
+            : tr('Telefoni nuk arrin shërbimin e lidhjes. Kontrollo internetin ose çaktivizo bllokuesin e reklamave/VPN-në.', 'This device cannot reach the connection service. Check your internet or disable ad blocker/VPN.') + (type ? ` (${type})` : ''));
         }
       });
       peer.on('open', () => {
         if (!alive || ref.phase !== 'connecting') return;
+        setDiag(d => { const n = { ...d, server: 'ok' }; ref.diag = n; return n; });
         const conn = peer.connect(params.id, { reliable: true });
         if (!ref.conn) ref.conn = conn;
+        conn.on('iceStateChanged', s => setDiag(d => { const n = { ...d, found: 'ok', ice: s }; ref.diag = n; return n; }));
         wireConn(conn);
       });
     }).catch(() => {
@@ -38207,7 +38226,12 @@ const UnitTransferGuest = ({ params, onClose, onBackToHost, inlineModal, languag
   const heading = text => ce('h1', { className: `${inlineModal ? 'text-[20px]' : 'text-[26px]'} font-extrabold tracking-tight text-primary leading-tight` }, text);
   const codeBlock = ce('div', { className: 'my-4' }, ce('p', { className: 'text-[14px] text-secondary mb-2.5' }, tr(`Lidhur me kodin e ${hostNoun === 'telefoni' ? 'telefonit' : 'kompjuterit'}:`, `Connected with the ${hostNoun} code:`)), S.digits(params.code));
   let body;
-  if (phase === 'connecting') body = ce('div', null, heading(tr('Po lidhet…', 'Connecting…')), ce('p', { className: 'text-[14.5px] text-secondary mt-3' }, tr('Prit një çast.', 'One moment.')));
+  const dot = s => s === 'ok' ? '✓' : s === 'wait' ? '…' : '✕';
+  if (phase === 'connecting') body = ce('div', null, heading(tr('Po lidhet…', 'Connecting…')), ce('p', { className: 'text-[14.5px] text-secondary mt-3' }, tr('Prit një çast.', 'One moment.')),
+    ce('div', { className: 'mt-4 text-[13px] text-tertiary space-y-1 tabular-nums' },
+      ce('div', null, `${dot(diag.server)} ${tr('Shërbimi i lidhjes', 'Connection service')}`),
+      ce('div', null, `${diag.found === 'ok' ? '✓' : diag.found === 'no' ? '✕' : '…'} ${tr('Pajisja tjetër', 'Other device')}`),
+      ce('div', null, `${diag.ice === 'connected' || diag.ice === 'completed' ? '✓' : diag.ice === 'failed' ? '✕' : '…'} ${tr('Kanali direkt', 'Direct channel')}${diag.ice ? ' (' + diag.ice + ')' : ''}`)));
   else if (phase === 'ready') body = ce('div', null,
     heading(tr(`Dërgo skedar te ${hostNoun}`, `Send a file to the ${hostNoun}`)), codeBlock,
     ce('label', { className: 'h-12 sm:h-14 rounded-2xl bg-brand-600 text-white text-[15px] sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer' },
