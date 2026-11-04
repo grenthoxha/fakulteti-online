@@ -1147,7 +1147,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-hold">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-fullscreen">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -8792,7 +8792,7 @@ const buildUnitLessonPlan = (chapter, quiz, courseTitle) => {
 const getVideoStorySwipeAction = (dx, dy) => {
   if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.2) return dx < 0 ? 'next' : 'previous';
   if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-    if (dy >= 80) return 'close';
+    if (dy >= 60) return 'previous';
     if (dy <= -60) return 'next';
   }
   return null;
@@ -8950,9 +8950,15 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true,
     root.addEventListener('click', onClick, true);
     root.addEventListener('wheel', onWheel, active);
     const feed = root.querySelector('#course-video-scroll-feed');
+    const captions = Array.from(root.querySelectorAll?.('.course-video-caption') || []);
+    const syncCaptionHeights = () => captions.forEach(caption => {
+      caption.closest('.story-slide')?.style.setProperty('--story-caption-height', `${caption.getBoundingClientRect().height}px`);
+    });
+    syncCaptionHeights();
     let feedWidth = feed?.clientWidth;
     let feedHeight = feed?.clientHeight;
     const resizeObserver = feed && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => {
+      syncCaptionHeights();
       if (feed.clientWidth === feedWidth && feed.clientHeight === feedHeight) return;
       feedWidth = feed.clientWidth;
       feedHeight = feed.clientHeight;
@@ -8960,7 +8966,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true,
       feed.scrollLeft = feed.dataset.axis === 'vertical' ? 0 : index * feedWidth;
       feed.scrollTop = feed.dataset.axis === 'vertical' ? index * feedHeight : 0;
     }) : null;
-    if (resizeObserver) resizeObserver.observe(feed);
+    if (resizeObserver) { resizeObserver.observe(feed); captions.forEach(caption => resizeObserver.observe(caption)); }
     return () => {
       removeHold();
       resizeObserver?.disconnect();
@@ -9065,7 +9071,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       })
     ),
     /* Kontrollet poshtë videos */
-    h('div', { className: 'flex items-center gap-3 px-1' },
+    h('div', { className: 'story-player-controls flex items-center gap-3 px-1' },
       h('button', { type: 'button', onClick: togglePlay, className: iconBtn, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
         st.playing
           ? h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' }))
@@ -10314,7 +10320,7 @@ function AcademyApp({
     try { const stored = JSON.parse(localStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
   const [studentCardOpen, setStudentCardOpen] = useState(false);
-  const [examToolOpen, setExamToolOpen] = useState(null);
+  const [archiveSearch, setArchiveSearch] = useState('');
   const [archiveSelection, setArchiveSelection] = useState({ yearId: '', courseId: '' });
   const [openExamId, setOpenExamId] = useState(null);
   const [examActionId, setExamActionId] = useState(null);
@@ -12619,6 +12625,7 @@ function AcademyApp({
   const [selectedExplainVideoId, setSelectedExplainVideoId] = useState('');
   const [courseVideoFeedOpen, setCourseVideoFeedOpen] = useState(false);
   const [courseVideoFeedIndex, setCourseVideoFeedIndex] = useState(0);
+  const [storyFit, setStoryFit] = useState('auto');
   const courseVideoFeedScrollLockRef = useRef(0);
   const courseVideoFeedAnimationRef = useRef(null);
   const [likedVideoIds, setLikedVideoIds] = useState(() => {
@@ -18697,7 +18704,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const animate = now => {
       if (startedAt === null) startedAt = now;
       const progress = Math.min(1, (now - startedAt) / 420);
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased = progress * progress * (3 - 2 * progress);
       position(courseVideoFeedIndex + (safeIndex - courseVideoFeedIndex) * eased);
       if (progress < 1) animation.frame = requestAnimationFrame(animate);
       else { position(safeIndex); restore(); setCourseVideoFeedIndex(safeIndex); }
@@ -32054,6 +32061,53 @@ Nënshkrimi: _____________________`;
   };
   /* ══ PROVIMET · pamja minimale (skeda e parë) ══ */
   const openExamAdd = () => { const d = new Date(`${today}T12:00:00`); d.setDate(d.getDate() + 7); setDeadlineDraft({ title: '', courseId: '', date: dateKey(d), examTime: '', examRoom: '', pick: '', type: 'exam', isExamModalOpen: true }); };
+  const renderArchiveExamChooser = () => {
+    const ce = React.createElement;
+    const completedYearsList = (branchYears || []).filter(y => Number(y.id) < Number(yearId) || (completedAcademicYears || []).includes(Number(y.id)));
+    const archiveYear = (branchYears || []).find(item => String(item.id) === String(archiveSelection.yearId)) || completedYearsList[0] || yr;
+    const archiveCourses = (archiveYear?.semesters || []).flatMap(semester => semester.courses || []);
+    const selectedArchiveCourse = archiveCourses.find(item => item.id === archiveSelection.courseId);
+    const linkedArchive = selectedArchiveCourse && (window.FAKULTETI_EDITORIAL?.archiveExams || []).find(item => item.courseId === selectedArchiveCourse.id && Array.isArray(item.questions) && item.questions.length > 0 && item.questions.every(question => question && typeof question.prompt === 'string' && question.prompt.trim() && ['recall', 'mcq'].includes(question.type) && (question.type === 'recall' ? (typeof question.expected === 'string' && question.expected.trim()) : (Array.isArray(question.options) && question.options.length > 1 && Number.isInteger(question.correct) && question.correct >= 0 && question.correct < question.options.length))));
+    const shownCourses = archiveCourses.filter(item => unitFold(item.title).includes(unitFold(archiveSearch.trim())));
+    const startSelected = () => {
+      if (!selectedArchiveCourse || !linkedArchive) return;
+      setCourse(selectedArchiveCourse);
+      setMockExam({ id: `mock_archive_${Date.now()}`, courseId: selectedArchiveCourse.id, courseTitle: selectedArchiveCourse.title, questions: linkedArchive.questions.map((question, index) => ({ ...question, id: question.id || `archive_${index}` })), answers: {}, index: 0, submitted: false, score: 0, difficulty: 'archive', isArchiveExam: true, timeLimitSeconds: 3600, startedAt: Date.now() });
+      setMockExamRemainingSeconds(3600); setMockRecallReveal(false); setView('mock-exam');
+    };
+    return ce('section', { className: 'space-y-4', 'aria-label': 'Zgjidh provimin nga arkiva' },
+      ce('div', { className: 'card-surface border border-default rounded-2xl p-4 space-y-4' },
+        ce('div', { className: 'flex items-center gap-3' },
+          ce('span', { className: 'w-11 h-11 rounded-xl bg-brand-600/10 text-brand-700 dark:text-brand-300 flex items-center justify-center shrink-0' }, unitUiIcon('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2', 'w-5 h-5')),
+          ce('div', null, ce('h2', { className: 'font-semibold text-primary' }, 'Cilin provim dëshiron të mbash?'), ce('p', { className: 'text-xs text-secondary mt-1' }, 'Zgjidh vitin dhe lëndën · 1 orë'))),
+        ce('label', { className: 'block text-xs font-medium text-secondary' }, 'Viti akademik',
+          ce('select', { value: archiveYear?.id || '', onChange: event => { setArchiveSelection({ yearId: event.target.value, courseId: '' }); setArchiveSearch(''); }, className: 'w-full h-11 mt-1.5 rounded-xl input-bg border border-default px-3 text-sm font-semibold text-primary' }, (branchYears || []).map(item => ce('option', { key: item.id, value: item.id }, item.label)))),
+        ce('label', { className: 'block text-xs font-medium text-secondary' }, 'Kërko lëndën', ce('input', { type: 'search', value: archiveSearch, onChange: event => setArchiveSearch(event.target.value), placeholder: 'Emri i lëndës…', className: 'w-full h-11 mt-1.5 rounded-xl input-bg border border-default px-3 text-sm text-primary' }))),
+      ce('fieldset', { className: 'space-y-2.5' },
+        ce('legend', { className: 'text-xs font-medium text-secondary mb-3' }, `${shownCourses.length} lëndë · ${archiveYear?.label || ''}`),
+        shownCourses.map(item => {
+          const selected = selectedArchiveCourse?.id === item.id;
+          return ce('article', { key: item.id, className: `card-surface border rounded-2xl overflow-hidden ${selected ? 'border-brand-500' : 'border-default'}` },
+            ce('label', { className: 'flex items-center gap-3 p-4 cursor-pointer' },
+              ce('input', { type: 'radio', name: 'archive-course', value: item.id, checked: selected, onChange: () => setArchiveSelection({ yearId: archiveYear.id, courseId: item.id }), className: 'w-4 h-4 accent-brand-600 shrink-0' }),
+              ce('span', { className: 'flex-1 min-w-0' }, ce('span', { className: 'block text-sm text-primary font-semibold leading-5' }, item.title), ce('span', { className: 'block text-xs text-secondary mt-1' }, `${Number(item.ects) || 0} ECTS`)),
+              selected && ce('span', { className: 'text-brand-700 dark:text-brand-300 shrink-0', 'aria-hidden': true }, unitUiIcon('M5 12l4 4L19 6', 'w-5 h-5'))),
+            selected && ce('div', { className: 'border-t border-default px-4 pb-4 pt-3 space-y-3' },
+              ce('p', { className: 'text-xs text-secondary leading-5', role: 'status' }, linkedArchive ? 'Provimi është gati. Kohëzgjatja: 1 orë.' : 'Ky provim është në përgatitje. Do të hapet kur të shtohen pyetjet për këtë lëndë.'),
+              ce('button', { type: 'button', disabled: !linkedArchive, onClick: startSelected, className: 'w-full h-11 rounded-xl bg-brand-600 text-white text-sm font-semibold disabled:opacity-45' }, linkedArchive ? 'Fillo provimin · 1 orë' : 'Në përgatitje')));
+        })),
+      !shownCourses.length && ce('div', { className: 'card-surface rounded-2xl border border-default p-6 text-center text-sm text-secondary', role: 'status' }, archiveCourses.length ? 'Nuk u gjet asnjë lëndë me këtë emër.' : 'Nuk ka lëndë të regjistruara për këtë vit.'));
+  };
+  const renderExamToolPage = kind => {
+    const h = React.createElement;
+    const title = kind === 'calc' ? 'Kalkulatori i notës' : 'Provim nga arkiva';
+    return h('div', { className: 'exam-tool-page w-full max-w-2xl mx-auto p-4 sm:p-6 pb-28 space-y-5 anim-fade-up' },
+      h('header', { className: 'flex items-center gap-3' },
+        h('button', { type: 'button', onClick: () => { setStudentTab('exams'); goBackOr('student'); }, className: 'w-10 h-10 rounded-xl card-surface border border-default text-primary shrink-0', 'aria-label': 'Kthehu te provimet' }, '←'),
+        h('h1', { className: 'text-xl font-bold tracking-tight text-primary' }, title)),
+      kind === 'calc' ? renderGpaExamTargetCalculator() : renderArchiveExamChooser());
+  };
+
   const renderExamsMinimal = () => {
     const ce = React.createElement;
     const courseOf = exam => allCourses.find(c => c.id === exam.courseId);
@@ -32428,23 +32482,6 @@ Nënshkrimi: _____________________`;
             className: "mt-4 w-full h-12 rounded-[14px] bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-default"
           }, `Shto ${examImport.items.filter(it => it.on).length} provime`))));
 
-    const completedYearsList = (branchYears || []).filter(y => Number(y.id) < Number(yearId) || (completedAcademicYears || []).includes(Number(y.id)));
-    const archiveYear = (branchYears || []).find(item => String(item.id) === String(archiveSelection.yearId)) || completedYearsList[0] || yr;
-    const archiveCourses = (archiveYear?.semesters || []).flatMap(semester => semester.courses || []);
-    const selectedArchiveCourse = archiveCourses.find(item => item.id === archiveSelection.courseId);
-    const linkedArchive = selectedArchiveCourse && (window.FAKULTETI_EDITORIAL?.archiveExams || []).find(item => item.courseId === selectedArchiveCourse.id && Array.isArray(item.questions) && item.questions.length > 0 && item.questions.every(question => question && typeof question.prompt === 'string' && question.prompt.trim() && ['recall', 'mcq'].includes(question.type) && (question.type === 'recall' ? (typeof question.expected === 'string' && question.expected.trim()) : (Array.isArray(question.options) && question.options.length > 1 && Number.isInteger(question.correct) && question.correct >= 0 && question.correct < question.options.length))));
-    const archiveChooser = examToolOpen === 'archive' && ce('section', { className: 'card-surface rounded-2xl border border-default p-4 space-y-4 anim-fade-up', 'aria-label': 'Zgjidh provimin nga arkiva' },
-      ce('div', null, ce('h3', { className: 'font-semibold text-primary' }, 'Cilin provim dëshiron të mbash?'), ce('p', { className: 'text-xs text-secondary mt-1' }, 'Zgjidh vitin dhe lëndën. Kohëzgjatja: 1 orë.')),
-      ce('label', { className: 'block text-xs text-secondary' }, 'Viti akademik', ce('select', { value: archiveYear?.id || '', onChange: event => setArchiveSelection({ yearId: event.target.value, courseId: '' }), className: 'w-full h-10 mt-1.5 rounded-xl input-bg border border-default px-3 text-sm text-primary' }, (branchYears || []).map(item => ce('option', { key: item.id, value: item.id }, item.label)))),
-      ce('fieldset', { className: 'space-y-2 max-h-72 overflow-y-auto' }, ce('legend', { className: 'text-xs text-secondary mb-2' }, 'Lënda e provimit'), archiveCourses.map(item => ce('label', { key: item.id, className: `flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${selectedArchiveCourse?.id === item.id ? 'border-brand-500 bg-brand-600/5' : 'border-default'}` }, ce('input', { type: 'radio', name: 'archive-course', value: item.id, checked: selectedArchiveCourse?.id === item.id, onChange: () => setArchiveSelection({ yearId: archiveYear.id, courseId: item.id }), className: 'accent-brand-600' }), ce('span', { className: 'text-sm text-primary font-medium' }, item.title)))),
-      selectedArchiveCourse && !linkedArchive && ce('p', { className: 'rounded-xl bg-brand-600/5 p-3 text-xs text-secondary leading-5', role: 'status' }, `Provimi për “${selectedArchiveCourse.title}” është në përgatitje. Pyetjet do të lidhen me këtë lëndë para se të hapet.`),
-      ce('button', { type: 'button', disabled: !linkedArchive, className: 'w-full h-11 rounded-xl bg-brand-600 text-white font-semibold text-sm disabled:opacity-45', onClick: () => {
-        if (!selectedArchiveCourse || !linkedArchive) return;
-        setCourse(selectedArchiveCourse);
-        setMockExam({ id: `mock_archive_${Date.now()}`, courseId: selectedArchiveCourse.id, courseTitle: selectedArchiveCourse.title, questions: linkedArchive.questions.map((question, index) => ({ ...question, id: question.id || `archive_${index}` })), answers: {}, index: 0, submitted: false, score: 0, difficulty: 'archive', isArchiveExam: true, timeLimitSeconds: 3600, startedAt: Date.now() });
-        setMockExamRemainingSeconds(3600); setMockRecallReveal(false); setView('mock-exam');
-      } }, linkedArchive ? 'Fillo provimin · 1 orë' : selectedArchiveCourse ? 'Në përgatitje' : 'Zgjidh një lëndë'));
-
     const tools = [
       { id: 'calc', title: "Kalkulatori i notës", icon: "M5 3h14v18H5zM8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M8 18h2M12 18h2" },
       { id: 'archive', title: "Provim nga arkiva", icon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2", hint: 'Zgjidh lëndën · 1 orë' }
@@ -32473,22 +32510,17 @@ Nënshkrimi: _____________________`;
       ce("section", { className: "space-y-3" },
         ce("div", { className: "grid grid-cols-2 gap-2.5" },
           tools.map(tool => {
-            const expandable = true;
-            const open = examToolOpen === tool.id;
             return ce("button", {
               key: tool.id,
               type: "button",
-              onClick: () => setExamToolOpen(open ? null : tool.id),
-              "aria-expanded": expandable ? open : undefined,
-              className: `card-surface border rounded-2xl p-3.5 text-left flex flex-col gap-3 cursor-pointer ${open ? 'border-brand-500' : 'border-default'}`
+              onClick: () => setView(tool.id === 'calc' ? 'grade-calculator' : 'archive-exam'),
+              className: 'card-surface border border-default rounded-2xl p-3.5 text-left flex flex-col gap-3 cursor-pointer'
             },
               ce("span", { className: "w-[34px] h-[34px] rounded-[10px] bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0" }, unitUiIcon(tool.icon, "w-[18px] h-[18px]")),
               ce("span", { className: "block" },
                 ce("span", { className: "block text-[13.5px] font-semibold text-primary leading-tight" }, tool.title),
                 tool.hint ? ce("span", { className: "block text-[12px] text-tertiary mt-0.5" }, tool.hint) : null));
-          })),
-        archiveChooser,
-        examToolOpen === 'calc' && renderGpaExamTargetCalculator()));
+          }))));
   };
 
   /* ══ KREU · Detyrat e sotme (pamja minimale) ══ */
@@ -33100,8 +33132,7 @@ Nënshkrimi: _____________________`;
     const programName = scheduleProgramFilter === 'social-work' ? 'Punë Sociale · Viti I' : 'Psikologji · Viti III';
     return h('section', { className: 'space-y-3', 'aria-label': `Orari i ${programName}` },
       h('div', null,
-        h('h2', { className: 'text-base font-bold text-primary' }, programName),
-        h('p', { className: 'text-xs text-secondary mt-1' }, 'Orari javor i fakultetit · Të gjitha grupet e këtij viti')),
+        h('h2', { className: 'text-base font-bold text-primary' }, programName)),
       sessions.length ? sessions.map((session, index) => h('article', {
         key: `${session.room}:${session.s}:${session.g}:${index}`, className: 'sch-card space-y-2'
       },
@@ -33423,12 +33454,14 @@ Nënshkrimi: _____________________`;
     const curVideo = courseVideoFeed[courseVideoFeedIndex] || courseVideoFeed[0];
     if (!curVideo) return null;
     const total = courseVideoFeed.length;
+    const fullPicture = storyFit === 'contain' || (storyFit === 'auto' && curVideo.kind === 'article');
     const h = React.createElement;
 
     return h(ModalPortal, null,
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
+        'data-fit': storyFit,
         isPlaying: videoLivePlaying,
         onPlayingChange: setVideoLivePlaying,
         holdLabel: appearanceText('Në pauzë', 'Paused'),
@@ -33439,7 +33472,7 @@ Nënshkrimi: _____________________`;
         "aria-modal": "true",
         "aria-label": appearanceText('Video dhe artikuj', 'Videos and articles')
       },
-        h('div', { className: "w-full h-full min-h-0 flex flex-col" },
+        h('div', { className: "story-shell w-full h-full min-h-0 flex flex-col" },
 
           h('div', { className: 'story-progress', 'aria-label': appearanceText('Progresi i postimeve', 'Story progress') },
             courseVideoFeed.map((video, idx) => h('button', {
@@ -33453,7 +33486,7 @@ Nënshkrimi: _____________________`;
             }))))),
 
           /* Lart: kategoria + mbyll (shirit më vete, nuk mbulon videon) */
-          h('div', { className: "shrink-0 flex items-center gap-2.5 pl-4 pr-2 pt-3 pb-2" },
+          h('div', { className: "story-topbar shrink-0 flex items-center gap-2.5 pl-4 pr-2 pt-3 pb-2" },
             (() => {
               const hs = getTopicVideoSource(curVideo.url);
               const hp = hs?.videoId ? `https://i.ytimg.com/vi/${hs.videoId}/mqdefault.jpg` : (hs?.thumbnail || curVideo.thumbnail || '');
@@ -33463,6 +33496,13 @@ Nënshkrimi: _____________________`;
             h('div', { className: "flex-1 min-w-0" },
               h('div', { className: "text-[15px] font-semibold truncate" }, getCategoryLabel(curVideo.category || curVideo.courseTitle || 'Psikologji'))
             ),
+            h('button', {
+              type: 'button', onClick: () => setStoryFit(fullPicture ? 'cover' : 'contain'),
+              className: 'story-fit-toggle w-10 h-10 rounded-full bg-black/20 flex items-center justify-center shrink-0',
+              'aria-pressed': fullPicture,
+              'aria-label': !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'),
+              title: !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen')
+            }, h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
             h('button', {
               type: "button",
               onClick: () => setCourseVideoFeedOpen(false),
@@ -33502,6 +33542,7 @@ Nënshkrimi: _____________________`;
                 key: `slide_${video.id || idx}`,
                 className: "story-slide relative w-full h-full min-h-0 min-w-0 shrink-0 snap-start snap-always flex flex-col",
                 'data-story-kind': video.kind || 'video',
+                'data-native-controls': Boolean(src?.type === 'video' || (src?.provider && src.provider !== 'YouTube')),
                 'aria-hidden': !isActive,
                 inert: isActive ? undefined : ''
               },
@@ -33517,12 +33558,12 @@ Nënshkrimi: _____________________`;
                 }),
                 /* Videoja shfrytëzon hapësirën e plotë; luhet vetëm ajo aktive. */
                 video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' }, h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' }))
-                : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc && window.location?.protocol !== 'file:')
+                : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
                 ? h(UnitYouTubeReelPlayer, {
                     key: `yt_${video.id || idx}`,
                     title: video.title,
                     poster: src.thumbnail,
-                    embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=0&iv_load_policy=3&fs=0&disablekb=1&origin=${encodeURIComponent(window.location.origin)}`
+                    embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=0&iv_load_policy=3&fs=0&disablekb=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
                   })
                 : h('div', { 'data-story-player': src?.provider || 'native', 'data-playing': String(videoLivePlaying), className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
                   isActive
@@ -34193,7 +34234,7 @@ Nënshkrimi: _____________________`;
       setView('student');
       setSidebarOpen(false);
     },
-    className: `w-full text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all flex items-center gap-2.5 ${(view === 'student' && studentTab === 'exams') || ['mock-exam', 'mock-analysis', 'final-prep'].includes(view) ? 'active-surface text-brand-700 dark:text-brand-300' : 'text-secondary hover:text-primary hover-surface'}`
+    className: `w-full text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all flex items-center gap-2.5 ${(view === 'student' && studentTab === 'exams') || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'active-surface text-brand-700 dark:text-brand-300' : 'text-secondary hover:text-primary hover-surface'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4",
     fill: "none",
@@ -35282,7 +35323,7 @@ Nënshkrimi: _____________________`;
     obligations: sortedDeadlines,
     campusSpots,
     onBack: () => goBackOr('studentservices')
-  }) : view === 'articles' ? renderArticlesView() : view === 'housing' ? renderHousingView() : view === 'books' ? renderBooksView() : view === 'scholarship' ? renderScholarshipView() : view === 'studygroups' ? renderStudyGroupsView() : view === 'pastexams' ? renderExamPapersView() : view === 'freerooms' ? renderFreeRoomsView() : view === 'campusguide' ? renderCampusGuideView() : view === 'examclash' ? renderExamClashView() : view === 'urbantraffic' ? renderUrbanTrafficView() : view === 'studentperks' ? renderStudentPerksView() : view === 'seniortips' ? renderSeniorTipsView() : view === 'scholarshiptarget' ? renderScholarshipTargetView() : view === 'career' ? renderCareerView() : view === 'studentrights' ? renderStudentRightsView() : view === 'invisiblecurriculum' ? renderInvisibleCurriculumView() : view === 'student' ? /*#__PURE__*/React.createElement("div", {
+  }) : view === 'grade-calculator' ? renderExamToolPage('calc') : view === 'archive-exam' ? renderExamToolPage('archive') : view === 'articles' ? renderArticlesView() : view === 'housing' ? renderHousingView() : view === 'books' ? renderBooksView() : view === 'scholarship' ? renderScholarshipView() : view === 'studygroups' ? renderStudyGroupsView() : view === 'pastexams' ? renderExamPapersView() : view === 'freerooms' ? renderFreeRoomsView() : view === 'campusguide' ? renderCampusGuideView() : view === 'examclash' ? renderExamClashView() : view === 'urbantraffic' ? renderUrbanTrafficView() : view === 'studentperks' ? renderStudentPerksView() : view === 'seniortips' ? renderSeniorTipsView() : view === 'scholarshiptarget' ? renderScholarshipTargetView() : view === 'career' ? renderCareerView() : view === 'studentrights' ? renderStudentRightsView() : view === 'invisiblecurriculum' ? renderInvisibleCurriculumView() : view === 'student' ? /*#__PURE__*/React.createElement("div", {
     className: "p-3 sm:p-6 w-full max-w-6xl mx-auto space-y-5 anim-fade-up pb-24 lg:pb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col sm:flex-row sm:items-center justify-end gap-3 pb-1"
@@ -36527,7 +36568,7 @@ Nënshkrimi: _____________________`;
     onClick: () => setGroupMessagesOpen(true)
   }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle, { className: "w-6 h-6" })), !isInstructorAccount && view === 'student' && studentTab === 'exams' && !deadlineDraft.isExamModalOpen && !examAddMenu && !examImport.open && !examSelect.on && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: `exam-add-floating ${isMobileChromeHidden || examToolOpen === 'calc' ? 'is-hidden' : ''}`,
+    className: `exam-add-floating ${isMobileChromeHidden ? 'is-hidden' : ''}`,
     "aria-label": "Shto provim",
     "aria-hidden": isMobileChromeHidden || undefined,
     tabIndex: isMobileChromeHidden ? -1 : 0,
@@ -36598,8 +36639,8 @@ Nënshkrimi: _____________________`;
       setStudentTab('exams');
       setView('student');
     },
-    "aria-current": view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep'].includes(view) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep'].includes(view) ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    "aria-current": view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'text-brand-600 active-surface' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
