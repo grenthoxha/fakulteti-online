@@ -9,7 +9,7 @@
 .student-support-note { color:var(--muted); font-size:.75rem; line-height:1.65; margin-top:.35rem; overflow-wrap:anywhere; }
 .student-support-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.6rem; margin:.85rem 0; }
 .student-support-button { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:2.5rem; padding:.55rem .8rem; border:1px solid var(--line); border-radius:.75rem; background:var(--surface-muted); color:var(--ink); font-size:.75rem; font-weight:650; cursor:pointer; text-decoration:none; }
-.student-support-button.primary { background:#4a55df; border-color:#4a55df; color:white; }
+.student-support-button.primary { background:rgb(var(--brand-rgb)); border-color:rgb(var(--brand-rgb)); color:white; }
 .student-support-button.danger { color:#c43e4a; }
 .student-support-button:disabled { opacity:.55; cursor:not-allowed; }
 .student-support-button:hover:not(:disabled) { filter:brightness(.96); }
@@ -24,7 +24,7 @@
 .student-support-filters { display:flex; flex-wrap:wrap; gap:.55rem; margin-bottom:.9rem; }
 .student-support-filters label { flex:1 1 9rem; }
 .student-support-check { display:flex; align-items:flex-start; gap:.65rem; padding:.55rem 0; font-size:.8rem; line-height:1.6; overflow-wrap:anywhere; cursor:pointer; }
-.student-support-check input { flex-shrink:0; width:1.1rem; height:1.1rem; margin-top:.2rem; accent-color:#4a55df; }
+.student-support-check input { flex-shrink:0; width:1.1rem; height:1.1rem; margin-top:.2rem; accent-color:rgb(var(--brand-rgb)); }
 .student-support-check.is-checked > span { color:var(--muted); text-decoration:line-through; }
 .student-support-badge { display:inline-flex; font-size:.7rem; line-height:1.6; padding:.2rem .55rem; border-radius:.5rem; background:rgba(95,111,244,.1); color:var(--ink); }
 .student-support-alert { padding:.7rem .8rem; border-radius:.75rem; background:rgba(245,158,11,.09); border:1px solid rgba(245,158,11,.25); font-size:.8rem; line-height:1.6; margin:.65rem 0; overflow-wrap:anywhere; }

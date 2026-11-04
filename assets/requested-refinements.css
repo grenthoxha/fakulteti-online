@@ -40,7 +40,7 @@
 .profile-name-edit-hint { display:inline-flex; align-items:center; gap:.3rem; padding:.4rem; min-height:2rem; border-radius:.5rem; font-size:.65rem; color:var(--muted); background:var(--surface-muted); border:1px solid var(--line); flex-shrink:0; }
 .profile-membership-badge { display:grid; place-items:center; flex-shrink:0; width:1.65rem; height:1.65rem; border-radius:.6rem; border:1px solid var(--line); color:var(--muted); background:var(--surface-muted); }
 .profile-membership-badge.is-premium { color:rgb(var(--brand-rgb)); border-color:rgba(var(--brand-rgb),.25); background:rgba(var(--brand-rgb),.1); }
-.dark .profile-membership-badge.is-premium,.dark .course-detail-assistant > svg { color:#b6bfff; }
+.dark .profile-membership-badge.is-premium,.dark .course-detail-assistant > svg { color:#93c3ff; }
 .schedule-page .schedule-day-card,
 .schedule-page .schedule-day-card:hover,
 .schedule-page .schedule-session-card,
@@ -55,19 +55,19 @@
 .semester-materials-card > .semester-materials-card-footer:last-child { width:100%; margin:0; }
 .semester-materials-card .semester-materials-status { margin:0; padding:0; border:0; border-radius:0; background:transparent; font:inherit; }
 .semester-materials-card-cta { display:flex; align-items:center; gap:.5rem; color:rgb(var(--brand-rgb)); font:inherit; white-space:nowrap; }
-.dark .semester-materials-card-cta { color:#b6bfff; }
-.semester-materials-mini-book { width:2.9rem; height:3.8rem; flex-shrink:0; border-radius:.15rem .35rem .35rem .15rem; background:linear-gradient(100deg,#333986 0 12%,#5056c8 13%,#292e73 100%); color:#e3e6ff; display:flex; flex-direction:column; justify-content:space-between; padding:.4rem .4rem .4rem .6rem; box-shadow:3px 3px 0 var(--line),0 5px 12px rgba(0,0,0,.15); }
+.dark .semester-materials-card-cta { color:#93c3ff; }
+.semester-materials-mini-book { width:2.9rem; height:3.8rem; flex-shrink:0; border-radius:.15rem .35rem .35rem .15rem; background:linear-gradient(100deg,#10396c 0 12%,#1557b0 13%,#0c294c 100%); color:#dcecff; display:flex; flex-direction:column; justify-content:space-between; padding:.4rem .4rem .4rem .6rem; box-shadow:3px 3px 0 var(--line),0 5px 12px rgba(0,0,0,.15); }
 .semester-materials-mini-book > span:first-child { font-size:.3rem; letter-spacing:.05em; }
 .semester-materials-mini-book > strong { font-size:1.1rem; line-height:1; }
 .semester-materials-mini-book > span:last-child { font-size:.3rem; text-transform:uppercase; }
 .semester-materials-panel { padding:1.25rem; scroll-margin-top:5.5rem; }
 .semester-materials-showcase { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); align-items:center; gap:1.5rem; padding:1.25rem; margin-bottom:1.25rem; border-radius:1rem; background:var(--surface-muted); }
 .semester-materials-book-scene { display:grid; justify-items:center; gap:1rem; min-width:0; perspective:900px; }
-.semester-materials-book { width:clamp(7.5rem,17vw,11rem); min-height:12rem; aspect-ratio: .69; position:relative; display:flex; flex-direction:column; gap:1rem; padding:1.2rem 1rem 1rem 1.4rem; color:#eef0ff; border-radius:.2rem .5rem .5rem .2rem; background:linear-gradient(105deg,#202455 0 8%,#474daf 9%,#353a8d 55%,#202455 100%); transform:rotateY(-14deg) rotateZ(-3deg); box-shadow:8px 9px 0 -3px #d7d9e7,10px 11px 0 -3px #b8bdd4,0 22px 24px -14px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.15); }
+.semester-materials-book { width:clamp(7.5rem,17vw,11rem); min-height:12rem; aspect-ratio: .69; position:relative; display:flex; flex-direction:column; gap:1rem; padding:1.2rem 1rem 1rem 1.4rem; color:#eff6ff; border-radius:.2rem .5rem .5rem .2rem; background:linear-gradient(105deg,#07182d 0 8%,#1557b0 9%,#10396c 55%,#07182d 100%); transform:rotateY(-14deg) rotateZ(-3deg); box-shadow:8px 9px 0 -3px #d7d9e7,10px 11px 0 -3px #b8bdd4,0 22px 24px -14px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.15); }
 .semester-materials-book::after { content:''; position:absolute; top:0; bottom:0; left:9%; width:1px; background:rgba(255,255,255,.17); }
 .semester-materials-book-brand { font-size:.42rem; font-weight:700; letter-spacing:.16em; }
 .semester-materials-book-name { font-size:1rem; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
-.semester-materials-book-topic { color:#cbd0f6; font-size:.6rem; line-height:1.5; white-space:pre-line; }
+.semester-materials-book-topic { color:#bedbff; font-size:.6rem; line-height:1.5; white-space:pre-line; }
 .semester-materials-book-volume { margin-top:auto; padding-top:1rem; border-top:1px solid rgba(255,255,255,.2); font-size:.55rem; letter-spacing:.06em; }
 .semester-materials-book-caption { font-size:.6rem; color:var(--muted); text-align:center; }
 .semester-materials-pitch > span { display:inline-block; font-size:.6rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }

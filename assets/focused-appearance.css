@@ -20,7 +20,7 @@ header.app-scroll-chrome.header-bg { background:var(--surface) !important; -webk
 .course-detail-page .course-detail-tabs { background:var(--surface-muted) !important; border:1px solid var(--line) !important; border-radius:.95rem !important; padding:.3rem !important; gap:.2rem; }
 .course-detail-tabs > button { border-radius:.7rem; min-height:2.6rem; padding:.55rem .45rem; font-size:.75rem; font-weight:650; }
 .course-detail-page .course-detail-tabs > button.bg-brand-600 { background:var(--surface) !important; color:rgb(var(--brand-rgb)) !important; box-shadow:0 1px 3px rgba(16,24,40,.08) !important; }
-.dark .course-detail-page .course-detail-tabs > button.bg-brand-600 { color:#b6bfff !important; }
+.dark .course-detail-page .course-detail-tabs > button.bg-brand-600 { color:#93c3ff !important; }
 .course-detail-more { height:2.6rem; flex-basis:2.5rem; min-width:2.5rem; }
 .course-detail-page .course-detail-syllabus { border-radius:1.125rem; padding:.5rem; }
 .course-detail-chapter-nav { min-width:0; }
