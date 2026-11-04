@@ -6,10 +6,28 @@
  *   { type: 'mcq', prompt: 'Pyetja…', options: ['A', 'B'], correct: 0 },
  *   { type: 'recall', prompt: 'Pyetja…', expected: 'Përgjigjja…' }
  * ] }
- * Listat mbeten bosh derisa të jenë gati artikujt dhe provimet reale.
+ * Përfshihet një artikull shembull; provimet mbeten në përgatitje.
  */
 window.FAKULTETI_EDITORIAL = {
-  articles: [],
+  articles: [{
+    id: 'shembull-kontrolli-i-punimit',
+    title: 'Para se ta dorëzosh punimin: 5 kontrolle të fundit',
+    summary: 'Struktura, burimet dhe qartësia: një kontroll i shkurtër para dorëzimit të punimit.',
+    image: './assets/article-punimi-preview.svg',
+    author: 'Fakulteti Online · Artikull shembull',
+    date: '2026-11-04',
+    minutes: 3,
+    published: true,
+    body: [
+      'Para se ta dorëzosh punimin, lexoje edhe një herë me pesë pyetje konkrete përpara. Kjo listë është një shembull praktik; përshtate me udhëzimet e profesorit dhe kërkesat e detyrës.',
+      '1. A i përgjigjet punimi pyetjes kryesore? Lexo titullin, hyrjen dhe përfundimin njëri pas tjetrit. Shiko nëse trajtojnë të njëjtën çështje dhe nëse përfundimi lidhet me argumentet që ke zhvilluar në tekst.',
+      '2. A ka çdo paragraf një ide të qartë? Shëno me pak fjalë çfarë thotë secili paragraf. Nëse dy paragrafë përsërisin të njëjtën ide, bashkoji ose qartëso dallimin. Nëse një paragraf largohet nga tema, rishikoje vendin e tij.',
+      '3. A përputhen citimet me bibliografinë? Krahaso burimet që ke përdorur në tekst me listën në fund. Kontrollo autorin, vitin, faqet kur kërkohen dhe formatin e kërkuar nga profesori. Mos përfshi burime që nuk i ke lexuar ose përdorur.',
+      '4. A i ke trajtuar komentet e mëparshme? Hap vërejtjet e profesorit nga punimi i fundit. Për secilin koment, gjej një shembull në punimin aktual që tregon se e ke korrigjuar problemin: argumentim, citim, strukturë ose gjuhë.',
+      '5. A është skedari gati për dorëzim? Kontrollo emrin e skedarit, formatin, faqet dhe kërkesat teknike të detyrës. Hape versionin që do të dorëzosh dhe sigurohu që figurat, tabelat dhe referencat shfaqen siç duhet.',
+      'Në fund, ruaj një kopje të versionit të dorëzuar. Shëno një gjë që dëshiron ta bësh më mirë në punimin tjetër, që komentet e këtij punimi të të ndihmojnë edhe herën e ardhshme.'
+    ]
+  }],
   archiveExams: []
 };
 
