@@ -129,3 +129,9 @@
   .course-video-stories .shorts-action-icon svg { width:21px; height:21px; }
 }
 @media (prefers-reduced-motion:reduce) { .course-video-stories .shorts-action-icon, .course-video-stories .shorts-icon-button { transition:none; } }
+
+/* Hold the posted picture to hide every app overlay, including on article photos. */
+.course-video-stories[data-holding="true"] :is(.story-topbar,.shorts-action-rail,.course-video-caption,.shorts-desktop-nav,.story-hold-indicator,.story-player-controls > *) { opacity:0 !important; visibility:hidden !important; pointer-events:none !important; }
+.course-video-stories[data-holding="true"] .story-shell::before,
+.course-video-stories[data-holding="true"] .story-slide::after { opacity:0 !important; }
+.course-video-stories .course-video-frame > img { -webkit-touch-callout:none; user-select:none; -webkit-user-drag:none; }
