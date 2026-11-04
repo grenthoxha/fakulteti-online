@@ -250,16 +250,16 @@
     /* Në telefon: pa fotot e trurit në sfondin e Kreut */
     @media (max-width: 639px) { .psychology-brain-art { display: none !important; } }
     /* ORARI · dizajni F: header blu (ngjyra e website-it + toni i logos) dhe fletë e bardhë */
-    .schedule-min .sch-hero { position: relative; color: #fff; padding: 14px 16px 44px; background: linear-gradient(180deg, #1557b0 0%, #10458c 100%); }
+    .schedule-min .sch-hero { position: relative; color: #fff; padding: 10px 16px 36px; background: linear-gradient(180deg, #1557b0 0%, #10458c 100%); }
     .dark .schedule-min .sch-hero { background: linear-gradient(180deg, #10396c 0%, #0c294c 100%); }
     .schedule-min .sch-sheet { position: relative; margin-top: -28px !important; border-radius: 28px 28px 0 0; background: var(--surface); padding: 18px 16px 24px; }
     .dark .schedule-min .sch-sheet { background: var(--surface); }
-    .schedule-min .sch-circle { width: 44px; height: 44px; border-radius: 9999px; border: 0; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; background: rgba(255,255,255,.18); color: #fff; transition: background-color .2s ease, transform .15s ease; }
+    .schedule-min .sch-circle { width: 36px; height: 36px; border-radius: 9999px; border: 0; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; background: rgba(255,255,255,.18); color: #fff; transition: background-color .2s ease, transform .15s ease; }
     .schedule-min .sch-circle:hover { background: rgba(255,255,255,.26); }
     .schedule-min .sch-circle:active { transform: scale(.95); }
     .schedule-min .sch-circle.is-solid { background: #fff; color: #10458c; }
     .schedule-min .sch-circle:focus-visible, .schedule-min .sch-day:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-    .schedule-min .sch-day { position: relative; height: 72px; border: 0; border-radius: 22px; background: rgba(255,255,255,.16); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
+    .schedule-min .sch-day { position: relative; height: 56px; border: 0; border-radius: 16px; background: rgba(255,255,255,.16); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
     .schedule-min .sch-day:hover { background: rgba(255,255,255,.22); }
     .schedule-min .sch-day.is-sel { background: #fff; color: #10458c; }
     .schedule-min .sch-day-lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #dcecff; max-width: 100%; white-space: nowrap; }
@@ -277,16 +277,17 @@
     .schedule-min .sch-att.is-yes { background: #12805c; border-color: #12805c; color: #fff; font-weight: 700; }
     .schedule-min .sch-att.is-no { background: #d92d20; border-color: #d92d20; color: #fff; font-weight: 700; }
     @media (max-width: 1023px) {
-      .schedule-page > .schedule-min { max-width: none; width: auto; margin-left: -.75rem; margin-right: -.75rem; }
+      .schedule-page { display: flex; flex-direction: column; min-height: calc(100svh - 4rem); padding-bottom: 0 !important; }
+      .schedule-page > .schedule-min { display: flex; flex-direction: column; flex: 1; max-width: none; width: auto; margin-left: -.75rem; margin-right: -.75rem; background: var(--surface); }
       .schedule-page > .schedule-min:first-child { margin-top: -.75rem; }
-      .schedule-min .sch-sheet { margin-bottom: -6rem; padding-bottom: 7rem; min-height: calc(100svh - 14rem); }
+      .schedule-min .sch-sheet { flex: 1; margin-bottom: 0; padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); min-height: 0; }
     }
     @media (min-width: 640px) and (max-width: 1023px) {
       .schedule-page > .schedule-min { margin-left: -1rem; margin-right: -1rem; }
       .schedule-page > .schedule-min:first-child { margin-top: -1rem; }
     }
     @media (min-width: 1024px) {
-      .schedule-min .sch-hero { border-radius: 28px 28px 0 0; padding: 18px 24px 44px; }
+      .schedule-min .sch-hero { border-radius: 28px 28px 0 0; padding: 14px 24px 36px; }
       .schedule-min .sch-sheet { border-radius: 28px; padding: 22px 24px 28px; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
     }
     @media (max-width: 420px) { .schedule-min .sch-day-lbl { font-size: 10.5px; letter-spacing: .02em; } }
@@ -1858,6 +1859,8 @@ const UI_EN = {
   'Provo pamjen e re': 'Try the new view',
   'Orari i sotëm': "Today's schedule",
   'Sot në fakultet': 'At university today',
+  'Nesër në fakultet': 'At university tomorrow',
+  'Nesër nuk ke orë në fakultet.': 'You have no classes at university tomorrow.',
   'Ligjëratat dhe ushtrimet e sotme nga orari javor.': "Today's lectures and exercises from the weekly schedule.",
   'Nuk ke ligjërata ose ushtrime të planifikuara për sot.': 'You have no lectures or exercises planned for today.',
   'Nuk ke ligjërata ose ushtrime në orar sot.': 'You have no lectures or exercises on the schedule today.',
@@ -7822,13 +7825,73 @@ BRANCHES.forEach(branch => {
 });
 
 /* ──────── ONBOARDING SCREEN ──────── */
+const normalizeStudentName = value => String(value || '').trim().replace(/\s+/g, ' ');
+const isValidStudentNamePart = value => {
+  const name = normalizeStudentName(value);
+  return name.length <= 80 && (name.match(/\p{L}/gu) || []).length >= 2 && /^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u.test(name);
+};
+const isValidStudentFullName = value => {
+  const parts = normalizeStudentName(value).split(' ');
+  return parts.length >= 2 && isValidStudentNamePart(parts[0]) && isValidStudentNamePart(parts.slice(1).join(' '));
+};
+// ASK, ReKos 2024, "Emrat dhe mbiemrat në Kosovë", Table 3, printed page 8.
+// Source: https://askapi.rks-gov.net/Custom/52ce01c7-cf15-4230-bf43-464c5b1321b1.pdf
+// © ASK, February 2026. Reproduction permitted with source attribution.
+// The columns are independent lists, not name/surname pairs. A match is only
+// a preliminary name filter; it does not verify a person or approve their ID.
+const ASK_STUDENT_FIRST_NAMES = Object.freeze([
+  'Fatime', 'Bajram', 'Emine', 'Bekim', 'Agim', 'Muhamet', 'Fatmir', 'Ramadan', 'Arben', 'Ganimete',
+  'Besim', 'Egzon', 'Afrim', 'Endrit', 'Merita', 'Blerim', 'Naim', 'Shpresa', 'Valon', 'Sanije',
+  'Agron', 'Amar', 'Enver', 'Ali', 'Besnik', 'Shqipe', 'Luljeta', 'Fatmire', 'Ismet', 'Burim',
+  'Ilir', 'Fadil', 'Drita', 'Sevdije', 'Driton', 'Rexhep', 'Agnesa', 'Shaban', 'Ajshe', 'Ajan',
+  'Jon', 'Bashkim', 'Vjollca', 'Skender', 'Jeton', 'Edona', 'Vlora', 'Alban', 'Avni', 'Blerta',
+  'Sara', 'Lumnije', 'Omer', 'Medina', 'Bujar', 'Enis', 'Naser', 'Fitore', 'Teuta', 'Altin',
+  'Alea', 'Liridon', 'Aferdita', 'Adem', 'Lulzim', 'Diar', 'Hana', 'Arta', 'Ardian', 'Erza',
+  'Shkurte', 'Arsim', 'Arlind', 'Faton', 'Elsa', 'Liridona', 'Gani', 'Arlinda', 'Kushtrim', 'Fitim',
+  'Mimoza', 'Kimete', 'Andi', 'Rinor', 'Valentina', 'Rinesa', 'Adelina', 'Leart', 'Egzona', 'Sami',
+  'Blerina', 'Dion', 'Nexhmije', 'Armend', 'Kaltrina', 'Leonora', 'Ardit', 'Sabrije', 'Florije', 'Shukrije'
+]);
+const ASK_STUDENT_LAST_NAMES = Object.freeze([
+  'Krasniqi', 'Gashi', 'Berisha', 'Morina', 'Shala', 'Bytyqi', 'Hasani', 'Rexhepi', 'Bajrami', 'Hoti',
+  'Kastrati', 'Mehmeti', 'Hoxha', 'Shabani', 'Kryeziu', 'Ahmeti', 'Hyseni', 'Osmani', 'Aliu', 'Mustafa',
+  'Ramadani', 'Thaqi', 'Ademi', 'Jashari', 'Sadiku', 'Salihu', 'Beqiri', 'Rama', 'Tahiri', 'Zeqiri',
+  'Syla', 'Ibrahimi', 'Sylejmani', 'Kelmendi', 'Maliqi', 'Haliti', 'Hajdari', 'Halili', 'Sejdiu', 'Maloku',
+  'Haziri', 'Elshani', 'Selimi', 'Isufi', 'Selmani', 'Arifi', 'Imeri', 'Uka', 'Fazliu', 'Latifi',
+  'Islami', 'Azemi', 'Miftari', 'Sahiti', 'Musliu', 'Kabashi', 'Abazi', 'Bajraktari', 'Bytyçi', 'Mazreku',
+  'Halimi', 'Zogaj', 'Neziri', 'Asllani', 'Ismajli', 'Ajeti', 'Murati', 'Zeneli', 'Bunjaku', 'Veseli',
+  'Shehu', 'Emini', 'Rexha', 'Thaçi', 'Spahiu', 'Avdyli', 'Rrahmani', 'Sinani', 'Pllana', 'Zeka',
+  'Brahimi', 'Hajdini', 'Avdiu', 'Kadriu', 'Demiri', 'Idrizi', 'Jakupi', 'Hashani', 'Rexhaj', 'Behrami',
+  'Ademaj', 'Bislimi', 'Balaj', 'Hoxhaj', 'Rashiti', 'Alija', 'Musa', 'Qerimi', 'Shaqiri', 'Duraku'
+]);
+const foldAskStudentName = value => normalizeStudentName(value).normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('sq');
+const askStudentFirstNameSet = new Set(ASK_STUDENT_FIRST_NAMES.map(foldAskStudentName));
+const askStudentLastNameSet = new Set(ASK_STUDENT_LAST_NAMES.map(foldAskStudentName));
+const ASK_DEFAULT_STUDENT_NAME = 'Arta Hoxha';
+// Compound names are allowed only when every component occurs in its ASK list.
+const isListedAskStudentName = (value, list) => isValidStudentNamePart(value)
+  && normalizeStudentName(value).split(/[ '\u2019-]+/).every(part => list.has(foldAskStudentName(part)));
+const getAskStudentNameError = (firstName, lastName) => {
+  if (!isValidStudentNamePart(firstName) || !isValidStudentNamePart(lastName)) return 'Shkruaj emrin dhe mbiemrin, me shkronja.';
+  if (!isListedAskStudentName(firstName, askStudentFirstNameSet)) return 'Emri nuk gjendet në listën aktuale të ASK-së. Kontrolloje shkrimin.';
+  if (!isListedAskStudentName(lastName, askStudentLastNameSet)) return 'Mbiemri nuk gjendet në listën aktuale të ASK-së. Kontrolloje shkrimin.';
+  return '';
+};
+const isAllowedAskStudentFullName = value => {
+  const parts = normalizeStudentName(value).split(' ');
+  return parts.slice(1).some((_, index) => !getAskStudentNameError(parts.slice(0, index + 1).join(' '), parts.slice(index + 1).join(' ')));
+};
+const getAskStudentFullNameError = value => {
+  if (!isValidStudentFullName(value)) return 'Shkruaj emrin dhe mbiemrin, me shkronja.';
+  return isAllowedAskStudentFullName(value) ? '' : 'Emri ose mbiemri nuk gjendet në listën aktuale të ASK-së. Kontrolloje shkrimin.';
+};
 function Onboarding({
   onSelect,
   uiLanguage,
   onLanguageChange
 }) {
   const [step, setStep] = useState(1);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(ASK_DEFAULT_STUDENT_NAME);
+  const [nameTouched, setNameTouched] = useState(false);
   const [role, setRole] = useState('student');
   const [gender, setGender] = useState(() => localStorage.getItem('u_gender') || '');
   const [branchId, setBranchId] = useState(null);
@@ -7857,7 +7920,8 @@ function Onboarding({
 
   const handleNameSubmit = e => {
     e.preventDefault();
-    if (name.trim().length > 1) setStep(2);
+    setNameTouched(true);
+    if (isAllowedAskStudentFullName(name) && ['male', 'female'].includes(gender)) setStep(2);
   };
   const handleBranchSelect = bId => {
     const b = BRANCHES.find(x => x.id === bId);
@@ -7886,7 +7950,8 @@ function Onboarding({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setStep(1);
-      setName('');
+      setName(ASK_DEFAULT_STUDENT_NAME);
+      setNameTouched(false);
       setBranchId(null);
     },
     "aria-label": "Kthehu në fillim të Fakulteti Online",
@@ -7902,7 +7967,7 @@ function Onboarding({
     className: "text-brand-600 dark:text-brand-400"
   }, "Fakulteti Online")), /*#__PURE__*/React.createElement("p", {
     className: "text-secondary text-xs sm:text-sm leading-relaxed max-w-md mx-auto"
-  }, step === 1 ? 'Shkruaj emrin tënd dhe zgjidh profilin për të vazhduar.' : step === 2 ? 'Zgjidh drejtimin tënd akademik në Fakulteti Online.' : `Mirë se vjen, ${name}! Tani zgjidh vitin tënd aktual.`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
+  }, step === 1 ? 'Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh më vonë te Profili.' : step === 2 ? 'Zgjidh drejtimin tënd akademik në Fakulteti Online.' : `Mirë se vjen, ${name}! Tani zgjidh vitin tënd aktual.`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
     onSubmit: handleNameSubmit,
     className: "space-y-4 max-w-xs mx-auto"
   }, /*#__PURE__*/React.createElement("input", {
@@ -7910,9 +7975,18 @@ function Onboarding({
     type: "text",
     value: name,
     onChange: e => setName(e.target.value),
-    placeholder: "Emri yt...",
+    onBlur: () => setNameTouched(true),
+    "aria-invalid": nameTouched && Boolean(getAskStudentFullNameError(name)),
+    "aria-describedby": nameTouched && getAskStudentFullNameError(name) ? 'student-name-error' : undefined,
+    placeholder: "Emri dhe mbiemri",
+    "aria-label": "Emri dhe mbiemri real",
+    required: true,
+    maxLength: 160,
+    autoComplete: 'name',
     className: "w-full card-surface border border-default p-4 rounded-xl text-primary font-semibold text-center focus:outline-none focus:border-brand-500 transition-colors"
-  }), /*#__PURE__*/React.createElement("div", {
+  }), nameTouched && getAskStudentFullNameError(name) && React.createElement('p', {
+    id: 'student-name-error', role: 'status', className: 'text-xs text-red-700 dark:text-red-400 text-left'
+  }, getAskStudentFullNameError(name)), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5 text-left"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-[10px] font-bold text-secondary uppercase tracking-wider"
@@ -7979,7 +8053,7 @@ function Onboarding({
     className: "text-xs font-bold uppercase tracking-wider"
   }, "Admin"))), /*#__PURE__*/React.createElement("button", {
     type: "submit",
-    disabled: name.trim().length < 2 || !['male', 'female'].includes(gender),
+    disabled: !isAllowedAskStudentFullName(name) || !['male', 'female'].includes(gender),
     className: "w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-500 transition-colors disabled:opacity-50 mt-2 cursor-pointer shadow-sm"
   }, "Vazhdo →")) : step === 2 ? /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
@@ -8653,6 +8727,97 @@ const buildUnitLessonPlan = (chapter, quiz, courseTitle) => {
   const allSteps = question ? readSteps.concat([{ kind: 'check', title: 'Pyetje e shpejtë', item: question.item, index: question.index, minutes: 1 }]) : readSteps;
   return { steps: allSteps, question };
 };
+const getVideoStorySwipeAction = (dx, dy) => {
+  if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.2) return dx < 0 ? 'next' : 'previous';
+  if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+    if (dy >= 80) return 'close';
+    if (dy <= -60) return 'next';
+  }
+  return null;
+};
+function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...props }) {
+  const rootRef = useRef(null);
+  const actionsRef = useRef(null);
+  actionsRef.current = { next: onNext, previous: onPrevious, close: onClose };
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let touch = null;
+    let suppressClickUntil = 0;
+    let wheelTotalX = 0;
+    let wheelTotalY = 0;
+    let lastWheelAt = 0;
+    let wheelFired = false;
+    let wheelLockedUntil = 0;
+    const isControl = target => Boolean(target?.closest?.('input, select, textarea, [contenteditable="true"]'));
+    const onTouchStart = event => {
+      touch = null;
+      if (event.touches.length !== 1 || isControl(event.target)) return;
+      const point = event.touches[0];
+      // Keep the native video's bottom control bar available for seeking.
+      if (event.target?.tagName === 'VIDEO' && point.clientY > event.target.getBoundingClientRect().bottom - 48) return;
+      touch = { x: point.clientX, y: point.clientY, moved: false };
+    };
+    const onTouchMove = event => {
+      if (!touch) return;
+      if (event.touches.length !== 1) { touch = null; return; }
+      const point = event.touches[0];
+      if (Math.hypot(point.clientX - touch.x, point.clientY - touch.y) > 12) {
+        touch.moved = true;
+        if (event.cancelable) event.preventDefault();
+      }
+    };
+    const onTouchEnd = event => {
+      const start = touch;
+      touch = null;
+      if (!start || event.touches.length || !event.changedTouches.length) return;
+      const point = event.changedTouches[0];
+      const action = getVideoStorySwipeAction(point.clientX - start.x, point.clientY - start.y);
+      if (start.moved || action) {
+        suppressClickUntil = Date.now() + 450;
+        if (event.cancelable) event.preventDefault();
+      }
+      if (action) actionsRef.current[action]?.();
+    };
+    const onTouchCancel = () => { touch = null; };
+    const onClick = event => {
+      if (Date.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); }
+    };
+    const onWheel = event => {
+      if (event.ctrlKey || isControl(event.target)) return;
+      if (event.cancelable) event.preventDefault();
+      const now = Date.now();
+      const idle = now - lastWheelAt;
+      lastWheelAt = now;
+      if (idle > 180) { wheelFired = false; wheelTotalX = 0; wheelTotalY = 0; }
+      if (wheelFired || now < wheelLockedUntil) return;
+      const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? root.clientHeight : 1;
+      wheelTotalX += event.deltaX * scale;
+      wheelTotalY += event.deltaY * scale;
+      const delta = Math.abs(wheelTotalX) > Math.abs(wheelTotalY) ? wheelTotalX : wheelTotalY;
+      if (Math.abs(delta) < 60) return;
+      wheelFired = true;
+      wheelLockedUntil = now + 450;
+      actionsRef.current[delta > 0 ? 'next' : 'previous']?.();
+    };
+    const active = { passive: false, capture: true };
+    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+    root.addEventListener('touchmove', onTouchMove, active);
+    root.addEventListener('touchend', onTouchEnd, active);
+    root.addEventListener('touchcancel', onTouchCancel, true);
+    root.addEventListener('click', onClick, true);
+    root.addEventListener('wheel', onWheel, active);
+    return () => {
+      root.removeEventListener('touchstart', onTouchStart, true);
+      root.removeEventListener('touchmove', onTouchMove, true);
+      root.removeEventListener('touchend', onTouchEnd, true);
+      root.removeEventListener('touchcancel', onTouchCancel, true);
+      root.removeEventListener('click', onClick, true);
+      root.removeEventListener('wheel', onWheel, true);
+    };
+  }, []);
+  return React.createElement('div', { ...props, ref: rootRef }, children);
+}
 function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const frameRef = useRef(null);
   const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
@@ -9763,6 +9928,7 @@ const removeLegacyRoomChanges = () => {
 
 function AcademyApp({
   studentName,
+  studentFullName,
   initialBranch,
   initialYear,
   actualRole,
@@ -9774,6 +9940,8 @@ function AcademyApp({
   // Premium UI & Systems State
 
   const profileNameParts = String(studentName || '').trim().split(/\s+/).filter(Boolean);
+  const profileRealNameParts = normalizeStudentName(studentFullName || studentName).split(' ');
+  const profileNeedsRealName = !isAllowedAskStudentFullName(studentFullName);
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
     let preferences;
@@ -9860,8 +10028,9 @@ function AcademyApp({
     React.createElement('p', { className: 'sr-only', role: 'status', 'aria-live': 'polite' }, homeMoveNotice),
     React.createElement('button', { type: 'button', className: 'appearance-control input-bg text-primary', onClick: () => { setHomePreferences(normalizeHomePreferences(null)); setHomeMoveNotice(appearanceText('Renditja fillestare u rikthye.', 'Default layout restored.')); } }, appearanceText('Rikthe renditjen fillestare', 'Restore default layout')))));
   const [profileDraft, setProfileDraft] = useState({
-    firstName: profileNameParts[0] || '',
-    lastName: profileNameParts.slice(1).join(' ')
+    firstName: profileRealNameParts[0] || '',
+    lastName: profileRealNameParts.slice(1).join(' '),
+    nickname: profileNeedsRealName ? '' : localStorage.getItem('u_nickname') || ''
   });
   const [isEditingName, setIsEditingName] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(() => localStorage.getItem('u_profile_photo') || '');
@@ -10161,13 +10330,22 @@ function AcademyApp({
   };
   const saveProfile = event => {
     event.preventDefault();
-    const firstName = profileDraft.firstName.trim();
-    const lastName = profileDraft.lastName.trim();
-    if (!firstName) return showToast('Shkruaje emrin.', 'ℹ️');
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
-    localStorage.setItem('u_name', fullName);
-    onProfileUpdate(fullName);
+    const firstName = normalizeStudentName(profileDraft.firstName);
+    const lastName = normalizeStudentName(profileDraft.lastName);
+    const nameError = getAskStudentNameError(firstName, lastName);
+    if (nameError) {
+      showToast(nameError, 'ℹ️');
+      return false;
+    }
+    const fullName = `${firstName} ${lastName}`;
+    const nickname = profileNeedsRealName ? '' : normalizeStudentName(profileDraft.nickname);
+    if (nickname.length > 40) { showToast('Nofka mund të ketë deri në 40 karaktere.', 'ℹ️'); return false; }
+    localStorage.setItem('u_real_name', fullName);
+    localStorage.setItem('u_nickname', nickname);
+    localStorage.setItem('u_name', nickname || fullName);
+    onProfileUpdate(nickname || fullName, fullName);
     showToast('Profili u përditësua.', '✓');
+    return true;
   };
   const handleProfilePhoto = event => {
     const file = event.target.files?.[0];
@@ -10207,8 +10385,8 @@ function AcademyApp({
     showToast('Fotografia u largua.', '✓');
   };
   const openProfileEditor = () => {
-    const parts = String(studentName || '').trim().split(/\s+/).filter(Boolean);
-    setProfileDraft({ firstName: parts[0] || '', lastName: parts.slice(1).join(' ') });
+    const parts = normalizeStudentName(studentFullName || studentName).split(' ');
+    setProfileDraft({ firstName: parts[0] || '', lastName: parts.slice(1).join(' '), nickname: profileNeedsRealName ? '' : localStorage.getItem('u_nickname') || '' });
     setIsEditingName(true);
   };
   useEffect(() => {
@@ -10969,6 +11147,7 @@ function AcademyApp({
     } catch(e) {}
     return {};
   });
+  const [profileExamResultsOpen, setProfileExamResultsOpen] = useState(false);
 
   const [simulatedGrades, setSimulatedGrades] = useState(() => {
     try {
@@ -12256,6 +12435,7 @@ function AcademyApp({
   const [selectedExplainVideoId, setSelectedExplainVideoId] = useState('');
   const [courseVideoFeedOpen, setCourseVideoFeedOpen] = useState(false);
   const [courseVideoFeedIndex, setCourseVideoFeedIndex] = useState(0);
+  const courseVideoFeedScrollLockRef = useRef(0);
   const [likedVideoIds, setLikedVideoIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('u_liked_videos') || '[]');
@@ -12860,22 +13040,12 @@ function AcademyApp({
     const handleVideoFeedKeys = event => {
       if (event.key === 'Escape') {
         setCourseVideoFeedOpen(false);
-      } else if (event.key === 'ArrowDown') {
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
         event.preventDefault();
-        const feed = document.getElementById('course-video-scroll-feed');
-        if (feed) {
-          const nextIdx = Math.min(( feed.children?.length || 1 ) - 1, courseVideoFeedIndex + 1);
-          setCourseVideoFeedIndex(nextIdx);
-          feed.scrollTo({ top: nextIdx * (feed.clientHeight || 1), behavior: 'smooth' });
-        }
-      } else if (event.key === 'ArrowUp') {
+        scrollToVideoFeedSlide(courseVideoFeedIndex + 1);
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
         event.preventDefault();
-        const feed = document.getElementById('course-video-scroll-feed');
-        if (feed) {
-          const prevIdx = Math.max(0, courseVideoFeedIndex - 1);
-          setCourseVideoFeedIndex(prevIdx);
-          feed.scrollTo({ top: prevIdx * (feed.clientHeight || 1), behavior: 'smooth' });
-        }
+        scrollToVideoFeedSlide(courseVideoFeedIndex - 1);
       }
     };
     window.addEventListener('keydown', handleVideoFeedKeys);
@@ -13073,7 +13243,7 @@ function AcademyApp({
     const chevron = () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true, className: 'text-slate-400 dark:text-slate-500 flex-shrink-0' }, h('path', { d: 'M9 6l6 6-6 6' }));
     const label = txt => h('div', { className: 'text-[13px] font-semibold text-secondary mb-2.5' }, txt);
     const groups = [
-      { name: t('Studimi', 'Study'), items: [
+      { id: 'study', name: t('Studimi', 'Study'), items: [
         { view: 'books', label: t('Librat dhe skriptat', 'Books and notes'), icon: 'M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h14' },
         { view: 'studygroups', label: t('Grupet e studimit', 'Study groups'), icon: 'M9 4.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7zM2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.5 2.4 3.5 5.5' },
         { view: 'pastexams', label: t('Provimet e vjetra', 'Past exams'), icon: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6' },
@@ -13093,24 +13263,21 @@ function AcademyApp({
         { view: 'invisiblecurriculum', label: t('Kurrikula e padukshme', 'Hidden curriculum'), icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6z' }
       ]}
     ];
-    const stats = [
-      { v: doneEcts + '/' + totalEcts, l: 'ECTS' },
-      { v: String(Number(streakDays) || 0), l: t('ditë rresht', 'day streak') },
-      { v: (Number(pct) || 0) + '%', l: t('progresi i vitit', 'year progress') }
-    ];
+    const completedProfileExams = enrolledCourses.filter(course => done.includes(course.id));
     return h('div', { className: 'profile-minimal w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
       h('section', { className: 'flex items-center gap-3.5' },
         h('div', { className: 'w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
           profilePhoto ? h('img', { src: profilePhoto, alt: t('Fotografia e profilit', 'Profile photo'), className: 'w-full h-full object-cover' }) : profileInitials),
         h('div', { className: 'flex-1 min-w-0' },
           h('div', { className: 'text-[19px] font-bold tracking-tight text-primary truncate' }, studentName || 'Student'),
+          studentFullName && studentName !== studentFullName && h('div', { className: 'text-xs text-secondary mt-0.5 truncate' }, studentFullName),
           h('div', { className: 'text-sm text-secondary mt-0.5' }, branchObj.label + ' · ' + yearLabel)),
-        h('button', { type: 'button', onClick: () => isEditingName ? setIsEditingName(false) : openProfileEditor(), 'aria-expanded': isEditingName, 'aria-controls': 'profile-edit', className: 'text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
-      isEditingName && h('form', {
+        h('button', { type: 'button', onClick: () => isEditingName && !profileNeedsRealName ? setIsEditingName(false) : openProfileEditor(), 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', className: 'text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName && !profileNeedsRealName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
+      (isEditingName || profileNeedsRealName) && h('form', {
         id: 'profile-edit',
         'aria-label': t('Ndrysho profilin', 'Edit profile'),
         onKeyDown: e => { if (e.key === 'Escape') { e.preventDefault(); setIsEditingName(false); } },
-        onSubmit: e => { saveProfile(e); if (profileDraft.firstName.trim()) setIsEditingName(false); },
+        onSubmit: e => { if (saveProfile(e)) setIsEditingName(false); },
         className: 'card-surface border border-default rounded-[18px] p-4 space-y-4 anim-fade-up'
       },
         h('div', { className: 'flex items-center gap-3.5' },
@@ -13120,17 +13287,17 @@ function AcademyApp({
             h('button', { type: 'button', onClick: () => profilePhotoInputRef.current?.click(), className: 'h-10 px-3.5 rounded-xl bg-black/[0.05] dark:bg-white/[0.07] text-sm font-semibold text-primary cursor-pointer' }, profilePhoto ? t('Ndrysho foton', 'Change photo') : t('Shto foton', 'Add photo')),
             profilePhoto && h('button', { type: 'button', onClick: removeProfilePhoto, className: 'h-10 px-3 rounded-xl text-sm font-semibold text-red-700 dark:text-red-400 cursor-pointer bg-transparent' }, t('Fshi', 'Remove'))),
           h('input', { type: 'file', ref: profilePhotoInputRef, onChange: handleProfilePhoto, accept: 'image/*', className: 'hidden' })),
+        h('p', { className: 'text-xs text-secondary' }, profileNeedsRealName ? t('Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh pas ruajtjes.', 'Enter your real first and last name. You can add a nickname after saving.') : t('Emri dhe mbiemri janë të detyrueshëm. Nofka është opsionale.', 'First and last name are required. Nickname is optional.')),
         h('div', { className: 'grid grid-cols-2 gap-2.5' },
           [['firstName', t('Emri', 'First name')], ['lastName', t('Mbiemri', 'Last name')]].map(([key, text]) => h('label', { key, className: 'block min-w-0' },
             h('span', { className: 'block text-[13px] text-secondary mb-1.5' }, text),
-            h('input', { type: 'text', value: profileDraft[key], required: key === 'firstName', autoComplete: key === 'firstName' ? 'given-name' : 'family-name', onChange: e => { const v = e.target.value; setProfileDraft(p => ({ ...p, [key]: v })); }, className: 'w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500' })))),
+            h('input', { type: 'text', value: profileDraft[key], required: true, maxLength: 80, autoComplete: key === 'firstName' ? 'given-name' : 'family-name', onChange: e => { const v = e.target.value; setProfileDraft(p => ({ ...p, [key]: v })); }, className: 'w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500' })))),
+        !profileNeedsRealName && h('label', { className: 'block' },
+          h('span', { className: 'block text-[13px] text-secondary mb-1.5' }, t('Nofka (opsionale)', 'Nickname (optional)')),
+          h('input', { type: 'text', value: profileDraft.nickname || '', maxLength: 40, autoComplete: 'nickname', onChange: e => { const nickname = e.target.value; setProfileDraft(previous => ({ ...previous, nickname })); }, className: 'w-full h-11 px-3 rounded-xl input-bg border border-default text-[15px] text-primary outline-none focus:border-brand-500' })),
         h('div', { className: 'flex justify-end gap-2' },
-          h('button', { type: 'button', onClick: () => setIsEditingName(false), className: 'h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent' }, t('Anulo', 'Cancel')),
+          !profileNeedsRealName && h('button', { type: 'button', onClick: () => setIsEditingName(false), className: 'h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent' }, t('Anulo', 'Cancel')),
           h('button', { type: 'submit', className: 'h-10 px-5 rounded-xl bg-brand-600 text-white text-sm font-semibold cursor-pointer' }, t('Ruaj', 'Save')))),
-      h('div', { className: 'grid grid-cols-3 card-surface border border-default rounded-[18px]' },
-        stats.map((st, i) => h('div', { key: i, className: 'py-3.5 flex flex-col items-center gap-0.5' + (i < 2 ? ' border-r border-default' : '') },
-          h('span', { className: 'text-lg font-bold text-primary' }, st.v),
-          h('span', { className: 'text-xs text-secondary' }, st.l)))),
       (() => {
         const card = getStudentCardData();
         return h('button', { type: 'button', onClick: () => { setStudentCardSide('front'); setStudentCardOpen(true); }, className: 'w-full rounded-[18px] card-surface border border-default flex items-center gap-3.5 px-4 py-3 text-left cursor-pointer' },
@@ -13154,7 +13321,21 @@ function AcademyApp({
       groups.map(g => h('section', { key: g.name },
         label(g.name),
         h('div', { className: cardCls },
-          g.items.map((it, i) => h('button', { key: it.view, type: 'button', onClick: () => setView(it.view), className: rowCls + (i ? divider : '') },
+          g.id === 'study' && h(React.Fragment, null,
+            h('button', { type: 'button', onClick: () => setProfileExamResultsOpen(open => !open), 'aria-expanded': profileExamResultsOpen, 'aria-controls': 'profile-exam-results', className: rowCls },
+              icon('M4 20V10M10 20V4M16 20v-7M22 20H2'),
+              h('span', { className: 'flex-1 min-w-0' }, t('Progresi dhe notat', 'Progress and grades')),
+              h('span', { className: 'text-xs text-secondary text-right' }, `${Number(pct) || 0}% · ${completedProfileExams.length} ${completedProfileExams.length === 1 ? t('provim', 'exam') : t('provime', 'exams')}`), chevron()),
+            profileExamResultsOpen && h('section', { id: 'profile-exam-results', className: 'pb-3 border-t border-default', 'aria-label': t('Provimet dhe notat', 'Exams and grades') },
+              h('p', { className: 'text-xs text-secondary pt-3 mb-2' }, `${doneEcts}/${totalEcts} ECTS · ${yearLabel}`),
+              completedProfileExams.length ? h('ul', null, completedProfileExams.map((course, index) => {
+                const grade = Number(studentGrades[course.id]);
+                const hasGrade = Number.isInteger(grade) && grade >= 6 && grade <= 10;
+                return h('li', { key: course.id, className: 'flex items-center justify-between gap-3 py-3' + (index ? divider : '') },
+                  h('span', { className: 'text-sm font-medium text-primary min-w-0' }, course.title),
+                  h('span', { className: 'max-w-32 text-sm font-semibold text-brand-700 dark:text-brand-300 text-right shrink-0' }, hasGrade ? t('Nota ', 'Grade ') + grade : t('Pa notë të regjistruar', 'No grade recorded')));
+              })) : h('p', { className: 'text-sm text-secondary py-2' }, t('Nuk ke ende provime të përfunduara për këtë vit.', 'You have no completed exams for this year yet.')))),
+          g.items.map((it, i) => h('button', { key: it.view, type: 'button', onClick: () => setView(it.view), className: rowCls + (i || g.id === 'study' ? divider : '') },
             icon(it.icon), h('span', { className: 'flex-1' }, it.label), chevron()))))),
       h('section', null,
         label(t('Cilësimet', 'Settings')),
@@ -18267,6 +18448,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   };
   const scrollToVideoFeedSlide = targetIndex => {
     const safeIndex = Math.max(0, Math.min(targetIndex, Math.max(0, courseVideoFeed.length - 1)));
+    courseVideoFeedScrollLockRef.current = Date.now() + 500;
     setCourseVideoFeedIndex(safeIndex);
     const feed = document.getElementById('course-video-scroll-feed');
     if (feed) {
@@ -27949,16 +28131,21 @@ Nënshkrimi: _____________________`;
   // Kartela "Sot në fakultet" në Kreu (në vend të "Orari në fakultet").
   const renderHomeTodayFacultyCard = () => {
     const h = React.createElement;
-    const homeDayId = new Date(`${today}T12:00:00`).getDay();
-    const homeSessions = homeDayId >= 1 && homeDayId <= 5 ? scheduleMinDaySessions(homeDayId) : [];
     const homeNow = new Date();
     const homeNowMin = homeNow.getHours() * 60 + homeNow.getMinutes();
+    const homeTodayDayId = homeNow.getDay();
+    const homeTodaySessions = homeTodayDayId >= 1 && homeTodayDayId <= 5 ? scheduleMinDaySessions(homeTodayDayId) : [];
+    const showTomorrow = homeTodaySessions.length > 0 && homeTodaySessions.every(item => scheduleMinToMinutes(item.end) <= homeNowMin);
+    const homeDate = showTomorrow ? addCalendarDays(homeNow, 1) : homeNow;
+    const homeDateKey = dateKey(homeDate);
+    const homeDayId = homeDate.getDay();
+    const homeSessions = showTomorrow ? (homeDayId >= 1 && homeDayId <= 5 ? scheduleMinDaySessions(homeDayId) : []) : homeTodaySessions;
     const rows = homeSessions.map(item => {
       const course = allCourses.find(c => c.id === item.courseId);
-      const isPast = scheduleMinToMinutes(item.end) <= homeNowMin;
+      const isPast = !showTomorrow && scheduleMinToMinutes(item.end) <= homeNowMin;
       const isExercise = item.type === 'exercise';
       return h('button', {
-        key: item.id, type: 'button', onClick: () => openAcademicSession(item, today),
+        key: item.id, type: 'button', onClick: () => openAcademicSession(item, homeDateKey),
         className: 'w-full flex items-center gap-2.5 py-[11px] text-left cursor-pointer border-b border-default last:border-b-0'
       },
         h('span', { className: `w-[42px] shrink-0 text-[14px] tabular-nums ${isPast ? 'font-semibold text-secondary' : 'font-bold text-primary'}` }, item.start),
@@ -27970,14 +28157,14 @@ Nënshkrimi: _____________________`;
       className: 'card-surface border border-default rounded-3xl shadow-2xs select-none relative px-[18px] pt-[18px] pb-2'
     },
       h('div', { className: 'flex items-center justify-between gap-3 pb-3 mb-2 border-b border-default' },
-        h('h2', { className: 'text-base font-[650] tracking-tight text-primary' }, 'Sot në fakultet'),
+        h('h2', { className: 'text-base font-[650] tracking-tight text-primary' }, showTomorrow ? 'Nesër në fakultet' : 'Sot në fakultet'),
         h('button', {
           type: 'button', className: 'text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer',
-          onClick: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(null); setView('week'); }
+          onClick: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(homeDateKey); setView('week'); }
         }, 'Orari →')),
       rows.length
         ? h('div', null, rows)
-        : h('p', { className: 'py-[11px] text-[15px] text-secondary' }, 'Sot nuk ke orë në fakultet.'));
+        : h('p', { className: 'py-[11px] text-[15px] text-secondary' }, showTomorrow ? 'Nesër nuk ke orë në fakultet.' : 'Sot nuk ke orë në fakultet.'));
   };
 
   const renderNewHome = () => {
@@ -31351,7 +31538,7 @@ Nënshkrimi: _____________________`;
       startYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
       try { localStorage.setItem('u_card_enrolled_year', String(startYear)); } catch (e) {}
     }
-    const parts = String(studentName || 'Student').trim().split(/\s+/).filter(Boolean);
+    const parts = String(studentFullName || studentName || 'Student').trim().split(/\s+/).filter(Boolean);
     const surname = parts.length > 1 ? parts[parts.length - 1] : '—';
     const givenName = parts.length > 1 ? parts.slice(0, -1).join(' ') : (parts[0] || 'Student');
     const code = unitFold(branchObj.label).replace(/[^a-z]/g, '').slice(0, 3).toUpperCase() || 'STU';
@@ -32612,23 +32799,23 @@ Nënshkrimi: _____________________`;
     return ce("header", { className: "sch-hero" },
       ce("div", { className: "flex items-center justify-between gap-3" },
         ce("div", { className: "min-w-0" },
-          ce("h1", { className: "text-[22px] leading-[1.15] font-extrabold tracking-[-0.02em] truncate" }, cap(academicWeekRangeLabel))),
+          ce("h1", { className: "text-[18px] sm:text-[20px] leading-[1.15] font-extrabold tracking-[-0.02em] truncate" }, cap(academicWeekRangeLabel))),
         ce("div", { className: "flex items-center gap-2 shrink-0" },
           circle("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
           circle("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
           circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
-      ce('label', { className: 'block mt-3' },
-        ce('span', { className: 'block text-xs font-semibold text-white/80 mb-1' }, 'Shfaq orarin'),
+      ce('label', { className: 'block mt-2' },
+        ce('span', { className: 'sr-only' }, 'Shfaq orarin'),
         ce('select', {
           value: scheduleProgramFilter,
           onChange: event => setScheduleProgramFilter(event.target.value),
-          className: 'w-full min-h-11 px-3 rounded-xl input-bg border border-default text-sm font-semibold text-primary cursor-pointer',
+          className: 'w-full min-h-9 px-3 rounded-xl input-bg border border-default text-sm font-semibold text-primary cursor-pointer',
           'aria-label': 'Filtro orarin sipas programit'
         },
           ce('option', { value: 'personal' }, 'Orari im'),
           ce('option', { value: 'social-work' }, 'Punë Sociale · Viti I'),
           ce('option', { value: 'psychology' }, 'Psikologji · Viti III'))),
-      (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-2 mt-3.5", role: "tablist", "aria-label": "Ditët e javës" },
+      (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-1.5 mt-2.5", role: "tablist", "aria-label": "Ditët e javës" },
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
@@ -32954,8 +33141,11 @@ Nënshkrimi: _____________________`;
 
     return h(ModalPortal, null,
       /* Ekran i plotë i errët: videot rrëshqasin vertikalisht, një për ekran */
-      h('div', {
+      h(UnitVideoStoryGestures, {
         className: "fixed inset-0 z-[99999] bg-black text-white select-none",
+        onNext: () => scrollToVideoFeedSlide(courseVideoFeedIndex + 1),
+        onPrevious: () => scrollToVideoFeedSlide(courseVideoFeedIndex - 1),
+        onClose: () => setCourseVideoFeedOpen(false),
         role: "dialog",
         "aria-modal": "true",
         "aria-label": appearanceText('Videot', 'Videos')
@@ -32985,7 +33175,7 @@ Nënshkrimi: _____________________`;
           /* Lista me rrëshqitje vertikale (snap) */
           h('div', {
             id: "course-video-scroll-feed",
-            className: "flex-1 min-h-0 w-full overflow-y-auto snap-y snap-mandatory scrollbar-none",
+            className: "flex-1 min-h-0 w-full overflow-y-hidden snap-y snap-mandatory scrollbar-none",
             style: { scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' },
             ref: el => {
               if (el && !el.dataset.ready) {
@@ -32994,6 +33184,7 @@ Nënshkrimi: _____________________`;
               }
             },
             onScroll: e => {
+              if (Date.now() < courseVideoFeedScrollLockRef.current) return;
               const el = e.currentTarget;
               const idx = Math.round(el.scrollTop / (el.clientHeight || 1));
               if (idx !== courseVideoFeedIndex && idx >= 0 && idx < total) setCourseVideoFeedIndex(idx);
@@ -33041,7 +33232,23 @@ Nënshkrimi: _____________________`;
                       },
                         src?.thumbnail ? h('img', { src: src.thumbnail, alt: "", loading: "lazy", onError: e => { e.currentTarget.style.display = 'none'; }, className: "absolute inset-0 w-full h-full object-cover opacity-80" }) : null,
                         h('span', { className: "relative w-[60px] h-[60px] rounded-full bg-white/20 flex items-center justify-center" },
-                          h('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": true }, h('path', { d: "M8 5v14l11-7z" }))))
+                          h('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": true }, h('path', { d: "M8 5v14l11-7z" })))),
+                  // Embedded players receive gestures on the picture; their bottom controls stay accessible.
+                  isActive && ['YouTube', 'Vimeo'].includes(src?.provider) && h('button', {
+                    type: 'button',
+                    className: 'absolute top-0 inset-x-0 bg-transparent cursor-pointer',
+                    style: { bottom: '48px' },
+                    'aria-label': videoLivePlaying ? appearanceText('Ndal videon', 'Pause video') : appearanceText('Luaj videon', 'Play video'),
+                    onClick: event => {
+                      const frame = event.currentTarget.parentElement.querySelector('iframe');
+                      if (!frame?.contentWindow) return;
+                      const shouldPlay = !videoLivePlaying;
+                      frame.contentWindow.postMessage(JSON.stringify({ context: 'player.js', method: shouldPlay ? 'play' : 'pause' }), '*');
+                      frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: shouldPlay ? 'playVideo' : 'pauseVideo', args: [] }), '*');
+                      frame.contentWindow.postMessage(JSON.stringify({ method: shouldPlay ? 'play' : 'pause' }), '*');
+                      setVideoLivePlaying(shouldPlay);
+                    }
+                  })
                 ),
 
                 /* Poshtë videos: titulli, përshkrimi, veprimet (nuk e mbulojnë videon) */
@@ -36489,6 +36696,10 @@ Nënshkrimi: _____________________`;
 function App() {
   const [uiLanguage, setUiLanguage] = useState(() => activeUiLanguage);
   const [studentName, setStudentName] = useState(() => localStorage.getItem('u_name') || null);
+  const [studentFullName, setStudentFullName] = useState(() => {
+    const saved = localStorage.getItem('u_real_name') || localStorage.getItem('u_name') || '';
+    return isValidStudentFullName(saved) ? normalizeStudentName(saved) : '';
+  });
   const [selectedBranch, setSelectedBranch] = useState(() => localStorage.getItem('u_branch') || null);
   const [selectedYear, setSelectedYear] = useState(() => {
     const s = localStorage.getItem('u_year');
@@ -36508,6 +36719,11 @@ function App() {
     setUiLanguage(safeLanguage);
   };
   const handleSelect = (n, bId, yId, r, taughtArr, semId, gender) => {
+    if (!isAllowedAskStudentFullName(n)) return;
+    n = normalizeStudentName(n);
+    localStorage.setItem('u_real_name', n);
+    localStorage.removeItem('u_nickname');
+    setStudentFullName(n);
     localStorage.setItem('u_name', n);
     localStorage.setItem('u_branch', bId);
     localStorage.setItem('u_year', yId);
@@ -36537,6 +36753,9 @@ function App() {
   };
   const handleLogout = () => {
     setStudentName(null);
+    setStudentFullName('');
+    localStorage.removeItem('u_real_name');
+    localStorage.removeItem('u_nickname');
     setSelectedBranch(null);
     setSelectedYear(null);
     setActualRole('student');
@@ -36551,9 +36770,10 @@ function App() {
     localStorage.removeItem('u_simulated_role');
     localStorage.removeItem('u_taught_courses');
   };
-  const handleProfileUpdate = fullName => {
-    localStorage.setItem('u_name', fullName);
-    setStudentName(fullName);
+  const handleProfileUpdate = (displayName, fullName) => {
+    localStorage.setItem('u_name', displayName);
+    setStudentName(displayName);
+    setStudentFullName(fullName);
   };
 
   // Reset scroll and apply saved theme on mount
@@ -36571,6 +36791,7 @@ function App() {
   });
   return /*#__PURE__*/React.createElement(AcademyApp, {
     studentName: studentName,
+    studentFullName: studentFullName,
     initialBranch: selectedBranch,
     initialYear: selectedYear,
     actualRole: actualRole,
