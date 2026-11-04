@@ -17,4 +17,8 @@ The request takes only `name`, for example `/api/ask-name?name=Arta`. The respon
 
 Surnames remain a local check against the 100 ASK surnames already in the frontend. No surname, full-name pair or identity document is sent to this endpoint. A name match is not identity verification or account approval.
 
-The frontend is not connected to this service until its deployed HTTPS address is provided.
+The frontend now uses the public HTTPS service deployed with Sites:
+
+`https://fakulteti-ask-name-check.personalebuds.chatgpt.site/api/ask-name?name=Arta`
+
+`ask-name-worker.mjs` contains the active Worker request handler (Web Request/Response API). The Sites Worker calls the handler before its page framework. Test this handler with `node --test ask-name-worker.test.mjs`. The Node service above remains an alternative hosting option. No credentials are required in the frontend.
