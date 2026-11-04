@@ -329,6 +329,19 @@
     @keyframes notification-fade { from { opacity: 0; } to { opacity: 1; } }
     @media (min-width: 768px) { .notification-panel { left: auto; width: min(460px, 100vw); box-shadow: -16px 0 60px rgba(0,0,0,.18); } }
     @media (prefers-reduced-motion: reduce) { .notification-panel, .notification-backdrop { animation: none; } }
+
+    .notification-preview-layer .notification-backdrop { background:transparent; animation:none; }
+    .notification-preview { position:absolute; display:flex; flex-direction:column; width:min(380px,calc(100vw - 24px)); max-height:min(480px,calc(100dvh - var(--notification-preview-top,64px) - 12px)); background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:0 18px 60px rgba(7,20,42,.18),0 2px 10px rgba(7,20,42,.08); overflow:hidden; animation:notification-preview-enter .18s ease-out both; }
+    .dark .notification-preview { box-shadow:0 20px 65px rgba(0,0,0,.5); }
+    .notification-preview-heading { display:flex; align-items:center; gap:8px; padding:12px 14px 12px 16px; border-bottom:1px solid var(--line); flex:none; }
+    .notification-preview-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:20px; background:rgba(76,131,186,.12); color:#1557b0; font-size:11px; font-weight:700; }
+    .dark .notification-preview-count { color:#a2c9f2; }
+    .notification-preview-list { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+    .notification-preview .notification-row { padding:13px 16px; gap:10px; }
+    .notification-preview .notification-icon { width:32px; height:32px; border-radius:11px; }
+    .notification-preview-footer { padding:7px 12px; border-top:1px solid var(--line); flex:none; }
+    @keyframes notification-preview-enter { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    @media (prefers-reduced-motion:reduce) { .notification-preview { animation:none; } }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -1172,7 +1185,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-shorts-1">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-hold-clean-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -8853,8 +8866,9 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     ignoreClickUntil = Date.now() + 450;
     const active = root.contains(previous.slide) && previous.slide.getAttribute('aria-hidden') === 'false';
     const playing = Boolean(resume && active && previous.wasPlaying);
-    if (previous.player.isConnected) setPlayback(previous.player, playing, false);
-    if (active) onPlayingChange(playing);
+    if (previous.native) previous.native.controls = previous.hadControls;
+    if (previous.player?.isConnected) setPlayback(previous.player, playing, false);
+    if (active && !previous.isArticle) onPlayingChange(playing);
   };
   const down = event => {
     if (event.isPrimary === false) { finish(true); return; }
@@ -8863,19 +8877,20 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     const target = event.target;
     if (target?.closest?.('input, select, textarea, a, [contenteditable="true"]')) return;
     const slide = target?.closest?.('.story-slide[aria-hidden="false"]');
-    if (!slide || slide.dataset.storyKind === 'article' || !target.closest('.course-video-frame, .story-nav-zone')) return;
+    if (!slide || !target.closest('.course-video-frame, .story-nav-zone')) return;
+    const isArticle = slide.dataset.storyKind === 'article';
     if (target.tagName === 'VIDEO' && event.clientY > target.getBoundingClientRect().bottom - 48) return;
     const player = slide.querySelector('[data-story-player]');
-    if (!player || (!player.querySelector('video') && !['youtube', 'YouTube', 'Vimeo'].includes(player.dataset.storyPlayer))) return;
+    if (!isArticle && (!player || (!player.querySelector('video') && !['youtube', 'YouTube', 'Vimeo'].includes(player.dataset.storyPlayer)))) return;
     pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
     timer = setTimeout(() => {
       timer = null;
       if (!pointer || !root.contains(slide) || slide.getAttribute('aria-hidden') !== 'false') return;
-      const native = player.querySelector('video');
-      const wasPlaying = native ? !native.paused && !native.ended : player.dataset.playing === undefined ? getPlaying() : player.dataset.playing === 'true';
-      held = { slide, player, wasPlaying };
-      setPlayback(player, false, true);
-      onPlayingChange(false);
+      const native = isArticle ? null : player.querySelector('video');
+      const wasPlaying = !isArticle && (native ? !native.paused && !native.ended : player.dataset.playing === undefined ? getPlaying() : player.dataset.playing === 'true');
+      held = { slide, player: isArticle ? null : player, native, hadControls: Boolean(native?.controls), wasPlaying, isArticle };
+      if (native) native.controls = false;
+      if (!isArticle) { setPlayback(player, false, true); onPlayingChange(false); }
       root.dataset.holding = 'true';
     }, 260);
   };
@@ -10351,13 +10366,32 @@ function AcademyApp({
   }, []);
   
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [notificationPreviewOpen, setNotificationPreviewOpen] = useState(false);
+  const notificationBellRef = useRef(null);
+  const [notificationPreviewPosition, setNotificationPreviewPosition] = useState({ top: 64, right: 12 });
+  useEffect(() => {
+    if (!notificationPreviewOpen) return;
+    const position = () => {
+      const bell = notificationBellRef.current;
+      if (!bell) return;
+      const rect = bell.getBoundingClientRect();
+      const width = Math.min(380, window.innerWidth - 24);
+      const top = Math.max(8, Math.min(rect.bottom + 10, window.innerHeight - 140));
+      const right = Math.max(12, Math.min(window.innerWidth - rect.right, window.innerWidth - width - 12));
+      setNotificationPreviewPosition(previous => previous.top === top && previous.right === right ? previous : { top, right });
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    return () => { window.removeEventListener('resize', position); window.removeEventListener('scroll', position, true); };
+  }, [notificationPreviewOpen]);
   const [notificationTab, setNotificationTab] = useState('all');
   useEffect(() => {
-    if (!notificationCenterOpen) return;
+    if (!notificationCenterOpen && !notificationPreviewOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previous; };
-  }, [notificationCenterOpen]);
+  }, [notificationCenterOpen, notificationPreviewOpen]);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
     try { const stored = JSON.parse(localStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
@@ -31638,8 +31672,28 @@ Nënshkrimi: _____________________`;
     try { localStorage.setItem('u_notifications_read', JSON.stringify(next)); } catch (e) {}
   };
   const renderNotificationCenter = () => {
-    if (!notificationCenterOpen) return null;
+    if (!notificationCenterOpen && !notificationPreviewOpen) return null;
     const ce = React.createElement;
+    if (notificationPreviewOpen && !notificationCenterOpen) {
+      const recent = notificationFeed.slice(0, 3);
+      return ce('div', { className: 'notification-layer notification-preview-layer' },
+        ce('div', { className: 'notification-backdrop', onClick: () => setNotificationPreviewOpen(false), 'aria-hidden': true }),
+        ce('section', {
+          id: 'notification-preview', className: 'notification-preview', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-preview-title',
+          style: { top: notificationPreviewPosition.top, right: notificationPreviewPosition.right, '--notification-preview-top': `${notificationPreviewPosition.top}px` }
+        },
+          ce('header', { className: 'notification-preview-heading' },
+            ce('div', { className: 'flex items-center gap-2 min-w-0 flex-1' }, ce('h2', { id: 'notification-preview-title', className: 'text-base font-bold text-primary' }, 'Njoftimet'), notificationUnreadCount > 0 && ce('span', { className: 'notification-preview-count', 'aria-label': `${notificationUnreadCount} të palexuara` }, notificationUnreadCount)),
+            ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'w-8 h-8 rounded-full hover-surface flex items-center justify-center text-secondary cursor-pointer shrink-0' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
+          ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(item => ce('button', {
+            key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
+            onClick: () => { setNotificationPreviewOpen(false); markNotificationsRead([item.id]); item.action(); }
+          },
+            ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon, 'w-[18px] h-[18px]')),
+            ce('span', { className: 'flex-1 min-w-0 text-left' }, ce('span', { className: 'block text-[13px] font-semibold text-primary leading-snug' }, item.title), ce('span', { className: 'block text-xs text-secondary leading-relaxed mt-1 line-clamp-2' }, item.sub), ce('span', { className: 'block text-[11px] text-secondary mt-1.5' }, item.time)),
+            ce('span', { className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined, style: { visibility: item.unread ? 'visible' : 'hidden' } }))) : ce('p', { className: 'p-6 text-sm text-secondary text-center' }, 'Nuk ka njoftime për momentin.')),
+          ce('footer', { className: 'notification-preview-footer' }, ce('button', { type: 'button', className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', ce('span', { 'aria-hidden': true, className: 'ml-2' }, '→')))));
+    }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
     return ce('div', { className: 'notification-layer' },
@@ -34340,11 +34394,13 @@ Nënshkrimi: _____________________`;
   }, "K\xEBrko l\xEBnd\xEB, kapitull ose koncept..."), /*#__PURE__*/React.createElement("kbd", {
     className: "text-[9px] px-1.5 py-0.5 rounded bg-white dark:bg-white/5 text-tertiary font-mono border border-default"
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setNotificationCenterOpen(true),
+    ref: notificationBellRef,
+    onClick: () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
     title: "Njoftimet",
     "aria-haspopup": "dialog",
-    "aria-expanded": notificationCenterOpen,
+    "aria-expanded": notificationCenterOpen || notificationPreviewOpen,
+    "aria-controls": notificationPreviewOpen ? "notification-preview" : undefined,
     className: "flex relative p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors items-center justify-center"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4",
