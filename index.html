@@ -1172,7 +1172,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-fullscreen-2">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-shorts-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -8981,9 +8981,15 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true,
     root.addEventListener('wheel', onWheel, active);
     const feed = root.querySelector('#course-video-scroll-feed');
     const captions = Array.from(root.querySelectorAll?.('.course-video-caption') || []);
-    const syncCaptionHeights = () => captions.forEach(caption => {
-      caption.closest('.story-slide')?.style.setProperty('--story-caption-height', `${caption.getBoundingClientRect().height}px`);
-    });
+    const syncCaptionHeights = () => {
+      if (feed) {
+        root.style.setProperty('--story-stage-width', `${feed.clientWidth}px`);
+        root.style.setProperty('--story-stage-height', `${feed.clientHeight}px`);
+      }
+      captions.forEach(caption => {
+        caption.closest('.story-slide')?.style.setProperty('--story-caption-height', `${caption.getBoundingClientRect().height}px`);
+      });
+    };
     syncCaptionHeights();
     let feedWidth = feed?.clientWidth;
     let feedHeight = feed?.clientHeight;
@@ -9102,11 +9108,11 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
     ),
     /* Kontrollet poshtë videos */
     h('div', { className: 'story-player-controls flex items-center gap-3 px-1' },
-      h('button', { type: 'button', onClick: togglePlay, className: iconBtn, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
+      h('button', { type: 'button', onClick: togglePlay, className: `${iconBtn} story-play-control`, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
         st.playing
           ? h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' }))
           : h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M8 5v14l11-7z' }))),
-      h('span', { className: 'text-xs tabular-nums text-zinc-400 w-10 text-right' }, fmt(st.t)),
+      h('span', { className: 'story-time story-time--current text-xs tabular-nums text-white/75' }, fmt(st.t)),
       h('input', {
         type: 'range',
         min: 0,
@@ -9118,8 +9124,8 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
         style: { accentColor: '#ffffff' },
         'aria-label': 'Koha e videos'
       }),
-      h('span', { className: 'text-xs tabular-nums text-zinc-400 w-10' }, fmt(st.d)),
-      h('button', { type: 'button', onClick: toggleMute, className: iconBtn, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
+      h('span', { className: 'story-time story-time--total text-xs tabular-nums text-white/75' }, fmt(st.d)),
+      h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
         h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
           h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
     )
@@ -33358,43 +33364,28 @@ Nënshkrimi: _____________________`;
       },
         h('div', { className: "story-shell w-full h-full min-h-0 flex flex-col" },
 
-          h('div', { className: 'story-progress', 'aria-label': appearanceText('Progresi i postimeve', 'Story progress') },
-            courseVideoFeed.map((video, idx) => h('button', {
-              key: `progress_${video.id || idx}`, type: 'button', className: 'story-progress-step',
-              'aria-label': appearanceText(`Postimi ${idx + 1} nga ${total}`, `Story ${idx + 1} of ${total}`),
-              'aria-current': idx === courseVideoFeedIndex ? 'step' : undefined,
-              onClick: () => scrollToVideoFeedSlide(idx)
-            }, h('span', { className: 'story-progress-track' }, h('span', {
-              className: 'story-progress-fill',
-              style: { width: `${idx < courseVideoFeedIndex ? 100 : idx === courseVideoFeedIndex ? video.kind === 'article' ? 100 : Math.min(100, Math.max(2, videoLiveTime / (videoLiveDuration || 1) * 100)) : 0}%` }
-            }))))),
-
-          /* Lart: kategoria + mbyll (shirit më vete, nuk mbulon videon) */
-          h('div', { className: "story-topbar shrink-0 flex items-center gap-2.5 pl-4 pr-2 pt-3 pb-2" },
-            (() => {
-              const hs = getTopicVideoSource(curVideo.url);
-              const hp = hs?.videoId ? `https://i.ytimg.com/vi/${hs.videoId}/mqdefault.jpg` : (hs?.thumbnail || curVideo.thumbnail || '');
-              return h('span', { className: "relative w-9 h-9 rounded-full bg-zinc-800 border border-white/20 shrink-0 overflow-hidden", "aria-hidden": true },
-                hp ? h('img', { key: hp, src: hp, alt: "", draggable: false, onError: e => { e.currentTarget.style.display = 'none'; }, className: "absolute inset-0 w-full h-full object-cover" }) : null);
-            })(),
-            h('div', { className: "flex-1 min-w-0" },
-              h('div', { className: "text-[15px] font-semibold truncate" }, getCategoryLabel(curVideo.category || curVideo.courseTitle || 'Psikologji'))
-            ),
+          h('div', { className: 'story-topbar' },
+            h('button', {
+              type: 'button', onClick: () => setCourseVideoFeedOpen(false),
+              className: 'shorts-close shorts-icon-button',
+              'aria-label': appearanceText('Mbyll postimin', 'Close story')
+            }, h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M6 6l12 12M18 6L6 18' }))),
+            h('label', { className: 'shorts-position' },
+              h('span', { className: 'sr-only' }, appearanceText('Zgjidh postimin', 'Choose post')),
+              h('select', {
+                value: courseVideoFeedIndex,
+                'aria-label': appearanceText('Zgjidh postimin', 'Choose post'),
+                onChange: event => scrollToVideoFeedSlide(Number(event.target.value), 'vertical')
+              }, courseVideoFeed.map((video, idx) => h('option', { key: video.id || idx, value: idx }, `${idx + 1} / ${total}`)))),
             h('button', {
               type: 'button', onClick: () => setStoryFit(fullPicture ? 'cover' : 'contain'),
-              className: 'story-fit-toggle w-10 h-10 rounded-full bg-black/20 flex items-center justify-center shrink-0',
-              'aria-pressed': fullPicture,
+              className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': fullPicture,
               'aria-label': !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'),
               title: !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen')
-            }, h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
-            h('button', {
-              type: "button",
-              onClick: () => setCourseVideoFeedOpen(false),
-              className: "w-11 h-11 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer",
-              "aria-label": appearanceText('Mbyll postimin', 'Close story')
-            }, h('svg', { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", "aria-hidden": true },
-              h('path', { d: "M6 6l12 12M18 6L6 18" })))
-          ),
+            }, h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' })))),
+          h('nav', { className: 'shorts-desktop-nav', 'aria-label': appearanceText('Kalimi mes postimeve', 'Post navigation') },
+            h('button', { type: 'button', disabled: courseVideoFeedIndex === 0, onClick: () => scrollToVideoFeedSlide(courseVideoFeedIndex - 1, 'vertical'), 'aria-label': appearanceText('Postimi paraprak', 'Previous story'), className: 'shorts-icon-button' }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M6 14l6-6 6 6' }))),
+            h('button', { type: 'button', disabled: courseVideoFeedIndex === total - 1, onClick: () => scrollToVideoFeedSlide(courseVideoFeedIndex + 1, 'vertical'), 'aria-label': appearanceText('Postimi tjetër', 'Next story'), className: 'shorts-icon-button' }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M6 10l6 6 6-6' })))),
 
           /* Kalimi ndjek drejtimin e gjestit; një postim zë të gjithë hapësirën. */
           h('div', {
@@ -33405,8 +33396,8 @@ Nënshkrimi: _____________________`;
             ref: el => {
               if (el && !el.dataset.ready) {
                 el.dataset.ready = '1';
-                el.dataset.axis = 'horizontal';
-                el.scrollLeft = courseVideoFeedIndex * (el.clientWidth || 1);
+                el.dataset.axis = 'vertical';
+                el.scrollTop = courseVideoFeedIndex * (el.clientHeight || 1);
               }
             },
             onScroll: e => {
@@ -33494,32 +33485,28 @@ Nënshkrimi: _____________________`;
                   })
                 ),
 
-                /* Poshtë videos: titulli, përshkrimi, veprimet (nuk e mbulojnë videon) */
-                h('div', { className: "course-video-caption flex flex-col gap-3.5 px-4 py-3" },
-                  video.kind === 'article' && h('div', null,
-                    h('h2', { className: 'text-lg font-semibold leading-snug' }, video.title),
-                    video.summary && h('p', { className: 'text-sm text-white/65 mt-1 line-clamp-2' }, video.summary)),
-                  h('div', { className: "flex gap-2" },
-                    h('button', {
-                      type: "button",
-                      onClick: () => toggleLikeVideo(video.id),
-                      "aria-pressed": isSaved,
-                      className: `h-[42px] px-4 rounded-full border text-sm font-medium flex items-center gap-2 cursor-pointer transition-colors ${isSaved ? 'bg-white text-black border-white' : 'border-white/25 hover:bg-white/10'}`
-                    },
-                      h('svg', { width: 16, height: 16, viewBox: "0 0 24 24", fill: isSaved ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 1.75, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, h('path', { d: "M6 3h12v18l-6-4-6 4z" })),
-                      isSaved ? appearanceText('U ruajt', 'Saved') : appearanceText('Ruaj', 'Save')),
-                    video.kind === 'article' ? h('button', { type: 'button', onClick: () => { setCourseVideoFeedOpen(false); setSelectedArticleId(video.articleId); setView('articles'); window.scrollTo({ top: 0, behavior: 'instant' }); }, className: 'h-[42px] px-4 rounded-full bg-white text-black text-sm font-semibold' }, appearanceText('Lexo artikullin →', 'Read article →'))
-                    : (video.courseId && video.topicId) ? h('button', {
-                      type: "button",
-                      onClick: () => {
-                        setCourseVideoFeedOpen(false);
-                        openTopicExplainById(video.courseId, video.topicId, 'video');
-                      },
-                      className: "h-[42px] px-4 rounded-full border border-white/25 hover:bg-white/10 text-sm font-medium flex items-center cursor-pointer transition-colors"
-                    }, appearanceText('Lënda', 'Course')) : null
-                  ),
+                h('aside', { className: 'shorts-action-rail', 'aria-label': appearanceText('Veprimet e postimit', 'Post actions') },
+                  h('button', {
+                    type: 'button', onClick: () => toggleLikeVideo(video.id), 'aria-pressed': isSaved,
+                    'aria-label': isSaved ? appearanceText('Hiq nga të ruajturat', 'Remove saved post') : appearanceText('Ruaj postimin', 'Save post'),
+                    className: `shorts-action${isSaved ? ' is-saved' : ''}`
+                  }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: isSaved ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: 'M6 3h12v18l-6-4-6 4z' }))), h('span', null, isSaved ? appearanceText('U ruajt', 'Saved') : appearanceText('Ruaj', 'Save'))),
+                  video.kind === 'article' ? h('button', {
+                    type: 'button', className: 'shorts-action', 'aria-label': appearanceText('Lexo artikullin →', 'Read article →'),
+                    onClick: () => { setCourseVideoFeedOpen(false); setSelectedArticleId(video.articleId); setView('articles'); window.scrollTo({ top: 0, behavior: 'instant' }); }
+                  }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5' }))), h('span', null, appearanceText('Lexo', 'Read')))
+                  : (video.courseId && video.topicId) ? h('button', {
+                    type: 'button', className: 'shorts-action', 'aria-label': appearanceText('Hap lëndën', 'Open course'),
+                    onClick: () => { setCourseVideoFeedOpen(false); openTopicExplainById(video.courseId, video.topicId, 'video'); }
+                  }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1zM12 5v15' }))), h('span', null, appearanceText('Lënda', 'Course'))) : null),
+                h('div', { className: 'course-video-caption flex flex-col' },
+                  h('div', { className: 'shorts-author' },
+                    h('span', { className: 'shorts-author-mark', 'aria-hidden': true }, video.kind === 'article' ? 'A' : 'F'),
+                    h('span', null, video.kind === 'article' ? appearanceText('Artikuj', 'Articles') : getCategoryLabel(video.category || video.courseTitle || 'Psikologji'))),
+                  h('h2', { className: 'shorts-title' }, video.title),
+                  video.kind === 'article' && video.summary && h('p', { className: 'shorts-summary' }, video.summary),
                   video.kind !== 'article' && h('div', { className: 'story-hold-hint' }, appearanceText('Mbaje shtypur videon për pauzë', 'Hold the video to pause')),
-                  idx < total - 1 && h('div', { className: 'story-scroll-cue' },
+                  idx === 0 && idx < total - 1 && h('div', { className: 'story-scroll-cue' },
                     h('svg', { className: 'story-cue-mouse', width: 18, height: 26, viewBox: '0 0 24 28', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
                       h('rect', { x: 7, y: 1, width: 10, height: 16, rx: 5 }),
                       h('path', { className: 'story-cue-wheel', d: 'M12 5v3' }),
