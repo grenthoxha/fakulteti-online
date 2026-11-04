@@ -33614,7 +33614,8 @@ Nënshkrimi: _____________________`;
     );
   };
   const renderCourseVideoHub = () => {
-    const hubFilteredVideos = courseVideoFeed.filter(v => {
+    const hubVideos = courseVideoFeed.filter(item => item.kind !== 'article');
+    const hubFilteredVideos = hubVideos.filter(v => {
       const matchesCat = matchesCategory(v, hubVideoCategoryFilter);
       if (!matchesCat) return false;
       if (!hubVideoSearchQuery.trim()) return true;
@@ -33628,12 +33629,12 @@ Nënshkrimi: _____________________`;
     });
 
     const activeCatCounts = {
-      all: courseVideoFeed.length,
-      kognitive: courseVideoFeed.filter(v => matchesCategory(v, 'kognitive')).length,
-      biopsikologji: courseVideoFeed.filter(v => matchesCategory(v, 'biopsikologji')).length,
-      klinike: courseVideoFeed.filter(v => matchesCategory(v, 'klinike')).length,
-      zhvillimore: courseVideoFeed.filter(v => matchesCategory(v, 'zhvillimore')).length,
-      sociale: courseVideoFeed.filter(v => matchesCategory(v, 'sociale')).length
+      all: hubVideos.length,
+      kognitive: hubVideos.filter(v => matchesCategory(v, 'kognitive')).length,
+      biopsikologji: hubVideos.filter(v => matchesCategory(v, 'biopsikologji')).length,
+      klinike: hubVideos.filter(v => matchesCategory(v, 'klinike')).length,
+      zhvillimore: hubVideos.filter(v => matchesCategory(v, 'zhvillimore')).length,
+      sociale: hubVideos.filter(v => matchesCategory(v, 'sociale')).length
     };
 
     return /*#__PURE__*/React.createElement(React.Fragment, null,
@@ -33653,7 +33654,7 @@ Nënshkrimi: _____________________`;
               }, "Biblioteka e Videove Mësimore · Psikologji"),
               /*#__PURE__*/React.createElement("span", {
                 className: "px-2 py-0.5 rounded-md bg-muted text-secondary text-xs font-medium"
-              }, `${courseVideoFeed.length} video`)
+              }, `${hubVideos.length} video`)
             ),
             /*#__PURE__*/React.createElement("p", {
               className: "text-xs text-secondary leading-relaxed"
@@ -33715,7 +33716,7 @@ Nënshkrimi: _____________________`;
                 className: "text-[11px] font-medium text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
               }, "Pastro kërkimin"),
               /*#__PURE__*/React.createElement("span", { className: "text-[11px] text-tertiary" },
-                `${hubFilteredVideos.length} nga ${courseVideoFeed.length} video`
+                `${hubFilteredVideos.length} nga ${hubVideos.length} video`
               )
             )
           ),
