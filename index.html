@@ -9059,6 +9059,13 @@ function getFilozofikuProgramSessions(data, program, dayId) {
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
 
+function searchFilozofikuProfessors(professors, query) {
+  const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return professors.filter(prof => words.every(word => normalize(prof.name).includes(word)));
+}
+
 function FilozofikuFreeRoomsPage({ onBack }) {
   const h = React.createElement;
   const [data, setData] = useState(() => FilozofikuDailyStore.getData());
@@ -9377,6 +9384,10 @@ function FilozofikuFreeRoomsPage({ onBack }) {
     );
   }, [professorsEvaluated, searchQuery]);
 
+  const searchedProfessors = useMemo(() => searchFilozofikuProfessors(professorsEvaluated, searchQuery), [professorsEvaluated, searchQuery]);
+  const showProfessorSearch = searchedProfessors.length > 0;
+  const professorsToShow = showProfessorSearch ? searchedProfessors : filteredProfessors;
+
   const selectedProf = useMemo(
     () => (selectedProfName ? professorsEvaluated.find(p => p.name === selectedProfName) || null : null),
     [professorsEvaluated, selectedProfName]
@@ -9433,64 +9444,9 @@ function FilozofikuFreeRoomsPage({ onBack }) {
 
     /* Controls Bar */
     h('section', { className: 'card-surface rounded-2xl border border-default p-3.5 sm:p-4 space-y-3' },
-      /* 3 Selectors: Dita, Nga ora, Deri në orën */
-      h('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-2.5' },
-        h('label', { className: 'block' },
-          h('span', { className: 'block text-[11px] font-semibold text-secondary mb-1' }, 'Dita'),
-          h('select', {
-            value: dayIdx,
-            onChange: e => { const v = Number(e.target.value); setDayIdx(v); setModalDayIdx(v); },
-            className: 'w-full h-9 px-3 rounded-xl input-bg border border-default text-xs font-semibold text-primary outline-none focus:border-teal-600 cursor-pointer'
-          }, dayAvailabilityAtViewedTime.map(d => h('option', { key: d.dayName, value: d.dayIdx },
-            d.dayName + (d.isToday ? ' (Sot)' : '')
-          )))
-        ),
-        h('label', { className: 'block' },
-          h('span', { className: 'block text-[11px] font-semibold text-secondary mb-1' }, 'Nga ora'),
-          h('select', {
-            value: useLiveClock ? 'live' : String(startIdx),
-            onChange: e => {
-              if (e.target.value === 'live') {
-                setUseLiveClock(true);
-                return;
-              }
-              const nextS = Number(e.target.value);
-              setUseLiveClock(false);
-              setStartIdx(nextS);
-              if (endIdx <= nextS) setEndIdx(Math.min(data.times.length - 1, nextS + 4));
-            },
-            className: 'w-full h-9 px-3 rounded-xl input-bg border border-default text-xs font-semibold text-primary tabular-nums outline-none focus:border-teal-600 cursor-pointer'
-          },
-            h('option', { value: 'live' }, 'Ora aktuale (' + liveInfo.currentClockLabel + ')'),
-            data.times.slice(0, -1).map((t, i) => h('option', { key: t, value: String(i) }, t))
-          )
-        ),
-        h('label', { className: 'block' },
-          h('span', { className: 'block text-[11px] font-semibold text-secondary mb-1' }, 'Deri në orën'),
-          h('select', {
-            value: useLiveClock ? 'live' : String(endIdx),
-            onChange: e => {
-              if (e.target.value === 'live') {
-                setUseLiveClock(true);
-                return;
-              }
-              setUseLiveClock(false);
-              setEndIdx(Number(e.target.value));
-            },
-            className: 'w-full h-9 px-3 rounded-xl input-bg border border-default text-xs font-semibold text-primary tabular-nums outline-none focus:border-teal-600 cursor-pointer'
-          },
-            h('option', { value: 'live' }, 'Ora aktuale (' + liveInfo.currentClockLabel + ')'),
-            data.times.map((t, i) => i > 0 ? h('option', { key: t, value: String(i) }, t) : null)
-          )
-        )
-      ),
-
-      invalidRange && h('div', { className: 'p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-semibold' },
-        'Ora e përfundimit duhet të jetë pas orës së fillimit.'
-      ),
 
       /* Status Filter + Profesorët Tab + Search */
-      h('div', { className: 'pt-2.5 border-t border-default flex flex-col sm:flex-row sm:items-center justify-between gap-2.5' },
+      h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5' },
         h('div', { className: 'flex items-center gap-1.5 flex-wrap' },
           [
             { id: 'all', label: 'Të gjitha (' + data.rooms.length + ')' },
@@ -9526,8 +9482,8 @@ function FilozofikuFreeRoomsPage({ onBack }) {
     ),
 
     /* Professors Grid (when statusFilter === 'professors') OR Rooms Grid */
-    statusFilter === 'professors'
-      ? (filteredProfessors.length === 0
+    (statusFilter === 'professors' || showProfessorSearch)
+      ? (professorsToShow.length === 0
           ? h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center space-y-2' },
               h('div', { className: 'text-sm font-bold text-primary' }, 'Nuk u gjet asnjë profesor'),
               h('button', {
@@ -9537,7 +9493,7 @@ function FilozofikuFreeRoomsPage({ onBack }) {
               }, 'Shiko të gjithë profesorët')
             )
           : h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
-              filteredProfessors.map(prof => h('article', {
+              professorsToShow.map(prof => h('article', {
                 key: prof.name,
                 onClick: () => setSelectedProfName(prof.name),
                 className: 'card-surface rounded-2xl border border-default hover:border-slate-400 p-4 transition-all cursor-pointer space-y-2'
@@ -9560,7 +9516,19 @@ function FilozofikuFreeRoomsPage({ onBack }) {
                 ),
                 h('div', { className: 'text-xs text-secondary truncate pt-0.5' },
                   prof.subjects.join(' · ')
-                )
+                ),
+                showProfessorSearch && h('div', { className: 'pt-3 mt-3 border-t border-default space-y-3' },
+                  prof.dayIndices.map(dIdx => h('section', { key: dIdx, className: 'space-y-1.5' },
+                    h('h4', { className: 'text-xs font-bold text-primary' }, data.days[dIdx]),
+                    prof.events.filter(event => event.d === dIdx).map((event, index) => h('div', {
+                      key: `${event.roomName}:${event.s}:${index}`,
+                      className: 'rounded-xl input-bg border border-default p-2.5 space-y-1'
+                    },
+                      h('div', { className: 'flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-primary' },
+                        h('span', { className: 'tabular-nums' }, event.timeRange),
+                        h('span', null, event.roomName)),
+                      h('div', { className: 'text-xs text-primary' }, event.t),
+                      h('div', { className: 'text-[11px] text-secondary' }, [event.g, event.a].filter(Boolean).join(' · ')))))))
               ))
             )
         )
@@ -13256,13 +13224,13 @@ function AcademyApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
-      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+      }, !studentServicesPage && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
         className: "text-sm font-bold text-primary"
-      }, studentServicesPage ? "Gjej shërbimin që të duhet" : "Shërbimet studentore"), /*#__PURE__*/React.createElement("p", {
+      }, "Shërbimet studentore"), /*#__PURE__*/React.createElement("p", {
         className: "text-[11px] text-secondary mt-0.5"
-      }, studentServicesPage ? "Zgjidh një shërbim për banim, studim, provime, transport ose mbështetje financiare." : "Hapi në një faqe të veçantë për t’i parë të gjitha shërbimet.")), /*#__PURE__*/React.createElement("span", {
+      }, "Hapi në një faqe të veçantë për t’i parë të gjitha shërbimet.")), /*#__PURE__*/React.createElement("span", {
         className: "text-[10px] font-semibold text-tertiary"
-      }, "16 shërbime"), /*#__PURE__*/React.createElement("span", {
+      }, "15 shërbime"), /*#__PURE__*/React.createElement("span", {
         className: "profile-services-chevron text-lg text-brand-600 dark:text-brand-300",
         "aria-hidden": "true"
       }, studentServicesPage ? '' : '→')), studentServicesPage && /*#__PURE__*/React.createElement("div", {
@@ -13505,43 +13473,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         "aria-hidden": "true"
       }, "\u2192"))))),
 
-      /* ══════════════════════════════════════════════════════════
-         4h. DETEKTORI I PROVIMEVE (PROFILE SECTION)
-         ══════════════════════════════════════════════════════════ */
-      /*#__PURE__*/React.createElement("section", {
-        className: "profile-service-card card-surface p-4 sm:p-5 rounded-2xl border border-default shadow-2xs space-y-3.5 transition-all duration-200"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-start sm:items-center gap-3 min-w-0"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center justify-center text-lg shrink-0 font-black shadow-2xs"
-      }, "\uD83D\uDCC5"), /*#__PURE__*/React.createElement("div", {
-        className: "min-w-0"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2 flex-wrap"
-      }, /*#__PURE__*/React.createElement("h2", {
-        className: "text-sm font-bold text-primary"
-      }, "P\u00EBrplasjet e provimeve"), /*#__PURE__*/React.createElement("span", {
-        className: "text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 tabular-nums"
-      }, `${selectedClashExamIds.length} n\u00EB afat`)), /*#__PURE__*/React.createElement("p", {
-        className: "text-xs text-secondary mt-0.5"
-      }, "Verifikoni mbivendosjen e orareve dhe koordinoni afatin e provimeve."))), /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2 shrink-0 flex-wrap"
-      }, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => {
-          setIsAddClashExamModalOpen(true);
-          setView('examclash');
-        },
-        className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-rose-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-      }, /*#__PURE__*/React.createElement("span", null, "+ Shto")), /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => setView('examclash'),
-        className: "px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-      }, /*#__PURE__*/React.createElement("span", null, "Shiko Orarin"), /*#__PURE__*/React.createElement("span", {
-        "aria-hidden": "true"
-      }, "\u2192"))))),
 
       /* ══════════════════════════════════════════════════════════
          4i. TRAFIKU URBAN (PROFILE SECTION)
@@ -28037,7 +27968,7 @@ Nënshkrimi: _____________________`;
       'data-home-section': 'schedule',
       className: 'card-surface border border-default rounded-3xl shadow-2xs select-none relative px-[18px] pt-[18px] pb-2'
     },
-      h('div', { className: 'flex items-center justify-between mb-1.5' },
+      h('div', { className: 'flex items-center justify-between gap-3 pb-3 mb-2 border-b border-default' },
         h('h2', { className: 'text-base font-[650] tracking-tight text-primary' }, 'Sot në fakultet'),
         h('button', {
           type: 'button', className: 'text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer',
@@ -28133,30 +28064,9 @@ Nënshkrimi: _____________________`;
       iconClass: 'bg-violet-500/10 text-violet-600 dark:text-violet-300',
       labelClass: 'text-violet-600 dark:text-violet-300'
     }]).slice(0, 2);
-    const liveHomeCard = renderLiveHomeCard();
-    const hideHeroForLive = false;
     const homeLayout = /*#__PURE__*/React.createElement("div", {
       className: "p-4 sm:p-6 lg:p-8 w-full space-y-4 anim-fade-up pb-24 lg:pb-8"
     },
-      /* MAIN HOME CARD */
-      hideHeroForLive ? null : /*#__PURE__*/React.createElement("section", {
-        "data-home-section": "intro",
-        className: "home-hero-integrated text-primary relative overflow-hidden"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "relative z-10 w-full"
-      }, liveHomeCard ? liveHomeCard : /*#__PURE__*/React.createElement(React.Fragment, null, dailyHomeAction.eyebrow && dailyHomeAction.eyebrow !== 'Hapi i radhës' ? /*#__PURE__*/React.createElement("div", {
-        className: "text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-300 mb-1.5"
-      }, dailyHomeAction.eyebrow) : null, /*#__PURE__*/React.createElement("h1", {
-        className: `text-xl sm:text-3xl font-extrabold tracking-tight leading-tight max-w-3xl ${homeHeroInstructor ? 'mb-3' : dailyHomeAction.reason ? 'mb-2' : 'mb-4'}`
-      }, dailyHomeAction.title), homeHeroInstructor ? renderHomeInstructor(homeHeroInstructor.name, homeHeroInstructor.role, dailyHomeAction.reason ? 'mb-3' : 'mb-4') : null, dailyHomeAction.reason ? /*#__PURE__*/React.createElement("p", {
-        className: "text-xs sm:text-sm text-secondary max-w-xl mb-4 leading-relaxed"
-      }, dailyHomeAction.reason) : null, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: openDailyHomeAction,
-        className: "hero-action w-full sm:w-auto min-h-12 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
-      }, /*#__PURE__*/React.createElement("span", null, dailyHomeAction.buttonLabel), /*#__PURE__*/React.createElement("span", {
-        "aria-hidden": "true"
-      }, "→"))), null)),
       /* 2.5 VIDEO MËSIMORE (MENJËHERË MBI ORARI NË FAKULTET - SERIOZE, ZERO EMOJIS) */
       /*#__PURE__*/React.createElement("section", {
         "data-home-section": "videos",
@@ -30842,7 +30752,7 @@ Nënshkrimi: _____________________`;
               /*#__PURE__*/React.createElement("span", { className: "text-base", "aria-hidden": "true" }, "🏢"),
               /*#__PURE__*/React.createElement("h2", {
                 className: "text-sm sm:text-base font-extrabold text-primary tracking-tight leading-tight"
-              }, appearanceText('Shërbimet & Jeta Studentore', 'Student Services & Campus Life'))
+              }, appearanceText('Shërbimet Studentore', 'Student Services'))
             )
           ),
           /* Right: All Services Link */
@@ -30850,12 +30760,12 @@ Nënshkrimi: _____________________`;
             type: "button",
             onClick: () => setView('studentservices'),
             className: "text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline shrink-0 cursor-pointer inline-flex items-center gap-1"
-          }, appearanceText('Të 6 shërbimet →', 'All 6 services →'))
+          }, appearanceText('Të gjitha shërbimet →', 'All services →'))
         ),
 
         /* Services Carousel (Horizontal scroll on mobile, responsive grid on desktop) */
         /*#__PURE__*/React.createElement("div", {
-          className: "services-carousel flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-2.5 overflow-x-auto pb-1.5 scrollbar-none snap-x snap-mandatory"
+          className: "services-carousel flex gap-2.5 overflow-x-auto overscroll-x-contain pb-1.5 snap-x snap-mandatory"
         }, [
           (() => {
             const fs = computeFilozofikuFreeSummary();
@@ -30923,11 +30833,13 @@ Nënshkrimi: _____________________`;
             icon: '🏷️',
             open: () => setView('studentperks')
           }
-        ].map(srv => /*#__PURE__*/React.createElement("button", {
+        ].filter(srv => ['freerooms', 'books', 'housing', 'urbantraffic'].includes(srv.id))
+        .sort((a, b) => ['freerooms', 'books', 'housing', 'urbantraffic'].indexOf(a.id) - ['freerooms', 'books', 'housing', 'urbantraffic'].indexOf(b.id))
+        .map(srv => /*#__PURE__*/React.createElement("button", {
           key: srv.id,
           type: "button",
           onClick: srv.open,
-          className: "snap-start flex-none w-[130px] sm:w-auto p-2.5 sm:p-3 rounded-xl input-bg border border-default hover:border-brand-400 hover:shadow-xs transition-all text-center flex flex-col items-center justify-between gap-1 cursor-pointer group"
+          className: "snap-start shrink-0 w-40 sm:w-44 min-w-0 p-2.5 sm:p-3 rounded-xl input-bg border border-default hover:border-brand-400 hover:shadow-xs transition-all text-center flex flex-col items-center justify-between gap-1 cursor-pointer group"
         },
           /* Icon */
           /*#__PURE__*/React.createElement("span", { className: "text-2xl mb-1 group-hover:scale-110 transition-transform", "aria-hidden": "true" }, srv.icon),
@@ -32670,9 +32582,9 @@ Nënshkrimi: _____________________`;
       ? [ce("span", { className: `w-1.5 h-1.5 rounded-full bg-current ${pomoRunning ? 'animate-pulse' : 'opacity-40'}` }), ce("span", { className: "tabular-nums" }, pomoFmt(pomoLeftSecs()))]
       : [unitUiIcon("M12 8v5l3 2M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z", "w-[18px] h-[18px]")]));
 
-    return ce(React.Fragment, null,
-      ce("div", { className: "flex items-center justify-between gap-3 min-h-9" },
-        ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, "Detyrat"),
+    return ce('div', { className: 'card-surface border border-default rounded-3xl shadow-2xs relative px-[18px] pt-[18px] pb-2' },
+      ce("div", { className: "flex items-center justify-between gap-3 pb-3 mb-2 border-b border-default" },
+        ce("h2", { className: "text-base font-[650] tracking-tight text-primary" }, "Detyrat"),
         ce("div", { className: "flex items-center gap-2" },
           pomoBtn,
         ce("button", {
@@ -32683,8 +32595,8 @@ Nënshkrimi: _____________________`;
           title: q.open ? "Mbyll" : "Shto detyrë",
           className: "w-9 h-9 rounded-full bg-brand-600 hover:bg-brand-500 text-white cursor-pointer inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         }, unitUiIcon(q.open ? "M6 6l12 12M18 6L6 18" : "M12 5v14M5 12h14", "w-4 h-4")))),
-      ce("div", { className: "card-surface border border-default rounded-[18px] overflow-visible" },
-        ce("div", { className: "px-4" },
+      ce("div", { className: "overflow-visible" },
+        ce("div", null,
           form,
           openShown.map((r, i) => row(r, i)),
           limit && ce("button", { type: "button", onClick: () => setExpandedAllTasks(true), className: `w-full h-11 text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer ${line}` }, `Shfaq edhe ${openList.length - 4}`),
