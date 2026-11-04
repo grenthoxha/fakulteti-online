@@ -34,6 +34,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400..600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -342,6 +343,18 @@
     .notification-preview-footer { padding:7px 12px; border-top:1px solid var(--line); flex:none; }
     @keyframes notification-preview-enter { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
     @media (prefers-reduced-motion:reduce) { .notification-preview { animation:none; } }
+
+    /* Article typography only: the app layout, content and controls remain unchanged. */
+    .editorial-articles .editorial-article-title,
+    .editorial-articles .editorial-article-list-title,
+    .editorial-articles .editorial-article-copy { font-family:"Literata",Georgia,"Times New Roman",serif; font-optical-sizing:auto; }
+    .editorial-articles .editorial-article-title { font-size:clamp(30px,5.8vw,40px); font-weight:500; line-height:1.12; letter-spacing:-.035em; text-align:start; overflow-wrap:break-word; }
+    .editorial-articles .editorial-article-summary { font-size:18px; font-weight:400; line-height:1.55; letter-spacing:normal; }
+    .editorial-articles .editorial-article-copy { font-size:19px; font-weight:400; line-height:1.78; letter-spacing:normal; text-align:start; overflow-wrap:break-word; }
+    .editorial-articles .editorial-article-copy > p { margin:0; }
+    .editorial-articles .editorial-article-copy > p + p { margin-top:1.15em; }
+    .editorial-articles .editorial-article-list-title { font-size:23px; font-weight:500; line-height:1.3; letter-spacing:-.025em; }
+    @media (min-width:640px) { .editorial-articles .editorial-article-copy { font-size:20px; } .editorial-articles .editorial-article-summary { font-size:19px; } }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -33392,7 +33405,7 @@ Nënshkrimi: _____________________`;
     const h = React.createElement;
     const selected = publishedArticles.find(item => item.id === selectedArticleId);
     const metadata = item => [item.author, item.date ? formatDateSq(item.date, { day: 'numeric', month: 'long', year: 'numeric' }) : '', `${item.minutes} min lexim`].filter(Boolean).join(' · ');
-    return h('div', { className: 'w-full max-w-2xl mx-auto p-4 pb-28 space-y-5 anim-fade-up' },
+    return h('div', { className: 'editorial-articles w-full max-w-2xl mx-auto p-4 pb-28 space-y-5 anim-fade-up' },
       h('header', { className: 'flex items-center gap-3' },
         h('button', { type: 'button', onClick: () => { if (selected) setSelectedArticleId(null); else goBackOr('settings'); }, className: 'w-10 h-10 rounded-xl card-surface border border-default text-primary shrink-0', 'aria-label': selected ? 'Kthehu te artikujt' : 'Kthehu te profili' }, '←'),
         h('h1', { className: 'text-xl font-bold text-primary' }, 'Artikujt')),
@@ -33400,12 +33413,12 @@ Nënshkrimi: _____________________`;
         selected.image && h('img', { src: selected.image, alt: selected.title, className: 'w-full max-h-[55svh] object-contain bg-black/5' }),
         h('div', { className: 'p-5 sm:p-7' },
           h('p', { className: 'text-xs text-secondary mb-3' }, metadata(selected)),
-          h('h2', { className: 'text-2xl font-bold tracking-tight text-primary leading-tight' }, selected.title),
-          selected.summary && h('p', { className: 'text-base text-secondary leading-7 mt-4 pb-5 border-b border-default' }, selected.summary),
-          h('div', { className: 'space-y-5 mt-6 text-[16px] leading-8 text-primary' }, selected.body.map((paragraph, index) => h('p', { key: index }, paragraph)))))
+          h('h2', { className: 'editorial-article-title text-primary' }, selected.title),
+          selected.summary && h('p', { className: 'editorial-article-summary text-secondary mt-4 pb-5 border-b border-default' }, selected.summary),
+          h('div', { className: 'editorial-article-copy mt-6 text-primary' }, selected.body.map((paragraph, index) => h('p', { key: index }, paragraph)))))
       : publishedArticles.length ? h('div', { className: 'space-y-4' }, publishedArticles.map(item => h('article', { key: item.id, className: 'card-surface rounded-2xl border border-default overflow-hidden' },
         item.image && h('button', { type: 'button', className: 'block w-full', onClick: () => openCourseVideoFeed(courseVideoFeed.findIndex(story => story.articleId === item.id)), 'aria-label': `Shiko fotografinë: ${item.title}` }, h('img', { src: item.image, alt: item.title, loading: 'lazy', className: 'w-full max-h-64 object-cover' })),
-        h('div', { className: 'p-5' }, h('p', { className: 'text-xs text-secondary mb-2' }, metadata(item)), h('h2', { className: 'text-lg font-bold text-primary' }, item.title), item.summary && h('p', { className: 'text-sm text-secondary leading-6 mt-2' }, item.summary),
+        h('div', { className: 'p-5' }, h('p', { className: 'text-xs text-secondary mb-2' }, metadata(item)), h('h2', { className: 'editorial-article-list-title text-primary' }, item.title), item.summary && h('p', { className: 'text-sm text-secondary leading-6 mt-2' }, item.summary),
           h('button', { type: 'button', onClick: () => { setSelectedArticleId(item.id); window.scrollTo({ top: 0, behavior: 'instant' }); }, className: 'min-h-10 mt-3 text-sm font-semibold text-brand-700 dark:text-brand-300', 'aria-label': `Lexo artikullin: ${item.title}` }, 'Lexo artikullin →')))))
       : h('section', { className: 'card-surface rounded-3xl border border-default px-6 py-12 text-center' },
         h('span', { className: 'inline-flex w-12 h-12 rounded-2xl bg-brand-600/10 text-brand-700 dark:text-brand-300 items-center justify-center mb-4', 'aria-hidden': true }, unitUiIcon('M4 4h16v16H4zM8 8h8M8 12h8M8 16h5', 'w-6 h-6')),
