@@ -250,23 +250,23 @@
     /* Në telefon: pa fotot e trurit në sfondin e Kreut */
     @media (max-width: 639px) { .psychology-brain-art { display: none !important; } }
     /* ORARI · dizajni F: header blu (ngjyra e website-it + toni i logos) dhe fletë e bardhë */
-    .schedule-min .sch-hero { position: relative; color: var(--ink); padding: 8px 16px 32px; background: #eaf0f8; }
+    .schedule-min .sch-hero { position: relative; color: var(--ink); padding: 5px 16px 30px; background: #eaf0f8; }
     .dark .schedule-min .sch-hero { background: #101d31; }
-    .schedule-min .sch-sheet { position: relative; margin-top: -28px !important; border-radius: 28px 28px 0 0; background: var(--surface); padding: 18px 16px 24px; }
+    .schedule-min .sch-sheet { position: relative; margin-top: -28px !important; border-radius: 28px 28px 0 0; background: var(--surface); padding: 8px 16px 24px; }
     .dark .schedule-min .sch-sheet { background: var(--surface); }
     .schedule-min .sch-circle { width: 32px; height: 32px; border-radius: 11px; border: 1px solid rgba(16,69,140,.12); display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; background: rgba(16,69,140,.06); color: #10458c; transition: background-color .2s ease, transform .15s ease; }
     .schedule-min .sch-circle:hover { background: rgba(16,69,140,.12); }
     .schedule-min .sch-circle:active { transform: scale(.95); }
     .schedule-min .sch-circle.is-solid { background: var(--surface); color: #10458c; }
     .schedule-min .sch-circle:focus-visible, .schedule-min .sch-day:focus-visible { outline: 2px solid #4c83ba; outline-offset: 2px; }
-    .schedule-min .sch-day { position: relative; height: 50px; border: 1px solid transparent; border-radius: 13px; background: rgba(16,69,140,.05); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
+    .schedule-min .sch-day { position: relative; height: 42px; border: 1px solid transparent; border-radius: 13px; background: rgba(16,69,140,.05); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
     .schedule-min .sch-day:hover { background: rgba(16,69,140,.1); }
     .schedule-min .sch-day.is-sel { background: var(--surface); color: #10458c; border-color: rgba(16,69,140,.2); }
     .schedule-min .sch-day-lbl { font-size: 10px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); max-width: 100%; white-space: nowrap; }
     .schedule-min .sch-day.is-sel .sch-day-lbl { color: #10458c; font-weight: 800; }
     .schedule-min .sch-day-num { font-size: 18px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
     .schedule-min .sch-day.is-today:not(.is-sel) { box-shadow: inset 0 0 0 1px rgba(76,131,186,.45); }
-    .schedule-min .sch-program-select { width: 100%; min-height: 36px !important; height: 36px; padding: 6px 34px 6px 11px; appearance: none; border: 1px solid rgba(16,69,140,.14); border-radius: 11px; background: rgba(255,255,255,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='1.8'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") right 10px center / 15px no-repeat; color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .schedule-min .sch-program-select { width: 100%; min-height: 32px !important; height: 32px; padding: 4px 34px 4px 11px; appearance: none; border: 1px solid rgba(16,69,140,.14); border-radius: 11px; background: rgba(255,255,255,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='1.8'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") right 10px center / 15px no-repeat; color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
     .schedule-min .sch-program-select:focus-visible { outline: 2px solid #4c83ba; outline-offset: 2px; }
     .schedule-min .sch-program-select option { background: var(--surface); color: var(--ink); }
     .dark .schedule-min .sch-circle { color: #b7cee7; background: rgba(148,177,207,.08); border-color: rgba(148,177,207,.16); }
@@ -296,14 +296,39 @@
       .schedule-page > .schedule-min:first-child { margin-top: -1rem; }
     }
     @media (min-width: 1024px) {
-      .schedule-min .sch-hero { border-radius: 28px 28px 0 0; padding: 10px 24px 32px; }
-      .schedule-min .sch-sheet { border-radius: 28px; padding: 22px 24px 28px; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
+      .schedule-min .sch-hero { border-radius: 28px 28px 0 0; padding: 6px 24px 30px; }
+      .schedule-min .sch-sheet { border-radius: 28px; padding: 10px 24px 28px; box-shadow: 0 -1px 0 rgba(0,0,0,.02); }
     }
     @media (max-width: 420px) { .schedule-min .sch-day-lbl { font-size: 9.5px; letter-spacing: .02em; } }
     @media (max-width: 359px) {
       .schedule-min .sch-hero { padding-left: 12px; padding-right: 12px; }
       .schedule-min .sch-day-lbl { font-size: 9.5px; letter-spacing: 0; }
     }
+
+    .notification-layer { position: fixed; inset: 0; z-index: 90; }
+    .notification-backdrop { position: absolute; inset: 0; background: rgba(5,14,30,.4); animation: notification-fade .22s ease both; }
+    .notification-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--page); color: var(--ink); animation: notification-enter .28s cubic-bezier(.22,.68,0,1) both; }
+    .notification-header { flex: none; padding: max(12px, env(safe-area-inset-top, 0px)) 16px 0; border-bottom: 1px solid var(--line); background: var(--surface); }
+    .notification-tabs { display: flex; gap: 24px; margin: 16px 8px 0; }
+    .notification-tabs button { padding: 0 0 12px; color: var(--muted); border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .notification-tabs button.is-active { color: var(--brand-600, #1557b0); border-color: currentColor; }
+    .dark .notification-tabs button.is-active { color: #8fbeef; }
+    .notification-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 16px; }
+    .notification-list { overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); }
+    .notification-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; padding: 16px; cursor: pointer; }
+    .notification-row + .notification-row { border-top: 1px solid var(--line); }
+    .notification-row.is-unread { background: rgba(76,131,186,.045); }
+    .notification-row:hover { background: rgba(76,131,186,.09); }
+    .notification-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 13px; background: rgba(76,131,186,.11); color: #1557b0; }
+    .dark .notification-icon { color: #a2c9f2; }
+    .notification-unread-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #397dc0; margin-top: 6px; }
+    .notification-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 20px; text-align: center; }
+    .notification-footer { flex: none; padding: 16px 20px max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+    .perk-conditions summary::marker { color: var(--muted); font-size: 11px; }
+    @keyframes notification-enter { from { opacity: .6; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes notification-fade { from { opacity: 0; } to { opacity: 1; } }
+    @media (min-width: 768px) { .notification-panel { left: auto; width: min(460px, 100vw); box-shadow: -16px 0 60px rgba(0,0,0,.18); } }
+    @media (prefers-reduced-motion: reduce) { .notification-panel, .notification-backdrop { animation: none; } }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -10321,6 +10346,12 @@ function AcademyApp({
   
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [notificationTab, setNotificationTab] = useState('all');
+  useEffect(() => {
+    if (!notificationCenterOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [notificationCenterOpen]);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
     try { const stored = JSON.parse(localStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
@@ -11841,82 +11872,77 @@ function AcademyApp({
   });
 
   const [studentPerksList, setStudentPerksList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('u_student_perks_list');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return [
+    const official = [
       {
-        id: 'perk-1',
-        title: 'Bilet\u00EB Kinemaje me Zbritje Studentore',
-        category: 'cinema',
-        categoryLabel: 'Kinema & Arg\u00EBtim',
-        icon: '\uD83C\uDFAC',
-        providerName: 'Cineplexx Kosova',
-        discountValue: '2.50\u20AC \u00E7do t\u00EB M\u00EBrkur\u00EB',
-        location: 'Albi Mall & Prishtina Mall',
-        howToClaim: 'Paraqitni indeksin fizik ose SEMS llogarin\u00EB aktive n\u00EB biletari.',
-        description: 'Zbritje e ve\u00E7ant\u00EB n\u00EB t\u00EB gjitha filmat 2D p\u00EBr student\u00EB n\u00EB dit\u00EBn e studentit.',
-        validUntil: 'Vlen \u00E7do t\u00EB M\u00EBrkur\u00EB',
-        isFeatured: true
+            "id": "perk-1",
+            "providerName": "Cineplexx Prishtinë",
+            "title": "Biletë studentore në kinema",
+            "category": "cinema",
+            "categoryLabel": "Kinema",
+            "discountValue": "2D · 3,50 €",
+            "location": "Prishtinë · Albi Mall",
+            "description": "Tarifa studentore për projeksionet 2D të hënën, të mërkurën dhe të enjten.",
+            "howToClaim": "Kërko tarifën studentore në biletari. Konfirmo dokumentin e pranueshëm dhe shtesat për projeksionin përpara pagesës.",
+            "validUntil": "E hënë · E mërkurë · E enjte",
+            "sourceUrl": "https://www.cineplexx-ks.eu/info/price-list/Cineplexx-Prishtine",
+            "sourceLabel": "Çmimorja Cineplexx",
+            "isFeatured": true,
+            "verifiedOn": "2026-11-05"
       },
       {
-        id: 'perk-2',
-        title: 'Zbritje 15% n\u00EB Libra Akademik\u00EB & Shkencor\u00EB',
-        category: 'books',
-        categoryLabel: 'Librari & Botime',
-        icon: '\uD83D\uDCDA',
-        providerName: 'Libraria Dukagjini & Buzuku',
-        discountValue: '-15% Zbritje',
-        location: 'Sheshi N\u00EBn\u00EB Tereza, Prishtin\u00EB',
-        howToClaim: 'Trego kartel\u00EBn e studentit n\u00EB ark\u00EB.',
-        description: 'Vlen p\u00EBr literatur\u00EB universitare, fjalor\u00EB, libra t\u00EB programimit dhe shkencave shoq\u00EBrore.',
-        validUntil: 'Gjat\u00EB t\u00EB gjith\u00EB semestrit',
-        isFeatured: true
+            "id": "perk-github",
+            "providerName": "GitHub Education",
+            "title": "Student Developer Pack",
+            "category": "tech",
+            "categoryLabel": "Mjete digjitale",
+            "discountValue": "Falas",
+            "location": "Online",
+            "description": "GitHub Pro dhe oferta të mjeteve për zhvillim për studentë të verifikuar.",
+            "howToClaim": "Duhet të jesh student, të paktën 13 vjeç. Apliko me llogarinë GitHub dhe dokumentacionin që kërkon GitHub Education. Përfitimet e partnerëve kanë kushtet e veta.",
+            "validUntil": "Për studentë të verifikuar",
+            "sourceUrl": "https://education.github.com/pack",
+            "sourceLabel": "GitHub Education",
+            "isFeatured": false,
+            "verifiedOn": "2026-11-05"
       },
       {
-        id: 'perk-3',
-        title: 'An\u00EBtar\u00EBsim Fitnesi me Tarif\u00EB Studentore',
-        category: 'fitness',
-        categoryLabel: 'Fitnes & Sport',
-        icon: '\uD83C\uDFCB\uFE0F\u200D\u2642\uFE0F',
-        providerName: 'Campus Fitness Club',
-        discountValue: '15\u20AC / muaj (nga 25\u20AC)',
-        location: 'Af\u00EBr Qendr\u00EBs s\u00EB Student\u00EBve',
-        howToClaim: 'Regjistrohu me v\u00EBrtetim t\u00EB studentit.',
-        description: 'Qasje e plot\u00EB n\u00EB palest\u00EBr, kardio dhe dushe n\u00EB \u00E7do orar gjat\u00EB dit\u00EBs.',
-        validUntil: 'E p\u00EBrhershme p\u00EBr student\u00EB',
-        isFeatured: false
+            "id": "perk-notion",
+            "providerName": "Notion",
+            "title": "Plus për studime",
+            "category": "tech",
+            "categoryLabel": "Mjete digjitale",
+            "discountValue": "Falas",
+            "location": "Online",
+            "description": "Plani Education për shënime dhe organizim personal në universitet.",
+            "howToClaim": "Për studentë dhe mësimdhënës të institucioneve të akredituara që plotësojnë kushtet e Notion. Përdor emailin universitar dhe verifiko të drejtën te plani Education; AI ka kushte të veçanta.",
+            "validUntil": "Sipas statusit dhe institucionit",
+            "sourceUrl": "https://www.notion.com/help/notion-for-education",
+            "sourceLabel": "Notion Education",
+            "isFeatured": false,
+            "verifiedOn": "2026-11-05"
       },
       {
-        id: 'perk-4',
-        title: 'Kafene Studentore: Kafe + Uj\u00EB me \u00C7mim Special',
-        category: 'food',
-        categoryLabel: 'Kafene & Ushqim',
-        icon: '\u2615',
-        providerName: 'Tech Lounge Cafe',
-        discountValue: '0.60\u20AC Kafeja',
-        location: 'P\u00EBrball\u00EB Fakultetit Teknik',
-        howToClaim: 'Mjafton t\u00EB keni indeksin me vete.',
-        description: 'Hap\u00EBsir\u00EB e p\u00EBrshatshme p\u00EBr t\u00EB m\u00EBsuar me laptop, priza n\u00EB \u00E7do tavolin\u00EB dhe WiFi t\u00EB shpejt\u00EB.',
-        validUntil: 'E hapur \u00E7do dit\u00EB pune',
-        isFeatured: false
-      },
-      {
-        id: 'perk-5',
-        title: 'Sh\u00EBrbime IT & Riparim Laptop\u00EBsh me 20% Zbritje',
-        category: 'tech',
-        categoryLabel: 'Teknologji & Pajisje',
-        icon: '\uD83D\uDCBB',
-        providerName: 'Student Tech Repair',
-        discountValue: '-20% n\u00EB Servis',
-        location: 'Rruga Agim Ramadani',
-        howToClaim: 'Trego kartel\u00EBn e studentit gjat\u00EB dor\u00EBzimit t\u00EB pajisjes.',
-        description: 'Instalim softueri arsimor, pastrim pluhuri, riparim ekrani dhe optimizim kompjuteri.',
-        validUntil: 'Deri n\u00EB fund t\u00EB vitit',
-        isFeatured: false
+            "id": "perk-jetbrains",
+            "providerName": "JetBrains",
+            "title": "Student Pack",
+            "category": "tech",
+            "categoryLabel": "Mjete digjitale",
+            "discountValue": "Falas",
+            "location": "Online",
+            "description": "Mjete programimi për mësim dhe hulumtim akademik, me licencë studentore.",
+            "howToClaim": "Verifiko statusin sipas procedurës së JetBrains, p.sh. me email universitar, kartelë ISIC/ITIC ose GitHub Student Developer Pack. Licenca është vetëm për përdorim arsimor jo komercial.",
+            "validUntil": "Rinovohet sipas statusit studentor",
+            "sourceUrl": "https://www.jetbrains.com/academy/student-pack/",
+            "sourceLabel": "JetBrains Student Pack",
+            "isFeatured": false,
+            "verifiedOn": "2026-11-05"
       }
-    ];
+];
+    try {
+      const cached = JSON.parse(localStorage.getItem('u_student_perks_list') || '[]');
+      const suggestions = Array.isArray(cached) ? cached.filter(item => item && /^perk-\d{10,}$/.test(item.id)).map(item => ({ ...item, verifiedOn: null, sourceUrl: null })) : [];
+      return [...official, ...suggestions];
+    } catch { return official; }
   });
 
   /* ── 4p. KËSHILLAT E STUDENTËVE TË VITEVE PARAPRAKE (SENIOR TIPS) ── */
@@ -23622,158 +23648,35 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     /* ── 4o. RENDER STUDENT PERKS VIEW ── */
   const renderStudentPerksView = () => {
-    const filteredPerks = studentPerksList.filter(p => {
-      if (perksFilterCategory === 'saved' && !savedPerkIds.includes(p.id)) return false;
-      if (perksFilterCategory !== 'all' && perksFilterCategory !== 'saved' && p.category !== perksFilterCategory) return false;
-      if (perksSearch.trim()) {
-        const q = perksSearch.toLowerCase();
-        const matchTitle = (p.title || '').toLowerCase().includes(q);
-        const matchProv = (p.providerName || '').toLowerCase().includes(q);
-        const matchLoc = (p.location || '').toLowerCase().includes(q);
-        const matchDesc = (p.description || '').toLowerCase().includes(q);
-        if (!matchTitle && !matchProv && !matchLoc && !matchDesc) return false;
-      }
-      return true;
+    const ce = React.createElement;
+    const filteredPerks = studentPerksList.filter(perk => {
+      if (perksFilterCategory === 'saved' && !savedPerkIds.includes(perk.id)) return false;
+      if (perksFilterCategory !== 'all' && perksFilterCategory !== 'saved' && perk.category !== perksFilterCategory) return false;
+      return !perksSearch.trim() || unitFold([perk.title, perk.providerName, perk.location, perk.description].join(' ')).includes(unitFold(perksSearch.trim()));
     });
-
-    return /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-7xl 2xl:max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 anim-fade-up pb-24"
-    },
-      /* Header Row */
-      /*#__PURE__*/React.createElement("div", {
-        className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-default"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-3.5 min-w-0"
-      }, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => goBackOr('home'),
-        className: "w-10 h-10 rounded-xl input-bg border border-default flex items-center justify-center text-secondary hover:text-primary transition-all cursor-pointer shrink-0 shadow-2xs hover:bg-slate-200 dark:hover:bg-slate-800"
-      }, "\u2190"), /*#__PURE__*/React.createElement("div", {
-        className: "min-w-0"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2.5 flex-wrap"
-      }, /*#__PURE__*/React.createElement("h1", {
-        className: "text-lg sm:text-2xl font-black text-primary tracking-tight"
-      }, "Zbritjet & Ofertat Studentore"), /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30"
-      }, "Student Deals Prishtin\u00EB")), /*#__PURE__*/React.createElement("p", {
-        className: "text-xs sm:text-sm text-secondary mt-0.5"
-      }, "Kurseni me kartel\u00EBn e studentit ose indeksin n\u00EB kinema, kafene, fitnes dhe librari."))), /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2.5 shrink-0"
-      }, /*#__PURE__*/React.createElement("button", {
-        type: "button",
-        onClick: () => setIsAddPerkModalOpen(true),
-        className: "px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-      }, /*#__PURE__*/React.createElement("span", null, "+ Sugjero Zbritje")))),
-
-      /* Search & Filters */
-      /*#__PURE__*/React.createElement("div", {
-        className: "card-surface p-4 rounded-2xl border border-default shadow-2xs flex flex-col sm:flex-row items-center gap-3"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "relative flex-1 w-full"
-      }, /*#__PURE__*/React.createElement("input", {
-        type: "text",
-        value: perksSearch,
-        onChange: e => setPerksSearch(e.target.value),
-        placeholder: "K\u00EBrko sipas dyqanit, ofert\u00EBs ose lagjes...",
-        className: "w-full p-2.5 pl-9 rounded-xl input-bg border border-default text-xs text-primary placeholder-secondary/60 outline-none focus:border-violet-500"
-      }), /*#__PURE__*/React.createElement("span", {
-        className: "absolute left-3 top-2.5 text-secondary text-xs pointer-events-none"
-      }, "\uD83D\uDD0D")), /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar"
-      }, [
-        { id: 'all', label: 'T\u00EB gjitha' },
-        { id: 'cinema', label: '\uD83C\uDFAC Kinema' },
-        { id: 'books', label: '\uD83D\uDCDA Libra' },
-        { id: 'fitness', label: '\uD83C\uDFCB\uFE0F Fitnes' },
-        { id: 'food', label: '\u2615 Kafene' },
-        { id: 'tech', label: '\uD83D\uDCBB IT' },
-        { id: 'saved', label: `\u2B50 T\u00EB Ruajtura (${savedPerkIds.length})` }
-      ].map(tab => /*#__PURE__*/React.createElement("button", {
-        key: tab.id,
-        type: "button",
-        onClick: () => setPerksFilterCategory(tab.id),
-        className: `px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${perksFilterCategory === tab.id ? 'bg-violet-600 text-white border-violet-600 shadow-2xs' : 'input-bg border-default text-secondary hover:text-primary'}`
-      }, tab.label)))),
-
-      /* Perks Grid */
-      /*#__PURE__*/React.createElement("div", {
-        className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-      }, filteredPerks.length === 0 ? /*#__PURE__*/React.createElement("div", {
-        className: "col-span-full card-surface p-12 rounded-3xl border border-default text-center space-y-3"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "text-4xl"
-      }, "\uD83C\uDFF7\uFE0F"), /*#__PURE__*/React.createElement("h3", {
-        className: "text-base font-black text-primary"
-      }, "Nuk u gjet asnj\u00EB ofert\u00EB"), /*#__PURE__*/React.createElement("p", {
-        className: "text-xs text-secondary max-w-md mx-auto"
-      }, "Provoni nj\u00EB filt\u00EBr tjet\u00EBr ose sugjeroni nj\u00EB zbritje q\u00EB e keni zbuluar vet\u00EB!")) : filteredPerks.map(perk => {
-        const isSaved = savedPerkIds.includes(perk.id);
-
-        return /*#__PURE__*/React.createElement("div", {
-          key: perk.id,
-          className: "card-surface rounded-2xl border border-default p-5 shadow-xs hover:border-violet-500/40 transition-all flex flex-col justify-between space-y-4"
-        },
-          /* Card Top */
-          /*#__PURE__*/React.createElement("div", {
-            className: "space-y-3"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex items-start justify-between gap-3"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex items-center gap-3 min-w-0"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 flex items-center justify-center text-xl shrink-0 font-black shadow-2xs"
-          }, perk.icon || "\uD83C\uDFF7\uFE0F"), /*#__PURE__*/React.createElement("div", {
-            className: "min-w-0"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-700 dark:text-violet-300"
-          }, perk.categoryLabel), /*#__PURE__*/React.createElement("h3", {
-            className: "text-sm sm:text-base font-black text-primary tracking-tight leading-snug mt-1"
-          }, perk.title))), /*#__PURE__*/React.createElement("div", {
-            className: "flex items-center gap-2 shrink-0"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "text-xs font-black px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0"
-          }, perk.discountValue), /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => handleToggleSavePerk(perk.id),
-            title: isSaved ? "Hiq nga të ruajturat" : "Ruaj zbritjen",
-            className: `w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 text-sm ${isSaved ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500 shadow-2xs' : 'input-bg border-default text-secondary hover:text-primary'}`
-          }, isSaved ? "\u2B50" : "\u2606"))),
-
-          /* Location & Provider */
-          /*#__PURE__*/React.createElement("div", {
-            className: "text-xs text-secondary flex items-center gap-2 flex-wrap"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "font-bold text-primary"
-          }, `\uD83C\uDFE2 ${perk.providerName}`), /*#__PURE__*/React.createElement("span", null, `\u2022 \uD83D\uDCCD ${perk.location}`)),
-
-          /* Description */
-          /*#__PURE__*/React.createElement("p", {
-            className: "text-xs text-secondary leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-default"
-          }, perk.description),
-
-          /* How to Claim */
-          /*#__PURE__*/React.createElement("div", {
-            className: "p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs text-violet-800 dark:text-violet-200 flex items-start gap-2"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "shrink-0 text-sm"
-          }, "\uD83D\uDCA1"), /*#__PURE__*/React.createElement("div", {
-            className: "text-[11px] leading-snug"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "font-black"
-          }, "Si t\u00EB p\u00EBrfitoni: "), /*#__PURE__*/React.createElement("span", null, perk.howToClaim)))),
-
-          /* Footer */
-          /*#__PURE__*/React.createElement("div", {
-            className: "pt-2 border-t border-default flex items-center justify-between text-xs"
-          }, /*#__PURE__*/React.createElement("span", {
-            className: "text-[11px] text-secondary"
-          }, `\u23F3 ${perk.validUntil}`), /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => handleToggleSavePerk(perk.id),
-            className: "font-bold text-secondary hover:text-primary transition-colors cursor-pointer"
-          }, isSaved ? "\u2713 E Ruajtur" : "+ Ruaj Zbritjen")));
-      })),
+    const categories = [{ id: 'all', label: 'Të gjitha' }, ...Array.from(new Map(studentPerksList.map(perk => [perk.category, { id: perk.category, label: perk.categoryLabel }])).values()), { id: 'saved', label: 'Të ruajtura' }];
+    return ce('div', { className: 'student-perks-page w-full max-w-3xl mx-auto p-4 sm:p-6 pb-24 space-y-5 anim-fade-up' },
+      ce('header', { className: 'flex items-center gap-3' },
+        ce('button', { type: 'button', onClick: () => goBackOr('home'), 'aria-label': 'Kthehu nga zbritjet', className: 'w-10 h-10 rounded-xl border border-default flex items-center justify-center text-secondary cursor-pointer shrink-0' }, unitUiIcon(UNIT_UI_ICONS.back)),
+        ce('div', { className: 'min-w-0 flex-1' }, ce('h1', { className: 'text-lg font-bold text-primary tracking-tight' }, 'Zbritjet studentore'), ce('p', { className: 'text-xs text-secondary mt-1' }, 'Oferta lokale dhe online · Me burim zyrtar')),
+        ce('button', { type: 'button', onClick: () => setIsAddPerkModalOpen(true), 'aria-label': 'Sugjero zbritje', title: 'Sugjero zbritje', className: 'w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center cursor-pointer shrink-0' }, unitUiIcon('M12 5v14M5 12h14'))),
+      ce('div', { className: 'space-y-3' },
+        ce('input', { type: 'search', value: perksSearch, onChange: event => setPerksSearch(event.target.value), 'aria-label': 'Kërko zbritje', placeholder: 'Kërko ofertën ose ofruesin', className: 'w-full h-11 px-4 rounded-xl input-bg border border-default text-sm text-primary outline-none focus:border-brand-500' }),
+        ce('div', { className: 'flex items-center gap-2 overflow-x-auto pb-1', role: 'group', 'aria-label': 'Filtro zbritjet' }, categories.map(tab => ce('button', { key: tab.id, type: 'button', 'aria-pressed': perksFilterCategory === tab.id, onClick: () => setPerksFilterCategory(tab.id), className: `px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap border cursor-pointer ${perksFilterCategory === tab.id ? 'bg-brand-600 text-white border-brand-600' : 'border-default text-secondary hover-surface'}` }, tab.label)))),
+      ce('div', { className: 'space-y-3' }, filteredPerks.length ? filteredPerks.map(perk => {
+        const saved = savedPerkIds.includes(perk.id);
+        const official = !!perk.verifiedOn && /^https:\/\//.test(perk.sourceUrl || '');
+        return ce('article', { key: perk.id, className: 'card-surface border border-default rounded-2xl p-4 sm:p-5 space-y-3' },
+          ce('div', { className: 'flex items-start justify-between gap-3' },
+            ce('div', { className: 'min-w-0' }, ce('p', { className: 'text-xs font-medium text-secondary' }, `${perk.providerName} · ${perk.location}`), ce('h2', { className: 'text-base font-bold text-primary mt-1 leading-snug' }, perk.title)),
+            ce('button', { type: 'button', onClick: () => handleToggleSavePerk(perk.id), 'aria-label': `${saved ? 'Hiq nga të ruajturat' : 'Ruaj zbritjen'}: ${perk.title}`, 'aria-pressed': saved, className: 'w-9 h-9 rounded-full hover-surface flex items-center justify-center text-brand-600 dark:text-brand-300 shrink-0 cursor-pointer' }, unitUiIcon(saved ? 'M5 3h14v18l-7-4-7 4zM9 9l2 2 4-4' : 'M5 3h14v18l-7-4-7 4z', 'w-5 h-5'))),
+          ce('div', { className: 'flex items-center gap-2 flex-wrap' }, ce('span', { className: 'text-sm font-bold text-brand-700 dark:text-brand-300' }, perk.discountValue), !official && ce('span', { className: 'text-xs text-secondary' }, 'Sugjerim studentor · Pa verifikim')),
+          ce('p', { className: 'text-sm leading-relaxed text-secondary' }, perk.description),
+          ce('details', { className: 'perk-conditions border-t border-default pt-3' },
+            ce('summary', { className: 'text-sm font-medium text-primary cursor-pointer' }, 'Si përfitohet dhe kushtet'),
+            ce('div', { className: 'pt-3 space-y-2 text-sm leading-relaxed text-secondary' }, ce('p', null, perk.howToClaim), ce('p', null, perk.validUntil), official && ce('p', { className: 'text-xs' }, 'Kontrolluar më 5 nëntor 2026 · Kushtet mund të ndryshojnë.'))),
+          official && ce('a', { href: perk.sourceUrl, target: '_blank', rel: 'noopener noreferrer', className: 'flex items-center justify-between gap-2 text-sm font-semibold text-brand-700 dark:text-brand-300 pt-1' }, `Shiko ofertën · ${perk.sourceLabel}`, ce('span', { 'aria-hidden': true }, '↗')));
+      }) : ce('div', { className: 'py-12 text-center text-sm text-secondary' }, 'Nuk u gjet asnjë ofertë. Provo një kërkim ose filtër tjetër.')),
 
       /* Add Perk Modal */
       isAddPerkModalOpen ? /*#__PURE__*/React.createElement("div", {
@@ -23802,7 +23705,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.title,
           onChange: e => setNewPerkForm({ ...newPerkForm, title: e.target.value }),
           placeholder: "p.sh. Kafe me \u00E7mim studentor 0.50\u20AC",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         })), /*#__PURE__*/React.createElement("div", {
           className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
         }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -23810,7 +23713,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, "Kategoria *"), /*#__PURE__*/React.createElement("select", {
           value: newPerkForm.category,
           onChange: e => setNewPerkForm({ ...newPerkForm, category: e.target.value }),
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         }, /*#__PURE__*/React.createElement("option", { value: "cinema" }, "\uD83C\uDFAC Kinema & Arg\u00EBtim"), /*#__PURE__*/React.createElement("option", { value: "food" }, "\u2615 Kafene & Ushqim"), /*#__PURE__*/React.createElement("option", { value: "fitness" }, "\uD83C\uDFCB\uFE0F Fitnes & Sport"), /*#__PURE__*/React.createElement("option", { value: "books" }, "\uD83D\uDCDA Librari"), /*#__PURE__*/React.createElement("option", { value: "tech" }, "\uD83D\uDCBB IT"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
           className: "block font-bold text-secondary mb-1"
         }, "Vlera e Zbritjes *"), /*#__PURE__*/React.createElement("input", {
@@ -23818,7 +23721,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.discountValue,
           onChange: e => setNewPerkForm({ ...newPerkForm, discountValue: e.target.value }),
           placeholder: "-15% ose 10\u20AC",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         }))), /*#__PURE__*/React.createElement("div", {
           className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
         }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -23828,7 +23731,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.providerName,
           onChange: e => setNewPerkForm({ ...newPerkForm, providerName: e.target.value }),
           placeholder: "p.sh. Cineplexx ose Emri i Kafenes\u00EB",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
           className: "block font-bold text-secondary mb-1"
         }, "Lokacioni n\u00EB Prishtin\u00EB"), /*#__PURE__*/React.createElement("input", {
@@ -23836,7 +23739,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.location,
           onChange: e => setNewPerkForm({ ...newPerkForm, location: e.target.value }),
           placeholder: "p.sh. Sheshi ose af\u00EBr FIEK",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
           className: "block font-bold text-secondary mb-1"
         }, "P\u00EBrshkrimi"), /*#__PURE__*/React.createElement("textarea", {
@@ -23844,7 +23747,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.description,
           onChange: e => setNewPerkForm({ ...newPerkForm, description: e.target.value }),
           placeholder: "P\u00EBrshkruani detajet e ofert\u00EBs...",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
           className: "block font-bold text-secondary mb-1"
         }, "Si p\u00EBrfitohet? (Kushti)"), /*#__PURE__*/React.createElement("input", {
@@ -23852,7 +23755,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           value: newPerkForm.howToClaim,
           onChange: e => setNewPerkForm({ ...newPerkForm, howToClaim: e.target.value }),
           placeholder: "p.sh. Trego indeksin para pages\u00EBs",
-          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-violet-500"
+          className: "w-full p-2.5 rounded-xl input-bg border border-default text-primary outline-none focus:border-brand-500"
         }))),
 
         /* Modal Actions */
@@ -23865,7 +23768,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, "Anulo"), /*#__PURE__*/React.createElement("button", {
           type: "button",
           onClick: handleCreateStudentPerk,
-          className: "px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold cursor-pointer shadow-xs"
+          className: "px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold cursor-pointer shadow-xs"
         }, "Shto Zbritjen (+20 XP)")))) : null);
   };
 
@@ -28583,14 +28486,8 @@ Nënshkrimi: _____________________`;
                   circleThumb && /*#__PURE__*/React.createElement("img", {
                     src: circleThumb, alt: "", loading: "lazy", decoding: "async", draggable: false,
                     onError: e => { e.currentTarget.style.display = 'none'; },
-                    className: `absolute inset-0 w-full h-full object-cover ${isCompleted ? 'opacity-60 grayscale-[35%]' : ''}`
-                  }),
-                  circleThumb && /*#__PURE__*/React.createElement("span", { className: "absolute inset-0 bg-black/20", "aria-hidden": true }),
-                  /*#__PURE__*/React.createElement("span", {
-                    className: "relative w-6 h-6 rounded-full bg-black/45 flex items-center justify-center", "aria-hidden": true
-                  }, /*#__PURE__*/React.createElement("svg", {
-                    width: 12, height: 12, viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": true, style: { marginLeft: '1px' }
-                  }, /*#__PURE__*/React.createElement("path", { d: vid.kind === 'article' ? "M4 4h16v16H4zM8 8h8v2H8zM8 12h8v2H8zM8 16h5v2H8z" : "M8 5v14l11-7z" }))))
+                    className: "absolute inset-0 w-full h-full object-cover"
+                  }))
               )
             );
           })
@@ -31738,42 +31635,24 @@ Nënshkrimi: _____________________`;
     if (!notificationCenterOpen) return null;
     const ce = React.createElement;
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
-    const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(g => ({ ...g, items: shown.filter(item => item.group === g.id) })).filter(g => g.items.length);
-    return ce("div", { className: "fixed inset-0 z-[90] overflow-y-auto anim-fade-in", style: { background: 'var(--page)' }, role: "dialog", "aria-modal": "true", "aria-labelledby": "notification-center-title" },
-      ce("div", { className: "w-full max-w-xl mx-auto px-4 sm:px-5 pb-16", style: { paddingTop: 'max(8px, env(safe-area-inset-top, 0px))' } },
-        ce("div", { className: "h-[52px] flex items-center justify-between gap-2" },
-          ce("button", { type: "button", onClick: () => setNotificationCenterOpen(false), className: "h-11 -ml-2 pl-1.5 pr-3 rounded-full flex items-center gap-1 text-[15px] font-medium text-brand-600 dark:text-brand-300 hover-surface cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.back, "w-5 h-5"), "Kthehu"),
-          ce("button", { type: "button", disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), className: `h-11 px-2 text-sm font-medium ${notificationUnreadCount ? 'text-brand-600 dark:text-brand-300 cursor-pointer' : 'text-tertiary cursor-default'}` }, "Shëno të gjitha si të lexuara")),
-        ce("h1", { id: "notification-center-title", className: "mt-1 text-[28px] font-bold text-primary tracking-tight" }, "Njoftimet"),
-        ce("div", { className: "mt-5 grid grid-cols-2 p-[3px] rounded-xl bg-black/[0.05] dark:bg-white/[0.06]", role: "tablist" },
-          [['all', 'Të gjitha'], ['unread', 'Të palexuara']].map(([id, label]) => ce("button", {
-            key: id,
-            type: "button",
-            role: "tab",
-            "aria-selected": notificationTab === id,
-            onClick: () => setNotificationTab(id),
-            className: `h-9 rounded-[10px] text-sm flex items-center justify-center gap-1.5 cursor-pointer ${notificationTab === id ? 'card-surface font-semibold text-primary shadow-sm' : 'font-medium text-secondary'}`
-          }, label, id === 'unread' && notificationUnreadCount > 0 && ce("span", { className: "min-w-5 h-5 px-1.5 rounded-full bg-brand-600 text-white text-[11px] font-semibold flex items-center justify-center" }, notificationUnreadCount)))),
-        groups.length ? groups.map(g => ce("section", { key: g.id, className: "mt-6 space-y-2.5" },
-          ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, g.label),
-          ce("div", { className: "card-surface border border-default rounded-[18px] px-4" },
-            g.items.map((item, i) => ce("button", {
-              key: item.id,
-              type: "button",
-              onClick: () => { markNotificationsRead([item.id]); item.action(); },
-              className: `w-full flex gap-3.5 py-3.5 text-left cursor-pointer ${i ? 'border-t border-black/5 dark:border-white/10' : ''}`
-            },
-              ce("span", { className: `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.unread ? 'bg-brand-500/10 text-brand-600 dark:text-brand-300' : 'bg-black/[0.04] dark:bg-white/[0.06] text-secondary'}` }, unitUiIcon(item.icon)),
-              ce("span", { className: "flex-1 min-w-0" },
-                ce("span", { className: "flex items-baseline justify-between gap-2.5" },
-                  ce("span", { className: `text-[15px] leading-snug text-primary ${item.unread ? 'font-semibold' : 'font-medium'}` }, item.title),
-                  ce("span", { className: "text-xs text-tertiary shrink-0" }, item.time)),
-                ce("span", { className: "block text-[13px] text-tertiary leading-snug mt-0.5" }, item.sub)),
-              ce("span", { className: "w-2 shrink-0 pt-1.5" }, item.unread && ce("span", { className: "block w-2 h-2 rounded-full bg-brand-600" }))))))) :
-          ce("div", { className: "mt-10 text-center space-y-2" },
-            ce("p", { className: "text-[15px] font-semibold text-primary" }, notificationTab === 'unread' ? "S'ke njoftime të palexuara." : "S'ka njoftime tani."),
-            ce("p", { className: "text-sm text-tertiary" }, "Kur të ketë diçka të re për lëndët, orarin apo afatet, do ta shohësh këtu.")),
-        ce("button", { type: "button", onClick: () => { setNotificationCenterOpen(false); setView('week'); }, className: "mt-8 mx-auto flex items-center gap-2 text-sm font-medium text-brand-600 dark:text-brand-300 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.settings, "w-4 h-4"), scheduleNotifications ? "Njoftimet e orarit janë aktive · Rregulloji" : "Aktivizo kujtesat e orarit")));
+    const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
+    return ce('div', { className: 'notification-layer' },
+      ce('div', { className: 'notification-backdrop', onClick: () => setNotificationCenterOpen(false), 'aria-hidden': true }),
+      ce('section', { className: 'notification-panel', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-center-title' },
+        ce('header', { className: 'notification-header' },
+          ce('div', { className: 'flex items-center gap-3' },
+            ce('button', { type: 'button', onClick: () => setNotificationCenterOpen(false), 'aria-label': 'Mbyll njoftimet', className: 'w-10 h-10 rounded-full hover-surface flex items-center justify-center text-primary cursor-pointer shrink-0' }, unitUiIcon(UNIT_UI_ICONS.back)),
+            ce('div', { className: 'flex-1 min-w-0' }, ce('h1', { id: 'notification-center-title', className: 'text-xl font-bold tracking-tight text-primary' }, 'Njoftimet'), ce('p', { className: 'text-xs text-secondary mt-0.5' }, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
+            ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'w-10 h-10 rounded-full hover-surface flex items-center justify-center text-brand-600 dark:text-brand-300 cursor-pointer disabled:opacity-40 disabled:cursor-default' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
+          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha'], ['unread', 'Të palexuara']].map(([id,label]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label)))),
+        ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'mb-6' },
+          ce('h2', { className: 'text-xs font-semibold text-secondary mb-2 px-1' }, group.label),
+          ce('div', { className: 'notification-list' }, group.items.map(item => ce('button', { key: item.id, type: 'button', onClick: () => { markNotificationsRead([item.id]); item.action(); }, className: `notification-row${item.unread ? ' is-unread' : ''}` },
+            ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon)),
+            ce('span', { className: 'flex-1 min-w-0 text-left' }, ce('span', { className: 'block text-sm font-semibold text-primary leading-snug' }, item.title), ce('span', { className: 'block text-[13px] leading-relaxed text-secondary mt-1' }, item.sub), ce('span', { className: 'block text-xs text-secondary mt-2' }, item.time)),
+            ce('span', { className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined, style: { visibility: item.unread ? 'visible' : 'hidden' } })))))) : ce('div', { className: 'notification-empty' },
+          ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check)), ce('h2', { className: 'text-base font-semibold text-primary' }, notificationTab === 'unread' ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'), ce('p', { className: 'text-sm text-secondary leading-relaxed' }, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'))),
+        ce('footer', { className: 'notification-footer' }, ce('button', { type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); }, className: 'flex items-center gap-2 text-sm text-secondary cursor-pointer' }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve'))));
   };
 
   /* ── 12 · KARTELA DIGJITALE ── */
@@ -33103,7 +32982,7 @@ Nënshkrimi: _____________________`;
           circle("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
           circle("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
           circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
-      ce('label', { className: 'block mt-2' },
+      ce('label', { className: 'block mt-1.5' },
         ce('span', { className: 'sr-only' }, 'Shfaq orarin'),
         ce('select', {
           value: scheduleProgramFilter,
@@ -33114,7 +32993,7 @@ Nënshkrimi: _____________________`;
           ce('option', { value: 'personal' }, 'Orari im'),
           ce('option', { value: 'social-work' }, 'Punë Sociale · Viti I'),
           ce('option', { value: 'psychology' }, 'Psikologji · Viti III'))),
-      (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-1.5 mt-2.5", role: "tablist", "aria-label": "Ditët e javës" },
+      (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-1.5 mt-1.5", role: "tablist", "aria-label": "Ditët e javës" },
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
@@ -34476,7 +34355,9 @@ Nënshkrimi: _____________________`;
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setNotificationCenterOpen(true),
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
-    title: "Njoftimet e sotme",
+    title: "Njoftimet",
+    "aria-haspopup": "dialog",
+    "aria-expanded": notificationCenterOpen,
     className: "flex relative p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors items-center justify-center"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4",
