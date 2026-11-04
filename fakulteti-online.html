@@ -1147,12 +1147,12 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-reels">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-hold">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
 
-  <script src="./assets/editorial-content.js?v=20261104-1"></script>
+  <script src="./assets/editorial-content.js?v=20261104-2"></script>
   <script src="./assets/student-support.js?v=20261006-8"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
@@ -8797,13 +8797,93 @@ const getVideoStorySwipeAction = (dx, dy) => {
   }
   return null;
 };
-function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...props }) {
+function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = () => {} } = {}) {
+  let pointer = null;
+  let timer = null;
+  let held = null;
+  let ignoreClickUntil = 0;
+  const clearTimer = () => { if (timer !== null) clearTimeout(timer); timer = null; };
+  const setPlayback = (player, playing, holding) => {
+    const native = player.querySelector('video');
+    if (player.dataset.storyPlayer === 'youtube') {
+      player.dispatchEvent(new CustomEvent('unit-story-playback', { detail: { playing, holding } }));
+    } else if (native) {
+      if (playing) {
+        try { native.play()?.catch?.(() => {}); } catch {}
+      } else native.pause();
+    } else {
+      const frame = player.querySelector('iframe');
+      const provider = player.dataset.storyPlayer;
+      if (provider === 'YouTube') frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: playing ? 'playVideo' : 'pauseVideo', args: [] }), '*');
+      if (provider === 'Vimeo') frame?.contentWindow?.postMessage(JSON.stringify({ method: playing ? 'play' : 'pause' }), '*');
+    }
+  };
+  const finish = (resume = true) => {
+    clearTimer();
+    pointer = null;
+    const previous = held;
+    held = null;
+    if (root.dataset) delete root.dataset.holding;
+    if (!previous) return;
+    ignoreClickUntil = Date.now() + 450;
+    const active = root.contains(previous.slide) && previous.slide.getAttribute('aria-hidden') === 'false';
+    const playing = Boolean(resume && active && previous.wasPlaying);
+    if (previous.player.isConnected) setPlayback(previous.player, playing, false);
+    if (active) onPlayingChange(playing);
+  };
+  const down = event => {
+    if (event.isPrimary === false) { finish(true); return; }
+    if (event.button !== undefined && event.button !== 0) return;
+    finish(true);
+    const target = event.target;
+    if (target?.closest?.('input, select, textarea, a, [contenteditable="true"]')) return;
+    const slide = target?.closest?.('.story-slide[aria-hidden="false"]');
+    if (!slide || slide.dataset.storyKind === 'article' || !target.closest('.course-video-frame, .story-nav-zone')) return;
+    if (target.tagName === 'VIDEO' && event.clientY > target.getBoundingClientRect().bottom - 48) return;
+    const player = slide.querySelector('[data-story-player]');
+    if (!player || (!player.querySelector('video') && !['youtube', 'YouTube', 'Vimeo'].includes(player.dataset.storyPlayer))) return;
+    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    timer = setTimeout(() => {
+      timer = null;
+      if (!pointer || !root.contains(slide) || slide.getAttribute('aria-hidden') !== 'false') return;
+      const native = player.querySelector('video');
+      const wasPlaying = native ? !native.paused && !native.ended : player.dataset.playing === undefined ? getPlaying() : player.dataset.playing === 'true';
+      held = { slide, player, wasPlaying };
+      setPlayback(player, false, true);
+      onPlayingChange(false);
+      root.dataset.holding = 'true';
+    }, 260);
+  };
+  const move = event => {
+    if (!pointer || event.pointerId !== pointer.id) return;
+    if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 12) finish(true);
+  };
+  const up = event => { if (pointer && event.pointerId === pointer.id) finish(true); };
+  const click = event => { if (Date.now() < ignoreClickUntil) { event.preventDefault(); event.stopPropagation(); } };
+  const contextMenu = event => { if (held) event.preventDefault(); };
+  const wheel = event => { if (!event.ctrlKey) finish(false); };
+  const key = event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'].includes(event.key)) finish(false); };
+  const blur = () => finish(false);
+  const visibility = () => { if (document.hidden) finish(false); };
+  const bindings = [['pointerdown', down], ['pointermove', move], ['pointerup', up], ['pointercancel', up], ['click', click], ['contextmenu', contextMenu], ['wheel', wheel], ['keydown', key]];
+  bindings.forEach(([type, listener]) => root.addEventListener(type, listener, true));
+  if (typeof window !== 'undefined') { window.addEventListener('pointerup', up, true); window.addEventListener('blur', blur); }
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visibility);
+  return () => {
+    finish(false);
+    bindings.forEach(([type, listener]) => root.removeEventListener(type, listener, true));
+    if (typeof window !== 'undefined') { window.removeEventListener('pointerup', up, true); window.removeEventListener('blur', blur); }
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
+  };
+}
+function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', children, ...props }) {
   const rootRef = useRef(null);
   const actionsRef = useRef(null);
-  actionsRef.current = { next: onNext, previous: onPrevious, close: onClose };
+  actionsRef.current = { next: onNext, previous: onPrevious, close: onClose, playing: isPlaying, onPlayingChange };
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const removeHold = bindVideoStoryHold(root, { getPlaying: () => actionsRef.current.playing, onPlayingChange: playing => actionsRef.current.onPlayingChange?.(playing) });
     let touch = null;
     let suppressClickUntil = 0;
     let wheelTotalX = 0;
@@ -8882,6 +8962,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...prop
     }) : null;
     if (resizeObserver) resizeObserver.observe(feed);
     return () => {
+      removeHold();
       resizeObserver?.disconnect();
       root.removeEventListener('touchstart', onTouchStart, true);
       root.removeEventListener('touchmove', onTouchMove, true);
@@ -8891,15 +8972,31 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...prop
       root.removeEventListener('wheel', onWheel, true);
     };
   }, []);
-  return React.createElement('div', { ...props, ref: rootRef }, children);
+  return React.createElement('div', { ...props, ref: rootRef }, children,
+    React.createElement('span', { className: 'story-hold-indicator', 'aria-hidden': true },
+      React.createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'currentColor' }, React.createElement('path', { d: 'M6 4h4v16H6zM14 4h4v16h-4z' })), holdLabel));
 }
 function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const frameRef = useRef(null);
+  const playerRef = useRef(null);
+  const holdingRef = useRef(false);
   const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
   const [started, setStarted] = useState(false);
   const send = (func, args = []) => {
     try { frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*'); } catch {}
   };
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    const changePlayback = event => {
+      holdingRef.current = Boolean(event.detail?.holding);
+      const playing = Boolean(event.detail?.playing);
+      send(playing ? 'playVideo' : 'pauseVideo');
+      setSt(previous => ({ ...previous, playing }));
+    };
+    player.addEventListener('unit-story-playback', changePlayback);
+    return () => player.removeEventListener('unit-story-playback', changePlayback);
+  }, []);
   useEffect(() => {
     const onMsg = e => {
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
@@ -8908,7 +9005,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       if (!data || typeof data !== 'object') return;
       if (data.event === 'onStateChange' && typeof data.info === 'number') {
         if (data.info === 1) setStarted(true);
-        setSt(s => ({ ...s, playing: data.info === 1 || data.info === 3 }));
+        setSt(s => ({ ...s, playing: !holdingRef.current && (data.info === 1 || data.info === 3) }));
         return;
       }
       const info = data.info;
@@ -8917,7 +9014,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       setSt(s => ({
         t: typeof info.currentTime === 'number' ? info.currentTime : s.t,
         d: typeof info.duration === 'number' && info.duration > 0 ? info.duration : s.d,
-        playing: typeof info.playerState === 'number' ? (info.playerState === 1 || info.playerState === 3) : s.playing,
+        playing: holdingRef.current ? false : typeof info.playerState === 'number' ? (info.playerState === 1 || info.playerState === 3) : s.playing,
         muted: typeof info.muted === 'boolean' ? info.muted : s.muted
       }));
     };
@@ -8939,7 +9036,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const toggleMute = () => { send(st.muted ? 'unMute' : 'mute'); setSt(s => ({ ...s, muted: !s.muted })); };
   const h = React.createElement;
   const iconBtn = 'w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center shrink-0 cursor-pointer transition-colors';
-  return h('div', { className: 'course-video-player flex flex-col gap-3 shrink-0' },
+  return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), className: 'course-video-player flex flex-col gap-3 shrink-0' },
     h('div', { className: 'course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
       h('iframe', {
         ref: frameRef,
@@ -33332,6 +33429,9 @@ Nënshkrimi: _____________________`;
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
+        isPlaying: videoLivePlaying,
+        onPlayingChange: setVideoLivePlaying,
+        holdLabel: appearanceText('Në pauzë', 'Paused'),
         onNext: axis => scrollToVideoFeedSlide(courseVideoFeedIndex + 1, axis),
         onPrevious: axis => scrollToVideoFeedSlide(courseVideoFeedIndex - 1, axis),
         onClose: () => setCourseVideoFeedOpen(false),
@@ -33401,6 +33501,7 @@ Nënshkrimi: _____________________`;
               return h('section', {
                 key: `slide_${video.id || idx}`,
                 className: "story-slide relative w-full h-full min-h-0 min-w-0 shrink-0 snap-start snap-always flex flex-col",
+                'data-story-kind': video.kind || 'video',
                 'aria-hidden': !isActive,
                 inert: isActive ? undefined : ''
               },
@@ -33423,7 +33524,7 @@ Nënshkrimi: _____________________`;
                     poster: src.thumbnail,
                     embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=0&iv_load_policy=3&fs=0&disablekb=1&origin=${encodeURIComponent(window.location.origin)}`
                   })
-                : h('div', { className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
+                : h('div', { 'data-story-player': src?.provider || 'native', 'data-playing': String(videoLivePlaying), className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
                   isActive
                     ? (src?.type === 'video'
                       ? h('video', {
@@ -33492,6 +33593,7 @@ Nënshkrimi: _____________________`;
                       className: "h-[42px] px-4 rounded-full border border-white/25 hover:bg-white/10 text-sm font-medium flex items-center cursor-pointer transition-colors"
                     }, appearanceText('Lënda', 'Course')) : null
                   ),
+                  video.kind !== 'article' && h('div', { className: 'story-hold-hint' }, appearanceText('Mbaje shtypur videon për pauzë', 'Hold the video to pause')),
                   idx < total - 1 && h('div', { className: 'story-scroll-cue' },
                     h('svg', { className: 'story-cue-mouse', width: 18, height: 26, viewBox: '0 0 24 28', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
                       h('rect', { x: 7, y: 1, width: 10, height: 16, rx: 5 }),

@@ -23,6 +23,6 @@ Burimi, atribuimi dhe licencat dokumentohen në `assets/brain/README.md`, `asset
 
 ## Artikujt dhe provimet nga arkiva
 
-Përmbajtja vendoset te `assets/editorial-content.js`. Lista `articles` pranon artikuj të publikuar me titull, përmbledhje, paragrafë dhe fotografi; skema dokumentohet në skedar. Artikujt me fotografi shfaqen edhe si stories te Kreu. Nuk janë vendosur artikuj demonstrues.
+Përmbajtja vendoset te `assets/editorial-content.js`. Lista `articles` pranon artikuj të publikuar me titull, përmbledhje, paragrafë dhe fotografi; skema dokumentohet në skedar. Artikujt me fotografi shfaqen edhe si stories te Kreu. Përfshihet një artikull shembull për kontrollin e punimit para dorëzimit.
 
 Lista `archiveExams` lidh ID-në ekzistuese të lëndës me pyetjet e provimit. Derisa të vendosen pyetjet, zgjedhja e lëndës është e mundshme dhe provimi shfaqet “Në përgatitje”. Nuk përzihen pyetje nga lëndë të tjera.
