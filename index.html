@@ -1147,7 +1147,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-stories">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-reels">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -8839,7 +8839,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...prop
         suppressClickUntil = Date.now() + 450;
         if (event.cancelable) event.preventDefault();
       }
-      if (action) actionsRef.current[action]?.();
+      if (action) actionsRef.current[action]?.(Math.abs(point.clientY - start.y) > Math.abs(point.clientX - start.x) ? 'vertical' : 'horizontal');
     };
     const onTouchCancel = () => { touch = null; };
     const onClick = event => {
@@ -8860,7 +8860,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...prop
       if (Math.abs(delta) < 60) return;
       wheelFired = true;
       wheelLockedUntil = now + 450;
-      actionsRef.current[delta > 0 ? 'next' : 'previous']?.();
+      actionsRef.current[delta > 0 ? 'next' : 'previous']?.(Math.abs(wheelTotalY) >= Math.abs(wheelTotalX) ? 'vertical' : 'horizontal');
     };
     const active = { passive: false, capture: true };
     root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
@@ -8871,10 +8871,14 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, children, ...prop
     root.addEventListener('wheel', onWheel, active);
     const feed = root.querySelector('#course-video-scroll-feed');
     let feedWidth = feed?.clientWidth;
+    let feedHeight = feed?.clientHeight;
     const resizeObserver = feed && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => {
-      if (feed.clientWidth === feedWidth) return;
+      if (feed.clientWidth === feedWidth && feed.clientHeight === feedHeight) return;
       feedWidth = feed.clientWidth;
-      feed.scrollLeft = Number(feed.dataset.activeIndex || 0) * feedWidth;
+      feedHeight = feed.clientHeight;
+      const index = Number(feed.dataset.activeIndex || 0);
+      feed.scrollLeft = feed.dataset.axis === 'vertical' ? 0 : index * feedWidth;
+      feed.scrollTop = feed.dataset.axis === 'vertical' ? index * feedHeight : 0;
     }) : null;
     if (resizeObserver) resizeObserver.observe(feed);
     return () => {
@@ -12519,6 +12523,7 @@ function AcademyApp({
   const [courseVideoFeedOpen, setCourseVideoFeedOpen] = useState(false);
   const [courseVideoFeedIndex, setCourseVideoFeedIndex] = useState(0);
   const courseVideoFeedScrollLockRef = useRef(0);
+  const courseVideoFeedAnimationRef = useRef(null);
   const [likedVideoIds, setLikedVideoIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('u_liked_videos') || '[]');
@@ -13118,6 +13123,7 @@ function AcademyApp({
       };
     }
   }, [dailyRoutineEditorOpen, dateTimeModalOpen, newProjectModalOpen, courseVideoFeedOpen]);
+  useEffect(() => () => { courseVideoFeedAnimationRef.current?.cancel(); }, [courseVideoFeedOpen]);
   useEffect(() => {
     if (!courseVideoFeedOpen) return;
     const handleVideoFeedKeys = event => {
@@ -13125,10 +13131,10 @@ function AcademyApp({
         setCourseVideoFeedOpen(false);
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
         event.preventDefault();
-        scrollToVideoFeedSlide(courseVideoFeedIndex + 1);
+        scrollToVideoFeedSlide(courseVideoFeedIndex + 1, event.key === 'ArrowDown' ? 'vertical' : 'horizontal');
       } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
         event.preventDefault();
-        scrollToVideoFeedSlide(courseVideoFeedIndex - 1);
+        scrollToVideoFeedSlide(courseVideoFeedIndex - 1, event.key === 'ArrowUp' ? 'vertical' : 'horizontal');
       }
     };
     window.addEventListener('keydown', handleVideoFeedKeys);
@@ -18558,17 +18564,48 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }));
     setCourseVideoComposerOpen(true);
   };
-  const scrollToVideoFeedSlide = targetIndex => {
+  const scrollToVideoFeedSlide = (targetIndex, axis = 'horizontal') => {
     const safeIndex = Math.max(0, Math.min(targetIndex, Math.max(0, courseVideoFeed.length - 1)));
-    courseVideoFeedScrollLockRef.current = Date.now() + 500;
-    setCourseVideoFeedIndex(safeIndex);
+    if (safeIndex === courseVideoFeedIndex || courseVideoFeedAnimationRef.current) return;
     const feed = document.getElementById('course-video-scroll-feed');
-    if (feed) {
-      feed.scrollTo({
-        left: safeIndex * (feed.clientWidth || 1),
-        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-      });
+    if (!feed) { setCourseVideoFeedIndex(safeIndex); return; }
+    const vertical = axis === 'vertical';
+    const previousSnap = feed.style.scrollSnapType;
+    const previousBehavior = feed.style.scrollBehavior;
+    feed.style.scrollSnapType = 'none';
+    feed.style.scrollBehavior = 'auto';
+    feed.dataset.axis = vertical ? 'vertical' : 'horizontal';
+    const position = index => {
+      feed.scrollLeft = vertical ? 0 : index * (feed.clientWidth || 1);
+      feed.scrollTop = vertical ? index * (feed.clientHeight || 1) : 0;
+    };
+    const restore = () => {
+      feed.style.scrollSnapType = previousSnap;
+      feed.style.scrollBehavior = previousBehavior;
+      courseVideoFeedScrollLockRef.current = 0;
+      courseVideoFeedAnimationRef.current = null;
+    };
+    position(courseVideoFeedIndex);
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      position(safeIndex);
+      restore();
+      setCourseVideoFeedIndex(safeIndex);
+      return;
     }
+    // Move the outgoing picture with the feed; switch playback only on arrival.
+    const animation = { frame: null, cancel: () => { cancelAnimationFrame(animation.frame); restore(); } };
+    courseVideoFeedAnimationRef.current = animation;
+    courseVideoFeedScrollLockRef.current = Date.now() + 1000;
+    let startedAt = null;
+    const animate = now => {
+      if (startedAt === null) startedAt = now;
+      const progress = Math.min(1, (now - startedAt) / 420);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      position(courseVideoFeedIndex + (safeIndex - courseVideoFeedIndex) * eased);
+      if (progress < 1) animation.frame = requestAnimationFrame(animate);
+      else { position(safeIndex); restore(); setCourseVideoFeedIndex(safeIndex); }
+    };
+    animation.frame = requestAnimationFrame(animate);
   };
   const openCourseVideoFeed = (index = 0) => {
     const safeIndex = Math.max(0, Math.min(index, Math.max(0, courseVideoFeed.length - 1)));
@@ -33292,11 +33329,11 @@ Nënshkrimi: _____________________`;
     const h = React.createElement;
 
     return h(ModalPortal, null,
-      /* Stories: një video për ekran, me kalim horizontal dhe gjeste për navigim. */
+      /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
-        onNext: () => scrollToVideoFeedSlide(courseVideoFeedIndex + 1),
-        onPrevious: () => scrollToVideoFeedSlide(courseVideoFeedIndex - 1),
+        onNext: axis => scrollToVideoFeedSlide(courseVideoFeedIndex + 1, axis),
+        onPrevious: axis => scrollToVideoFeedSlide(courseVideoFeedIndex - 1, axis),
         onClose: () => setCourseVideoFeedOpen(false),
         role: "dialog",
         "aria-modal": "true",
@@ -33335,7 +33372,7 @@ Nënshkrimi: _____________________`;
               h('path', { d: "M6 6l12 12M18 6L6 18" })))
           ),
 
-          /* Kalimi horizontal, si stories; scroll-i vertikal zgjedh videon pasuese. */
+          /* Kalimi ndjek drejtimin e gjestit; një postim zë të gjithë hapësirën. */
           h('div', {
             id: "course-video-scroll-feed",
             className: "story-stage flex-1 min-h-0 w-full flex overflow-hidden snap-x snap-mandatory scrollbar-none",
@@ -33344,13 +33381,16 @@ Nënshkrimi: _____________________`;
             ref: el => {
               if (el && !el.dataset.ready) {
                 el.dataset.ready = '1';
+                el.dataset.axis = 'horizontal';
                 el.scrollLeft = courseVideoFeedIndex * (el.clientWidth || 1);
               }
             },
             onScroll: e => {
               if (Date.now() < courseVideoFeedScrollLockRef.current) return;
               const el = e.currentTarget;
-              const idx = Math.round(el.scrollLeft / (el.clientWidth || 1));
+              const idx = el.dataset.axis === 'vertical'
+                ? Math.round(el.scrollTop / (el.clientHeight || 1))
+                : Math.round(el.scrollLeft / (el.clientWidth || 1));
               if (idx !== courseVideoFeedIndex && idx >= 0 && idx < total) setCourseVideoFeedIndex(idx);
             }
           },
