@@ -287,10 +287,10 @@
     .schedule-min .sch-att.is-yes { background: #12805c; border-color: #12805c; color: #fff; font-weight: 700; }
     .schedule-min .sch-att.is-no { background: #d92d20; border-color: #d92d20; color: #fff; font-weight: 700; }
     @media (max-width: 1023px) {
-      .schedule-page { display: flex; flex-direction: column; min-height: calc(100dvh - 4rem); background: var(--surface); padding-bottom: 0 !important; }
-      .schedule-page > .schedule-min { display: flex; flex-direction: column; flex: 1; max-width: none; width: auto; margin-left: -.75rem; margin-right: -.75rem; background: var(--surface); }
+      .schedule-page { display: flex; flex-direction: column; min-height: calc(100dvh - var(--app-header-height, 4rem)); background: var(--surface); padding-bottom: 0 !important; }
+      .schedule-page > .schedule-min { display: flex; flex-direction: column; flex: 1 0 auto; max-width: none; width: auto; margin-left: -.75rem; margin-right: -.75rem; background: var(--surface); }
       .schedule-page > .schedule-min:first-child { margin-top: -.75rem; }
-      .schedule-min .sch-sheet { flex: 1; margin-bottom: 0; padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); min-height: 0; }
+      .schedule-min .sch-sheet { flex: 1 0 auto; margin-bottom: 0; padding-bottom: calc(var(--app-mobile-nav-space, 60px) + 12px); min-height: auto; }
     }
     @media (min-width: 640px) and (max-width: 1023px) {
       .schedule-page > .schedule-min { margin-left: -1rem; margin-right: -1rem; }
@@ -355,6 +355,13 @@
     .editorial-articles .editorial-article-copy > p + p { margin-top:1.15em; }
     .editorial-articles .editorial-article-list-title { font-size:23px; font-weight:500; line-height:1.3; letter-spacing:-.025em; }
     @media (min-width:640px) { .editorial-articles .editorial-article-copy { font-size:20px; } .editorial-articles .editorial-article-summary { font-size:19px; } }
+
+    body:has(.app-shell), div.app-shell { min-height:100dvh; }
+    .app-header { flex-shrink:0; }
+    .mobile-nav-item svg { transition:transform 180ms ease; }
+    .mobile-nav-item:active svg { transform:scale(.92); }
+    @media (max-width:1023px) { .schedule-min .sch-hero { flex-shrink:0; } }
+    @media (prefers-reduced-motion:reduce) { .app-scroll-chrome, .mobile-nav-item, .mobile-nav-item svg { transition:none !important; } }
     .hero-action { box-shadow: 0 10px 24px -14px rgba(8,15,52,0.65); }
     .hero-action:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(8,15,52,0.65); }
     .nav-course-list > summary::-webkit-details-marker,
@@ -10283,7 +10290,7 @@ function AcademyApp({
   // Student-friendly power states
   const [speakingChapterId, setSpeakingChapterId] = useState(null);
 
-  const [isMobileChromeHidden, setIsMobileChromeHidden] = useState(false);
+  const [isMobileNavHidden, setIsMobileNavHidden] = useState(false);
   const lastScrollY = useRef(0);
   const scrollStopTimer = useRef(null);
 
@@ -10293,7 +10300,7 @@ function AcademyApp({
       const isMobileViewport = window.matchMedia ? window.matchMedia('(max-width: 1023px)').matches : window.innerWidth < 1024;
 
       if (!isMobileViewport || currentScrollY <= 16) {
-        setIsMobileChromeHidden(false);
+        setIsMobileNavHidden(false);
         lastScrollY.current = currentScrollY;
         clearTimeout(scrollStopTimer.current);
         return;
@@ -10301,14 +10308,14 @@ function AcademyApp({
 
       const movement = Math.abs(currentScrollY - lastScrollY.current);
       if (movement > 2) {
-        setIsMobileChromeHidden(true);
+        setIsMobileNavHidden(true);
       }
       lastScrollY.current = currentScrollY;
 
       clearTimeout(scrollStopTimer.current);
       scrollStopTimer.current = setTimeout(() => {
-        setIsMobileChromeHidden(false);
-      }, 220);
+        setIsMobileNavHidden(false);
+      }, 400);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
@@ -10316,6 +10323,30 @@ function AcademyApp({
       clearTimeout(scrollStopTimer.current);
     };
   }, []);
+
+  React.useLayoutEffect(() => {
+    const rootStyle = document.documentElement.style;
+    const header = document.querySelector('header.app-header');
+    const nav = document.querySelector('nav.mobile-nav');
+    const measureChrome = () => {
+      const headerHeight = header?.getBoundingClientRect().height || 64;
+      const navStyle = nav ? getComputedStyle(nav) : null;
+      const navSpace = navStyle && navStyle.display !== 'none' ? nav.getBoundingClientRect().height + (parseFloat(navStyle.bottom) || 0) : 0;
+      rootStyle.setProperty('--app-header-height', `${headerHeight}px`);
+      rootStyle.setProperty('--app-mobile-nav-space', `${navSpace}px`);
+    };
+    measureChrome();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measureChrome) : null;
+    if (header) observer?.observe(header);
+    if (nav) observer?.observe(nav);
+    window.addEventListener('resize', measureChrome);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measureChrome);
+      rootStyle.removeProperty('--app-header-height');
+      rootStyle.removeProperty('--app-mobile-nav-space');
+    };
+  }, [actualRole]);
 
   /* Also manage older, non-portal dialogs so every modal works by keyboard. */
   useEffect(() => {
@@ -10798,14 +10829,25 @@ function AcademyApp({
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
   const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
 
-  // Ensure scroll is at top on mount and view changes
-  useEffect(() => {
+  const previousAnimatedViewRef = useRef(view);
+  const pageAnimationRef = useRef(null);
+  React.useLayoutEffect(() => {
     if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
     const mainEl = typeof document !== 'undefined' ? (document.querySelector('main') || document.getElementById('root')) : null;
     if (mainEl) mainEl.scrollTop = 0;
-    setIsMobileChromeHidden(false);
+    setIsMobileNavHidden(false);
+    lastScrollY.current = 0;
+    clearTimeout(scrollStopTimer.current);
+    pageAnimationRef.current?.cancel();
+    const changed = previousAnimatedViewRef.current !== view;
+    previousAnimatedViewRef.current = view;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (changed && !reducedMotion && typeof mainEl?.animate === 'function') {
+      pageAnimationRef.current = mainEl.animate([{ opacity: .65 }, { opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
+    return () => { pageAnimationRef.current?.cancel(); };
   }, [view, course]);
   const [tab, setTab] = useState('overview');
   const [activeCourseChapterIdx, setActiveCourseChapterIdx] = useState(0);
@@ -34095,7 +34137,7 @@ Nënshkrimi: _____________________`;
     certificate: 'Certifikata'
   }[view] || course?.title || 'Fakulteti Online');
   return /*#__PURE__*/React.createElement("div", {
-    className: `flex min-h-[100svh] w-full font-sans ${appDesignVersion === 'premium' ? 'app-premium' : ''}`
+    className: `app-shell flex min-h-[100svh] w-full font-sans ${appDesignVersion === 'premium' ? 'app-premium' : ''}`
   }, sidebarOpen && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden touch-none transition-opacity duration-300",
     onClick: () => setSidebarOpen(false)
@@ -34366,7 +34408,7 @@ Nënshkrimi: _____________________`;
   }, doneEcts, " / ", totalEcts, " ECTS"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0 lg:pl-64"
   }, /*#__PURE__*/React.createElement("header", {
-    className: `app-scroll-chrome h-16 header-bg border-b border-default px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl ${view === 'home' && !isInstructorAccount ? 'home-header-blend' : ''} ${isMobileChromeHidden ? 'app-scroll-chrome--top-hidden' : ''}`
+    className: `app-header h-16 header-bg border-b border-default px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl ${view === 'home' && !isInstructorAccount ? 'home-header-blend' : ''}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
   }, isInstructorAccount && /*#__PURE__*/React.createElement("button", {
@@ -34488,7 +34530,8 @@ Nënshkrimi: _____________________`;
     alt: "Fotografia e profilit",
     className: "w-full h-full object-cover"
   }) : profileInitials))), /*#__PURE__*/React.createElement("main", {
-    className: "flex-1 min-w-0 overflow-x-hidden"
+    className: "app-main flex-1 min-w-0 overflow-x-hidden",
+    "data-view": view
   }, view === 'course' ? renderCourseStudyView() : view === 'home' ? renderNewHome() : view === 'library' ? renderKnowledgeLibrary() : view === 'videos' ? /*#__PURE__*/React.createElement("div", {
     className: "p-4 sm:p-6 lg:p-8 w-full max-w-5xl mx-auto space-y-5 anim-fade-up pb-24"
   }, /*#__PURE__*/React.createElement("div", {
@@ -36518,34 +36561,36 @@ Nënshkrimi: _____________________`;
     className: "text-center text-xs text-tertiary mt-4 max-w-md mx-auto"
   }, "")) : view === 'certificate' ? renderCertificateView() : view === 'studentservices' ? renderSettingsView(true) : view === 'academic-progress' ? renderAcademicProgress() : view === 'settings' ? renderSettingsView() : null), !isInstructorAccount && view === 'home' && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: `home-messages-floating ${isMobileChromeHidden ? 'is-hidden' : ''}`,
+    className: `home-messages-floating ${isMobileNavHidden ? 'is-hidden' : ''}`,
     "aria-label": "Mesazhet",
     "aria-haspopup": "dialog",
     "aria-expanded": groupMessagesOpen,
     "aria-controls": groupMessagesOpen ? "unit-group-messages" : undefined,
-    "aria-hidden": isMobileChromeHidden || undefined,
-    tabIndex: isMobileChromeHidden ? -1 : 0,
+    "aria-hidden": isMobileNavHidden || undefined,
+    tabIndex: isMobileNavHidden ? -1 : 0,
     title: "Mesazhet",
     onClick: () => setGroupMessagesOpen(true)
   }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle, { className: "w-6 h-6" })), !isInstructorAccount && view === 'student' && studentTab === 'exams' && !deadlineDraft.isExamModalOpen && !examAddMenu && !examImport.open && !examSelect.on && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: `exam-add-floating ${isMobileChromeHidden ? 'is-hidden' : ''}`,
+    className: `exam-add-floating ${isMobileNavHidden ? 'is-hidden' : ''}`,
     "aria-label": "Shto provim",
-    "aria-hidden": isMobileChromeHidden || undefined,
-    tabIndex: isMobileChromeHidden ? -1 : 0,
+    "aria-hidden": isMobileNavHidden || undefined,
+    tabIndex: isMobileNavHidden ? -1 : 0,
     title: "Shto provim",
     onClick: () => setExamAddMenu(true)
   }, unitUiIcon("M12 5v14M5 12h14", "w-6 h-6")), !isInstructorAccount && !pomoOpen && (pomo.endsAt || pomo.left !== pomo.total) && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: `pomo-floating ${view === 'home' || (view === 'student' && studentTab === 'exams') ? 'with-msg' : ''} ${pomo.phase === 'focus' ? '' : 'is-break'} ${pomo.endsAt ? '' : 'is-paused'} ${isMobileChromeHidden ? 'is-hidden' : ''}`,
+    className: `pomo-floating ${view === 'home' || (view === 'student' && studentTab === 'exams') ? 'with-msg' : ''} ${pomo.phase === 'focus' ? '' : 'is-break'} ${pomo.endsAt ? '' : 'is-paused'} ${isMobileNavHidden ? 'is-hidden' : ''}`,
     "aria-label": `Pomodoro, ${pomoFmt(pomoLeftSecs())} ${pomo.phase === 'focus' ? 'fokus' : 'pushim'}${pomo.endsAt ? '' : ', në pauzë'}. Hap`,
-    "aria-hidden": isMobileChromeHidden || undefined,
-    tabIndex: isMobileChromeHidden ? -1 : 0,
+    "aria-hidden": isMobileNavHidden || undefined,
+    tabIndex: isMobileNavHidden ? -1 : 0,
     title: "Pomodoro",
     onClick: () => setPomoOpen(true)
   }, /*#__PURE__*/React.createElement("span", { className: "pomo-dot", "aria-hidden": "true" }), /*#__PURE__*/React.createElement("span", null, pomoFmt(pomoLeftSecs()))), pomoOpen && renderPomodoroSheet(), !isInstructorAccount && view !== 'course' && /*#__PURE__*/React.createElement("nav", {
     "aria-label": "Navigimi kryesor",
-    className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${isMobileChromeHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
+    "aria-hidden": isMobileNavHidden ? true : undefined,
+    inert: isMobileNavHidden ? "" : undefined,
+    className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${isMobileNavHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setView('home'),
     "aria-current": view === 'home' ? 'page' : undefined,
