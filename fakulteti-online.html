@@ -1147,7 +1147,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-fullscreen">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261104-fullscreen-2">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -8859,7 +8859,12 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 12) finish(true);
   };
   const up = event => { if (pointer && event.pointerId === pointer.id) finish(true); };
-  const click = event => { if (Date.now() < ignoreClickUntil) { event.preventDefault(); event.stopPropagation(); } };
+  const click = event => {
+    if (Date.now() < ignoreClickUntil && event.target?.closest?.('.course-video-frame, .story-nav-zone')) {
+      ignoreClickUntil = 0;
+      event.preventDefault(); event.stopPropagation();
+    }
+  };
   const contextMenu = event => { if (held) event.preventDefault(); };
   const wheel = event => { if (!event.ctrlKey) finish(false); };
   const key = event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'].includes(event.key)) finish(false); };
