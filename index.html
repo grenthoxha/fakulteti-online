@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="./assets/fakulteti-online-logo.png?v=6">
   <link rel="shortcut icon" href="./assets/fakulteti-online-logo.png?v=6">
   <link rel="apple-touch-icon" href="./assets/fakulteti-online-logo-192.png?v=6">
-  <link rel="stylesheet" href="./assets/student-support.css?v=20261006-3">
+  <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -45,12 +45,13 @@
       theme: {
         extend: {
           colors: {
-            brand: { 50:'#f1f4ff', 100:'#e5eaff', 200:'#cfd8ff', 300:'#aebcff', 400:'#8395ff', 500:'#5f6ff4', 600:'#4a55df', 700:'#3e46c2', 800:'#343b9d', 900:'#30377d', 950:'#1d2149' }
+            brand: { 50:'#eff6ff', 100:'#dcecff', 200:'#bedbff', 300:'#93c3ff', 400:'#5ba3f5', 500:'#2879d8', 600:'#1557b0', 700:'#10458c', 800:'#10396c', 900:'#0c294c', 950:'#07182d' }
           },
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
         }
       }
     }
+    tailwind.config.theme.extend.colors.indigo = tailwind.config.theme.extend.colors.brand;
   </script>
 
   <style>
@@ -62,7 +63,7 @@
       --line: #e4e8f1;
       --ink: #172033;
       --muted: #667085;
-      --brand-rgb: 79, 70, 229;
+      --brand-rgb: 21, 87, 176;
       --shadow-sm: 0 1px 2px rgba(16,24,40,0.035), 0 1px 3px rgba(16,24,40,0.025);
       --shadow-md: 0 14px 40px -24px rgba(34,44,82,0.28), 0 4px 14px -8px rgba(34,44,82,0.12);
     }
@@ -71,8 +72,8 @@
     button, input, textarea, select { font: inherit; }
     button, summary, a { -webkit-tap-highlight-color: transparent; }
     button { touch-action: manipulation; }
-    :focus-visible { outline: 3px solid rgba(95,111,244,0.3); outline-offset: 2px; }
-    ::selection { background: rgba(95,111,244,0.2); color: inherit; }
+    :focus-visible { outline: 3px solid rgba(21,87,176,0.3); outline-offset: 2px; }
+    ::selection { background: rgba(21,87,176,0.2); color: inherit; }
 
     /* ── Hide scrollbars everywhere while keeping smooth scrolling (Clean & Minimalist) ── */
     html, body, *, *::before, *::after {
@@ -90,8 +91,8 @@
     /* ΓöÇΓöÇ Base: Light Mode ΓöÇΓöÇ */
     body {
       background:
-        radial-gradient(circle at 9% -8%, rgba(95,111,244,0.085), transparent 28rem),
-        radial-gradient(circle at 92% 2%, rgba(91,124,250,0.055), transparent 25rem),
+        radial-gradient(circle at 9% -8%, rgba(21,87,176,0.085), transparent 28rem),
+        radial-gradient(circle at 92% 2%, rgba(40,121,216,0.055), transparent 25rem),
         var(--page);
       color: var(--ink);
     }
@@ -101,7 +102,7 @@
     .card-surface:hover { border-color: #d2d9e8; box-shadow: var(--shadow-md); }
     .stat-card { background: rgba(255,255,255,0.94); border: 1px solid rgba(218,224,236,0.9); box-shadow: var(--shadow-sm); transition: all 0.25s; }
     .input-bg { background: rgba(247,248,252,0.94); border: 1px solid #e3e8f2; transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; }
-    .input-bg:focus { border-color: rgba(95,111,244,0.55); box-shadow: 0 0 0 4px rgba(95,111,244,0.08); }
+    .input-bg:focus { border-color: rgba(21,87,176,0.55); box-shadow: 0 0 0 4px rgba(21,87,176,0.08); }
     .text-primary { color: #172033; }
     .text-secondary { color: #667085; }
     .text-tertiary { color: #98a2b3; }
@@ -139,15 +140,15 @@
     .modal-bg { background: #ffffff; }
     .toggle-off-bg { background: #d1d5db; }
     .hover-surface:hover { background: #f3f4f6; }
-    .active-surface { background: #f1f4ff; }
+    .active-surface { background: #eff6ff; }
 
     /* ΓöÇΓöÇ Dark Mode ΓöÇΓöÇ */
     .dark { --page: #0b1020; --surface: #111827; --surface-muted: #151d2d; --line: rgba(255,255,255,0.08); --ink: #f3f5fb; --muted: #a4aec2; }
-    .dark body { background: radial-gradient(circle at 12% -10%, rgba(95,111,244,0.14), transparent 28rem), #0b1020; color: #e9ecf5; }
+    .dark body { background: radial-gradient(circle at 12% -10%, rgba(21,87,176,0.14), transparent 28rem), #0b1020; color: #e9ecf5; }
     .dark .sidebar-bg { background: rgba(14,20,34,0.93); }
     .dark .header-bg { background: rgba(12,18,31,0.82); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
     .dark .card-surface { background: rgba(18,25,39,0.92); border-color: rgba(255,255,255,0.075); box-shadow: 0 1px 2px rgba(0,0,0,0.18); }
-    .dark .card-surface:hover { border-color: rgba(131,149,255,0.28); box-shadow: 0 18px 40px -25px rgba(0,0,0,0.72); }
+    .dark .card-surface:hover { border-color: rgba(147,195,255,0.28); box-shadow: 0 18px 40px -25px rgba(0,0,0,0.72); }
     .dark .stat-card { background: rgba(18,25,39,0.94); border-color: rgba(255,255,255,0.075); }
     .dark .input-bg { background: rgba(23,30,45,0.92); border-color: rgba(255,255,255,0.075); }
     .dark .text-primary { color: #f3f5fb; }
@@ -159,14 +160,14 @@
     .dark .modal-bg { background: #12131f; }
     .dark .toggle-off-bg { background: #374151; }
     .dark .hover-surface:hover { background: rgba(255,255,255,0.04); }
-    .dark .active-surface { background: rgba(95,111,244,0.14); }
+    .dark .active-surface { background: rgba(21,87,176,0.14); }
 
     /* ΓöÇΓöÇ Premium product surfaces ΓöÇΓöÇ */
     .hero-premium {
       background:
         radial-gradient(circle at 88% 18%, rgba(255,255,255,0.16), transparent 18rem),
-        linear-gradient(135deg, #4a55df 0%, #343b9d 52%, #1d2149 100%);
-      box-shadow: 0 28px 60px -34px rgba(29,33,73,0.82), inset 0 1px 0 rgba(255,255,255,0.12);
+        linear-gradient(135deg, #1557b0 0%, #10396c 52%, #07182d 100%);
+      box-shadow: 0 28px 60px -34px rgba(7,24,45,0.82), inset 0 1px 0 rgba(255,255,255,0.12);
       border: 1px solid rgba(255,255,255,0.1);
       isolation: isolate;
     }
@@ -249,27 +250,27 @@
     /* Në telefon: pa fotot e trurit në sfondin e Kreut */
     @media (max-width: 639px) { .psychology-brain-art { display: none !important; } }
     /* ORARI · dizajni F: header blu (ngjyra e website-it + toni i logos) dhe fletë e bardhë */
-    .schedule-min .sch-hero { position: relative; color: #fff; padding: 14px 16px 44px; background: linear-gradient(180deg, #4a55df 0%, #3e46c2 100%); }
-    .dark .schedule-min .sch-hero { background: linear-gradient(180deg, #343b9d 0%, #30377d 100%); }
+    .schedule-min .sch-hero { position: relative; color: #fff; padding: 14px 16px 44px; background: linear-gradient(180deg, #1557b0 0%, #10458c 100%); }
+    .dark .schedule-min .sch-hero { background: linear-gradient(180deg, #10396c 0%, #0c294c 100%); }
     .schedule-min .sch-sheet { position: relative; margin-top: -28px !important; border-radius: 28px 28px 0 0; background: var(--surface); padding: 18px 16px 24px; }
     .dark .schedule-min .sch-sheet { background: var(--surface); }
     .schedule-min .sch-circle { width: 44px; height: 44px; border-radius: 9999px; border: 0; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; background: rgba(255,255,255,.18); color: #fff; transition: background-color .2s ease, transform .15s ease; }
     .schedule-min .sch-circle:hover { background: rgba(255,255,255,.26); }
     .schedule-min .sch-circle:active { transform: scale(.95); }
-    .schedule-min .sch-circle.is-solid { background: #fff; color: #3e46c2; }
+    .schedule-min .sch-circle.is-solid { background: #fff; color: #10458c; }
     .schedule-min .sch-circle:focus-visible, .schedule-min .sch-day:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
     .schedule-min .sch-day { position: relative; height: 72px; border: 0; border-radius: 22px; background: rgba(255,255,255,.16); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; min-width: 0; transition: background-color .2s ease; }
     .schedule-min .sch-day:hover { background: rgba(255,255,255,.22); }
-    .schedule-min .sch-day.is-sel { background: #fff; color: #3e46c2; }
-    .schedule-min .sch-day-lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #e3e6ff; max-width: 100%; white-space: nowrap; }
-    .schedule-min .sch-day.is-sel .sch-day-lbl { color: #3e46c2; font-weight: 800; }
+    .schedule-min .sch-day.is-sel { background: #fff; color: #10458c; }
+    .schedule-min .sch-day-lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #dcecff; max-width: 100%; white-space: nowrap; }
+    .schedule-min .sch-day.is-sel .sch-day-lbl { color: #10458c; font-weight: 800; }
     .schedule-min .sch-day-num { font-size: 20px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
     .schedule-min .sch-day.is-today:not(.is-sel) { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
     .schedule-min .sch-card { background: #f6f7fc; border-radius: 22px; padding: 14px; }
     .dark .schedule-min .sch-card { background: var(--surface-muted); }
     .schedule-min .sch-card.is-upcoming { background: transparent; box-shadow: inset 0 0 0 1.5px #e1e3f0; }
     .dark .schedule-min .sch-card.is-upcoming { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.12); }
-    .schedule-min .sch-card.is-live { box-shadow: inset 0 0 0 1.5px rgba(74,85,223,.55); }
+    .schedule-min .sch-card.is-live { box-shadow: inset 0 0 0 1.5px rgba(21,87,176,.55); }
     .schedule-min .sch-att { height: 44px; border-radius: 14px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; border: 1.5px solid #dcdfec; background: #fff; color: #3a3f4f; transition: transform .15s ease; }
     .schedule-min .sch-att:active { transform: scale(.97); }
     .dark .schedule-min .sch-att { background: transparent; border-color: rgba(255,255,255,.14); color: #d5d9e6; }
@@ -569,13 +570,13 @@
     .app-premium main .grid > *,
     .app-premium main article,
     .app-premium main section { min-width: 0; }
-    .app-premium .sidebar-bg { border-color: rgba(208,216,232,0.88); box-shadow: 10px 0 38px -34px rgba(29,33,73,0.45); }
-    .app-premium .header-bg { border-color: rgba(216,223,236,0.9); box-shadow: 0 14px 36px -34px rgba(29,33,73,0.6); }
+    .app-premium .sidebar-bg { border-color: rgba(208,216,232,0.88); box-shadow: 10px 0 38px -34px rgba(7,24,45,0.45); }
+    .app-premium .header-bg { border-color: rgba(216,223,236,0.9); box-shadow: 0 14px 36px -34px rgba(7,24,45,0.6); }
     .app-premium .card-surface {
       border-color: rgba(215,222,236,0.92);
-      box-shadow: 0 16px 38px -34px rgba(29,33,73,0.58), 0 1px 2px rgba(15,23,42,0.035);
+      box-shadow: 0 16px 38px -34px rgba(7,24,45,0.58), 0 1px 2px rgba(15,23,42,0.035);
     }
-    .app-premium .card-surface:hover { border-color: rgba(174,188,255,0.58); box-shadow: 0 22px 46px -36px rgba(29,33,73,0.62); }
+    .app-premium .card-surface:hover { border-color: rgba(174,188,255,0.58); box-shadow: 0 22px 46px -36px rgba(7,24,45,0.62); }
     .app-premium .input-bg { border-color: rgba(221,227,239,0.96); background: rgba(248,249,253,0.96); }
     .dark .app-premium .sidebar-bg,
     .dark .app-premium .header-bg { border-color: rgba(255,255,255,0.075); }
@@ -592,11 +593,11 @@
     .app-premium main h3 { font-weight: 600; }
     .app-premium main p,
     .app-premium main li { font-weight: 400; }
-    .app-premium .tester-compare-dock { box-shadow: 0 18px 48px -24px rgba(29,33,73,0.72); }
+    .app-premium .tester-compare-dock { box-shadow: 0 18px 48px -24px rgba(7,24,45,0.72); }
     .app-premium .session-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
     .app-premium .student-week-strip { scrollbar-width: none; }
     .app-premium .student-week-strip::-webkit-scrollbar { display: none; }
-    .app-premium .certificate-card { box-shadow: 0 30px 70px -38px rgba(29,33,73,0.62); border-color: rgba(199,207,224,0.95); }
+    .app-premium .certificate-card { box-shadow: 0 30px 70px -38px rgba(7,24,45,0.62); border-color: rgba(199,207,224,0.95); }
     .app-premium .case-list-panel { position: sticky; top: 5.25rem; }
 
     @media (min-width: 640px) {
@@ -770,7 +771,7 @@
       flex: 0 0 auto;
     }
     .profile-services-heading:focus-visible {
-      outline: 3px solid rgba(95,111,244,0.3);
+      outline: 3px solid rgba(21,87,176,0.3);
       outline-offset: -3px;
     }
     .profile-services-grid {
@@ -1133,9 +1134,9 @@
       }
     }
 </style>
-  <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261006-1">
+  <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
-  <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261006-7">
+  <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/video-viewer.css?v=20261027-1">
 </head>
 <body class="min-h-screen">
@@ -30848,39 +30849,10 @@ Nënshkrimi: _____________________`;
           /* Subtitle */
           /*#__PURE__*/React.createElement("span", { className: "block text-[10px] text-secondary line-clamp-1" }, srv.detail),
           /* Badge */
-          /*#__PURE__*/React.createElement("span", { className: `mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide ${srv.badgeClass}` }, srv.badge)
+          /*#__PURE__*/React.createElement("span", { className: 'mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide bg-brand-500/10 text-brand-700 dark:text-brand-300' }, srv.badge)
         )))
       ),
 
-      /* SECONDARY RESOURCES — intentionally after the student's core work */
-      /*#__PURE__*/React.createElement("section", {
-        "data-home-section": "resources",
-        className: "space-y-2"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "flex items-center justify-between gap-3 px-1"
-      }, /*#__PURE__*/React.createElement("h2", {
-        className: "text-sm font-black text-primary"
-      }, "Burime shtesë"), /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] text-secondary"
-      }, "Pasi t’i përfundosh prioritetet e ditës")), /*#__PURE__*/React.createElement("div", {
-        className: "grid grid-cols-3 gap-2 sm:gap-3"
-      }, [
-        { id: 'opinion', label: 'Opinione', icon: TaskIcons.Brain },
-        { id: 'scientific', label: 'Artikuj shkencorë', icon: TaskIcons.Microscope },
-        { id: 'course', label: 'Artikuj lëndorë', icon: TaskIcons.Book }
-      ].map(item => /*#__PURE__*/React.createElement("button", {
-        key: item.id,
-        type: "button",
-        onClick: () => {
-          setContentTab(item.id);
-          setView('library');
-        },
-        className: "p-3 sm:p-3.5 rounded-2xl card-surface border border-default hover:border-brand-300 hover:shadow-xs transition-all flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1.5 sm:gap-3 text-center sm:text-left group cursor-pointer shadow-2xs"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl active-surface text-brand-700 dark:text-brand-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-      }, /*#__PURE__*/React.createElement(item.icon, { className: "w-4 h-4" })), /*#__PURE__*/React.createElement("span", {
-        className: "text-xs sm:text-sm font-bold text-primary group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors leading-tight"
-      }, item.label)))))
     );
     // Reorder actual keyed sections so keyboard and screen-reader order match the layout.
     const h = React.createElement;
