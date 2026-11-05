@@ -112,7 +112,10 @@
 .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-fullscreen-control { position:absolute; z-index:8; bottom:40px; right:60px; width:40px; height:40px; background:#0006; }
 .tiktok-viewer[data-media-layout="phone-fit"]:fullscreen .story-shell { width:100%; height:100%; max-height:none; max-width:none; border-radius:0; }
 .tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .story-shell { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; }
-.tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] #course-video-scroll-feed .course-video-frame > img { object-fit:cover; }
+.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture { display:block; width:100%; height:100%; }
+.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture > img { display:block; width:100%; height:100%; object-fit:contain; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit="cover"] .story-photo-picture > img { object-fit:cover; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .story-backdrop { opacity:.8; filter:blur(32px) saturate(.7); }
 .tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .shorts-desktop-nav { right:16px; }
 /* Photo titles and actions belong to their own panel, outside the picture. */
 .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] :is(.story-shell::before,.story-slide::after,.tiktok-feed-heading,.shorts-position) { display:none; }
