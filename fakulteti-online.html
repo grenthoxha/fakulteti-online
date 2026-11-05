@@ -282,7 +282,9 @@
     .schedule-min .sch-day-num { font-size: 18px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
     .schedule-min .sch-day.is-today:not(.is-sel) { box-shadow: inset 0 0 0 1px rgba(76,131,186,.45); }
     .schedule-min .sch-program-select { width: 100%; min-height: 32px !important; height: 32px; padding: 4px 34px 4px 11px; appearance: none; border: 1px solid rgba(16,69,140,.14); border-radius: 11px; background: rgba(255,255,255,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='1.8'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") right 10px center / 15px no-repeat; color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .schedule-min .sch-program-select:focus-visible { outline: 2px solid #4c83ba; outline-offset: 2px; }
+    .schedule-min .sch-program-select { -webkit-tap-highlight-color: transparent; }
+    .schedule-min .sch-program-select:focus { outline: none; box-shadow: none; }
+    .schedule-min .sch-program-select:focus-visible { outline: 1px solid var(--muted); outline-offset: 2px; }
     .schedule-min .sch-program-select option { background: var(--surface); color: var(--ink); }
     .dark .schedule-min .sch-circle { color: #b7cee7; background: rgba(148,177,207,.08); border-color: rgba(148,177,207,.16); }
     .dark .schedule-min .sch-program-select { background-color: rgba(148,177,207,.06); border-color: rgba(148,177,207,.17); }
@@ -1213,7 +1215,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-photo-full-1">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-mobile-fit-2">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -9063,10 +9065,51 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
   };
 }
-function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', children, ...props }) {
+async function toggleVideoStoryFullscreen(root) {
+  try {
+    if (document.fullscreenElement) { await document.exitFullscreen(); return true; }
+    if (root?.requestFullscreen) { await root.requestFullscreen(); return true; }
+    const video = root?.querySelector('video');
+    if (video?.webkitEnterFullscreen) { video.webkitEnterFullscreen(); return true; }
+  } catch { /* Keep the viewport-sized player usable if fullscreen is unavailable. */ }
+  return false;
+}
+function bindVideoStoryChrome(root) {
+  let timer = null;
+  const clear = () => { clearTimeout(timer); timer = null; };
+  const show = visible => { root.dataset.controlsVisible = String(visible); };
+  const arm = () => {
+    clear();
+    if (root.dataset.storyKind === 'article') return;
+    timer = setTimeout(() => {
+      const player = root.querySelector('.story-slide[aria-hidden="false"] [data-story-player]');
+      const focused = typeof document !== 'undefined' ? document.activeElement : null;
+      if (player?.dataset.playing === 'false' || player?.dataset.nativeUi === 'true' || (root.contains(focused) && focused?.matches?.('input,select'))) return;
+      show(false);
+    }, 3000);
+  };
+  const click = event => {
+    if (event.defaultPrevented || root.dataset.holding === 'true') return;
+    const target = event.target;
+    if (target?.closest?.('.story-play-surface,.story-photo-surface') || (target?.closest?.('.course-video-frame') && !target?.closest?.('button,input,select,a,video,iframe'))) {
+      show(root.dataset.controlsVisible !== 'true');
+      if (root.dataset.controlsVisible === 'true') arm(); else clear();
+    } else if (target?.closest?.('button,input,select,a')) arm();
+  };
+  const focus = event => { if (event.target?.matches?.(':focus-visible') && event.target?.closest?.('.story-play-surface,.story-photo-surface')) { show(true); clear(); } };
+  const rotate = () => { show(true); arm(); };
+  show(root.dataset.storyKind !== 'article');
+  arm();
+  root.addEventListener('click', click);
+  root.addEventListener('focusin', focus);
+  window.addEventListener('orientationchange', rotate);
+  return () => { clear(); root.removeEventListener('click', click); root.removeEventListener('focusin', focus); window.removeEventListener('orientationchange', rotate); };
+}
+function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', postKey, children, ...props }) {
   const rootRef = useRef(null);
   const actionsRef = useRef(null);
   actionsRef.current = { next: onNext, previous: onPrevious, settle: onSettle, close: onClose, playing: isPlaying, onPlayingChange };
+  useEffect(() => rootRef.current ? bindVideoStoryChrome(rootRef.current) : undefined, [postKey]);
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -9254,11 +9297,10 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       /* Shtresë e padukshme: prek videon për ta ndalur/luajtur (fsheh titullin dhe logon e YouTube kur kalon miu) */
       h('button', {
         type: 'button',
-        onClick: togglePlay,
         className: 'story-play-surface absolute inset-0 w-full h-full cursor-pointer bg-transparent',
         hidden: nativeUi,
         tabIndex: nativeUi ? -1 : 0,
-        'aria-label': st.playing ? 'Ndal videon' : 'Luaj videon'
+        'aria-label': 'Shfaq ose fsheh kontrollet e videos'
       })
     ),
     h('button', {
@@ -9286,6 +9328,8 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
         'aria-label': 'Koha e videos'
       }),
       h('span', { className: 'story-time story-time--total text-xs tabular-nums text-white/75' }, fmt(st.d)),
+      h('button', { type: 'button', onClick: event => toggleVideoStoryFullscreen(event.currentTarget.closest('.tiktok-viewer')), className: `${iconBtn} story-fullscreen-control`, 'aria-label': 'Hap ose mbyll ekranin e plotë' },
+        h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
       h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
         h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
           h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
@@ -10303,7 +10347,9 @@ const removeLegacyRoomChanges = () => {
 
 // A personal landing preference, based on the real name rather than a nickname.
 const prefersFreeRoomsHome = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'bujar hoti';
-const getInitialAcademyView = (role, fullName) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) ? 'freerooms' : 'home';
+const prefersSocialWorkSchedule = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'grent hoxha';
+const getInitialScheduleProgram = fullName => prefersSocialWorkSchedule(fullName) ? 'social-work' : 'personal';
+const getInitialAcademyView = (role, fullName) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
 const getUnitInstallContext = (nav = navigator) => {
@@ -10422,6 +10468,7 @@ function AcademyApp({
   const profileRealIdentity = getStoredStudentIdentity(studentFullName || studentName);
   const profileNeedsRealName = !isValidStudentFullName(studentFullName);
   const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName);
+  const socialWorkScheduleUser = prefersSocialWorkSchedule(studentFullName || studentName);
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
     let preferences;
@@ -11058,6 +11105,7 @@ function AcademyApp({
     setViewRaw(next);
   }, []);
   useEffect(() => { if (freeRoomsHomeUser && actualRole !== 'instructor') setView('freerooms'); }, [freeRoomsHomeUser, actualRole]);
+  useEffect(() => { if (socialWorkScheduleUser && actualRole !== 'instructor') setView('week'); }, [socialWorkScheduleUser, actualRole]);
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
   const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
 
@@ -12538,7 +12586,8 @@ function AcademyApp({
     }
   });
   const [scheduleWeekOffset, setScheduleWeekOffset] = useState(0);
-  const [scheduleProgramFilter, setScheduleProgramFilter] = useState('personal');
+  const [scheduleProgramFilter, setScheduleProgramFilter] = useState(() => getInitialScheduleProgram(studentFullName || studentName));
+  useEffect(() => { setScheduleProgramFilter(socialWorkScheduleUser ? 'social-work' : 'personal'); }, [socialWorkScheduleUser]);
   const [scheduleProgramData, setScheduleProgramData] = useState(() => FilozofikuDailyStore.getData());
   useEffect(() => FilozofikuDailyStore.subscribe(setScheduleProgramData), []);
   const [scheduleScope, setScheduleScope] = useState('today');
@@ -33452,7 +33501,7 @@ Nënshkrimi: _____________________`;
         },
           ce('option', { value: 'personal' }, 'Orari im'),
           ce('option', { value: 'social-work' }, 'Punë Sociale · Viti I'),
-          ce('option', { value: 'psychology' }, 'Psikologji · Viti III'))),
+          !socialWorkScheduleUser && ce('option', { value: 'psychology' }, 'Psikologji · Viti III'))),
       (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-1.5 mt-1.5", role: "tablist", "aria-label": "Ditët e javës" },
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
@@ -33801,16 +33850,18 @@ Nënshkrimi: _____________________`;
     const isPhoto = curVideo.kind === 'article';
     const photoFullscreen = isPhoto && storyFit !== 'contain';
     const fullPicture = isPhoto || storyFit !== 'cover';
-    const fitLabel = isPhoto ? (photoFullscreen ? appearanceText('Zvogëlo fotografinë', 'Collapse photo') : appearanceText('Fotografia në ekran të plotë', 'Full-screen photo')) : (!fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'));
+    const fitLabel = isPhoto ? (photoFullscreen ? appearanceText('Shfaq fotografinë e plotë', 'Show the whole photo') : appearanceText('Mbush ekranin me fotografinë', 'Fill screen with photo')) : (!fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'));
     const h = React.createElement;
 
     return h(ModalPortal, null,
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
-        'data-fit': fullPicture ? 'contain' : 'cover',
+        'data-fit': isPhoto ? (photoFullscreen ? 'cover' : 'contain') : fullPicture ? 'contain' : 'cover',
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
+        'data-media-layout': 'phone-fit',
+        postKey: curVideo.id || courseVideoFeedIndex,
         style: { touchAction: 'none', overscrollBehavior: 'none' },
         isPlaying: videoLivePlaying,
         onPlayingChange: setVideoLivePlaying,
@@ -33894,8 +33945,10 @@ Nënshkrimi: _____________________`;
                   onClick: () => scrollToVideoFeedSlide(idx + 1)
                 }),
                 video.thumbnail && h('img', { src: video.thumbnail, alt: '', 'aria-hidden': true, className: 'story-backdrop', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
-                /* The original picture stays uncropped; only the active media plays. */
-                video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' }, h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' }))
+                /* Only active media plays; the fit button can reveal the whole picture. */
+                video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' },
+                  h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
+                  h('button', { type: 'button', className: 'story-photo-surface absolute inset-0 w-full h-full bg-transparent', 'aria-label': appearanceText('Shfaq ose fsheh detajet e fotografisë', 'Show or hide photo details'), tabIndex: isActive ? 0 : -1 }))
                 : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
                 ? h(UnitYouTubeReelPlayer, {
                     key: `yt_${video.id || idx}`,
