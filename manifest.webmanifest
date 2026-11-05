@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Fakulteti Online",
+  "short_name": "Fakulteti",
+  "description": "Orari, sallat e lira dhe materialet e fakultetit.",
+  "lang": "sq",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#1557b0",
+  "icons": [
+    { "src": "./assets/fakulteti-online-logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/fakulteti-online-logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

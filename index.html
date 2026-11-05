@@ -8,13 +8,27 @@
   <meta name="description" content="Fakulteti Online — platformë akademike për studentë dhe profesorë.">
   <link rel="icon" type="image/png" href="./assets/fakulteti-online-logo.png?v=6">
   <link rel="shortcut icon" href="./assets/fakulteti-online-logo.png?v=6">
-  <link rel="apple-touch-icon" href="./assets/fakulteti-online-logo-192.png?v=6">
+  <link rel="apple-touch-icon" sizes="160x160" href="./assets/apple-touch-icon.png?v=1">
+  <link rel="manifest" href="./manifest.webmanifest?v=1">
+  <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
+  <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    @media (display-mode: standalone) {
+      .tiktok-viewer.course-video-stories { box-sizing:border-box; padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+      .tiktok-viewer.course-video-stories .story-shell { height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
+      .tiktok-viewer.course-video-stories .story-topbar { padding-top:12px; }
+      .tiktok-viewer #course-video-scroll-feed .story-player-controls input[type="range"] { bottom:10px; }
+    }
+    @media (display-mode: standalone) and (max-width:1023px) {
+      .app-shell .app-header { height:calc(4rem + env(safe-area-inset-top,0px)); padding-top:env(safe-area-inset-top,0px); }
+    }
+  </style>
   
   <script>
     (function() {
@@ -1199,7 +1213,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-contained-reader-2">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-tiktok-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -9268,7 +9282,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
         value: Math.min(st.t, st.d || 0),
         onChange: e => { const v = Number(e.target.value) || 0; setSt(s => ({ ...s, t: v })); send('seekTo', [v, true]); },
         className: 'flex-1 min-w-0 h-1 cursor-pointer',
-        style: { accentColor: '#ffffff' },
+        style: { accentColor: '#ffffff', '--story-played': `${st.d ? Math.min(100, st.t / st.d * 100) : 0}%` },
         'aria-label': 'Koha e videos'
       }),
       h('span', { className: 'story-time story-time--total text-xs tabular-nums text-white/75' }, fmt(st.d)),
@@ -9593,7 +9607,7 @@ function searchFilozofikuProfessors(professors, query) {
   return professors.filter(prof => words.every(word => normalize(prof.name).includes(word)));
 }
 
-function FilozofikuFreeRoomsPage({ onBack }) {
+function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all' }) {
   const h = React.createElement;
   const [data, setData] = useState(() => FilozofikuDailyStore.getData());
   const [nowDate, setNowDate] = useState(() => new Date());
@@ -9617,7 +9631,7 @@ function FilozofikuFreeRoomsPage({ onBack }) {
   const [useLiveClock, setUseLiveClock] = useState(true);
   const [startIdx, setStartIdx] = useState(() => liveInfo.defaultStartIdx);
   const [endIdx, setEndIdx] = useState(() => liveInfo.defaultEndIdx);
-  const [statusFilter, setStatusFilter] = useState('all'); // 'free' | 'all' | 'occupied'
+  const [statusFilter, setStatusFilter] = useState(() => initialStatusFilter === 'free' ? 'free' : 'all'); // 'free' | 'all' | 'occupied'
   const [floorFilter, setFloorFilter] = useState('all');
   const [onlySmartboard, setOnlySmartboard] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -10287,6 +10301,62 @@ const removeLegacyRoomChanges = () => {
   try { localStorage.removeItem('u_seeded_room_override_v1'); } catch {}
 };
 
+// A personal landing preference, based on the real name rather than a nickname.
+const prefersFreeRoomsHome = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'bujar hoti';
+const getInitialAcademyView = (role, fullName) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) ? 'freerooms' : 'home';
+
+// Safari installs Home Screen web apps through its Share menu. Other browsers may expose a native prompt.
+const UnitInstallState = (() => {
+  let prompt = null;
+  const subscribers = new Set();
+  const isStandalone = () => Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
+  const notify = () => subscribers.forEach(fn => fn());
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); prompt = event; notify(); });
+  window.addEventListener('appinstalled', () => { prompt = null; notify(); });
+  return {
+    isStandalone,
+    canInstall: () => Boolean(prompt),
+    subscribe: fn => { subscribers.add(fn); return () => subscribers.delete(fn); },
+    async install() {
+      if (!prompt) return false;
+      const event = prompt; prompt = null; notify();
+      await event.prompt();
+      return (await event.userChoice).outcome === 'accepted';
+    }
+  };
+})();
+function UnitInstallButton({ className = '', uiLanguage = 'sq' }) {
+  const h = React.createElement;
+  const [open, setOpen] = useState(false);
+  const [standalone, setStandalone] = useState(UnitInstallState.isStandalone);
+  const en = uiLanguage === 'en';
+  const t = (sq, english) => en ? english : sq;
+  useEffect(() => UnitInstallState.subscribe(() => setStandalone(UnitInstallState.isStandalone())), []);
+  const shareIcon = h('svg', { width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true },h('path',{d:'M12 16V3M7 8l5-5 5 5M5 13v7h14v-7'}));
+  const onInstall = () => setOpen(true);
+  return h(React.Fragment,null,
+    h('button',{type:'button',className,disabled:standalone,onClick:onInstall,'aria-haspopup':'dialog'},
+      shareIcon,
+      h('span',{className:'flex-1'},standalone ? t('Aplikacioni është instaluar','App is installed') : t('Instalo aplikacionin','Install app')),
+      !standalone && h('span',{className:'text-xs text-secondary'},'iPhone · Android')),
+    open && h(ModalPortal,null,h('div',{
+      role:'dialog','aria-modal':'true','aria-labelledby':'install-app-title',
+      className:'fixed inset-0 z-[110] bg-black/45 backdrop-blur-sm flex items-center justify-center p-4',onClick:()=>setOpen(false)
+    },h('section',{className:'modal-bg w-full max-w-sm max-h-[calc(100dvh-32px)] overflow-y-auto rounded-3xl border border-default p-5 shadow-2xl',onClick:event=>event.stopPropagation()},
+      h('div',{className:'flex items-center gap-3 mb-4'},
+        h('img',{src:'./assets/apple-touch-icon.png',alt:'',className:'w-12 h-12 rounded-xl border border-default'}),
+        h('div',{className:'flex-1'},h('h2',{id:'install-app-title',className:'text-lg font-bold text-primary'},t('Fakulteti në telefon','Fakulteti on your phone')),h('p',{className:'text-sm text-secondary'},t('Hape nga ekrani kryesor.','Open it from your Home Screen.')))),
+      window.location.protocol !== 'https:' && h('a',{href:'https://grenthoxha.github.io/fakulteti-online/',target:'_blank',rel:'noopener',className:'flex justify-center min-h-11 items-center rounded-xl bg-brand-600 text-white font-semibold mb-4'},t('Hap versionin online','Open the online app')),
+      h('h3',{className:'font-semibold text-primary text-sm mb-2'},'iPhone · Safari'),
+      h('ol',{className:'list-decimal pl-5 space-y-2 text-sm text-secondary leading-6'},
+        h('li',null,t('Hape aplikacionin në Safari.','Open the app in Safari.')),
+        h('li',null,t('Prek Share (Ndaj), pastaj “Add to Home Screen”.','Tap Share, then “Add to Home Screen”.')),
+        h('li',null,t('Nëse shfaqet “Open as Web App”, lëre aktiv. Pastaj prek “Add”.','If “Open as Web App” appears, keep it enabled. Then tap “Add”.'))),
+      h('div',{className:'border-t border-default mt-4 pt-3 text-sm text-secondary leading-6'},h('strong',{className:'text-primary'},'Android · Chrome'),h('p',null,t('Nga menyja ⋮ zgjidh “Install app” ose “Add to Home screen”.','From the ⋮ menu, choose “Install app” or “Add to Home screen”.'))),
+      UnitInstallState.canInstall() && h('button',{type:'button',onClick:async()=>{try { if (await UnitInstallState.install()) setOpen(false); } catch {}},className:'w-full min-h-11 mt-4 rounded-xl bg-brand-600 text-white font-semibold'},t('Instalo tani','Install now')),
+      h('button',{type:'button',onClick:()=>setOpen(false),className:'w-full min-h-11 mt-4 rounded-xl input-bg text-primary border border-default font-semibold'},t('Në rregull','Got it'))))));
+}
+
 function AcademyApp({
   studentName,
   studentFullName,
@@ -10303,6 +10373,7 @@ function AcademyApp({
   const profileNameParts = String(studentName || '').trim().split(/\s+/).filter(Boolean);
   const profileRealIdentity = getStoredStudentIdentity(studentFullName || studentName);
   const profileNeedsRealName = !isValidStudentFullName(studentFullName);
+  const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName);
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
     let preferences;
@@ -10918,7 +10989,7 @@ function AcademyApp({
     return s ? Number(s) : null;
   });
   const [course, setCourse] = useState(null);
-  const [view, setViewRaw] = useState(() => actualRole === 'instructor' ? 'instructor' : 'home'); // home | course | settings | exam
+  const [view, setViewRaw] = useState(() => getInitialAcademyView(actualRole, studentFullName || studentName)); // home | course | settings | exam
   /* Historia e navigimit: "kthehu" të çon gjithmonë aty ku ishe më parë */
   const navStackRef = useRef([]);
   const navCtxRef = useRef({ view: 'home', studentTab: 'exams' });
@@ -10938,6 +11009,7 @@ function AcademyApp({
     }
     setViewRaw(next);
   }, []);
+  useEffect(() => { if (freeRoomsHomeUser && actualRole !== 'instructor') setView('freerooms'); }, [freeRoomsHomeUser, actualRole]);
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
   const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
 
@@ -13862,6 +13934,7 @@ function AcademyApp({
           h('button', { type: 'button', onClick: () => onLanguageChange(en ? 'sq' : 'en'), className: rowCls + divider },
             h('span', { className: 'flex-1' }, t('Gjuha', 'Language')),
             h('span', { className: 'text-sm text-secondary' }, en ? 'English' : 'Shqip')),
+          h(UnitInstallButton, { className: rowCls + divider, uiLanguage }),
           h('button', { type: 'button', onClick: onLogout, className: rowCls + divider + ' !text-red-700 dark:!text-red-400' },
             h('span', { className: 'flex-1' }, t('Dil nga llogaria', 'Sign out'))))));
   };
@@ -23072,6 +23145,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const renderFreeRoomsView = () => {
     return React.createElement(FilozofikuFreeRoomsPage, {
       onBack: () => goBackOr('studentservices'),
+      initialStatusFilter: freeRoomsHomeUser ? 'free' : 'all',
       uiLanguage
     });
   };
@@ -33681,7 +33755,7 @@ Nënshkrimi: _____________________`;
     return h(ModalPortal, null,
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
-        className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
+        className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
         'data-fit': fullPicture ? 'contain' : 'cover',
         'data-story-kind': curVideo.kind || 'video',
         style: { touchAction: 'none', overscrollBehavior: 'none' },
@@ -33699,11 +33773,12 @@ Nënshkrimi: _____________________`;
         h('div', { className: "story-shell w-full h-full min-h-0 flex flex-col" },
 
           h('div', { className: 'story-topbar' },
+            h('span', { className: 'tiktok-feed-heading' }, appearanceText('Për ty', 'For you')),
             h('button', {
               type: 'button', onClick: () => setCourseVideoFeedOpen(false),
               className: 'shorts-close shorts-icon-button',
               'aria-label': appearanceText('Mbyll postimin', 'Close story')
-            }, h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M6 6l12 12M18 6L6 18' }))),
+            }, h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M14 5l-7 7 7 7' }))),
             h('label', { className: 'shorts-position' },
               h('span', { className: 'sr-only' }, appearanceText('Zgjidh postimin', 'Choose post')),
               h('select', {
@@ -33713,7 +33788,7 @@ Nënshkrimi: _____________________`;
               }, courseVideoFeed.map((video, idx) => h('option', { key: video.id || idx, value: idx }, `${idx + 1} / ${total}`)))),
             h('button', {
               type: 'button', onClick: () => setStoryFit(fullPicture ? 'cover' : 'contain'),
-              className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': fullPicture,
+              className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': !fullPicture,
               'aria-label': !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'),
               title: !fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen')
             }, h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' })))),
@@ -33765,7 +33840,8 @@ Nënshkrimi: _____________________`;
                   'aria-label': appearanceText('Postimi tjetër', 'Next story'),
                   onClick: () => scrollToVideoFeedSlide(idx + 1)
                 }),
-                /* Videoja shfrytëzon hapësirën e plotë; luhet vetëm ajo aktive. */
+                video.thumbnail && h('img', { src: video.thumbnail, alt: '', 'aria-hidden': true, className: 'story-backdrop', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
+                /* The original picture stays uncropped; only the active media plays. */
                 video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' }, h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' }))
                 : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
                 ? h(UnitYouTubeReelPlayer, {
