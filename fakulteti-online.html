@@ -575,17 +575,11 @@
       }
     }
     .mobile-nav-item { position: relative; transition: color .2s ease, background-color .2s ease; }
-    .mobile-nav-item[aria-current="page"]::before {
-      content: "";
-      position: absolute;
-      top: -0.5rem;
-      left: 50%;
-      width: 1.5rem;
-      height: 3px;
-      border-radius: 999px;
-      background: #5f6ff4;
-      transform: translateX(-50%);
-    }
+    .mobile-nav-item { z-index:1; }
+    .mobile-nav-active { position:absolute; left:0; top:0; pointer-events:none; border-radius:12px; opacity:0; }
+    .mobile-nav[data-active-ready="true"] .mobile-nav-active { opacity:1; transition:transform 420ms cubic-bezier(.22,1,.36,1),width 420ms cubic-bezier(.22,1,.36,1),height 420ms cubic-bezier(.22,1,.36,1),background-color .2s ease; }
+    @media(prefers-reduced-motion:reduce) { .mobile-nav-active { transition:none !important; } }
+
 
     /* ΓöÇΓöÇ Responsive UNIT brand ΓöÇΓöÇ */
     .unit-brand-lockup { min-width: 0; max-width: 100%; }
@@ -1205,7 +1199,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-hold-clean-1">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-contained-reader-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -6497,6 +6491,37 @@ const UnitBookPage = ({ pdf, pageNum, boxW, boxH, zoom, highlights }) => {
         style: { position: 'absolute', left: `${rect[0] * 100}%`, top: `${rect[1] * 100}%`, width: `${rect[2] * 100}%`, height: `${rect[3] * 100}%`, background: 'rgba(253,224,71,.55)', borderRadius: 2 }
       })))));
 };
+const unitBookPagination = (layout, width, numPages, target) => {
+  const spread = layout !== 'scroll' && (layout === 'spread' ? width >= 768 : layout === 'auto' && width >= 1024) && numPages > 1;
+  const clamped = Math.max(1, Math.min(Math.floor(Number(target) || 1), numPages));
+  const anchor = !spread || clamped === 1 ? clamped : clamped % 2 === 0 ? clamped : clamped - 1;
+  const shown = !spread || anchor === 1 || anchor + 1 > numPages ? [anchor] : [anchor, anchor + 1];
+  return { spread, anchor, shown };
+};
+const UnitBookScrollPage = ({ pdf, pageNum, width, zoom, highlights, rootRef, onVisible }) => {
+  const hostRef = useRef(null);
+  const visibleRef = useRef(onVisible);
+  visibleRef.current = onVisible;
+  const [near, setNear] = useState(false);
+  const [ratio, setRatio] = useState(1.4142);
+  useEffect(() => {
+    const host = hostRef.current, root = rootRef.current;
+    if (!host || !root) return;
+    if (typeof IntersectionObserver !== 'function') { setNear(true); return; }
+    const nearby = new IntersectionObserver(entries => setNear(entries[0].isIntersecting), { root, rootMargin: '800px 0px' });
+    const active = new IntersectionObserver(entries => { if (entries[0].isIntersecting) visibleRef.current(pageNum); }, { root, rootMargin: '-40% 0px -40% 0px' });
+    nearby.observe(host); active.observe(host);
+    return () => { nearby.disconnect(); active.disconnect(); };
+  }, [rootRef, pageNum]);
+  useEffect(() => {
+    if (!near) return;
+    let cancelled = false;
+    pdf.getPage(pageNum).then(page => { const v = page.getViewport({ scale: 1 }); if (!cancelled) setRatio(v.height / v.width); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [near, pdf, pageNum]);
+  return React.createElement('div', { ref: hostRef, 'data-scroll-page': pageNum, style: { width: width * zoom, minHeight: width * ratio * zoom, flexShrink: 0, scrollMarginTop: 12 } },
+    near ? React.createElement(UnitBookPage, { pdf, pageNum, boxW: width, boxH: width * ratio, zoom, highlights }) : null);
+};
 const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNotice }) => {
   const h = React.createElement;
   const ic = UNIT_BOOK_ICONS;
@@ -6511,7 +6536,12 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
   const [zoom, setZoom] = useState(1);
   const [vw, setVw] = useState(() => window.innerWidth);
   const [stage, setStage] = useState({ w: 0, h: 0 });
-  const [controls, setControls] = useState(() => window.innerWidth >= 1024);
+  const [controls, setControls] = useState(true);
+  const [layout, setLayout] = useState(() => {
+    try { const value = localStorage.getItem('u_book_layout'); return ['auto','page','spread','scroll'].includes(value) ? value : 'auto'; } catch { return 'auto'; }
+  });
+  const changeLayout = value => { setLayout(value); setSel(null); try { localStorage.setItem('u_book_layout', value); } catch {} };
+  const continuous = layout === 'scroll';
   const [panel, setPanel] = useState(null);
   const [sel, setSel] = useState(null);
   const [highlights, setHighlights] = useState(() => unitReadJson(UNIT_BOOK_HL)[courseId] || []);
@@ -6575,16 +6605,21 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
     return () => { if (observer) observer.disconnect(); window.removeEventListener('resize', measure); };
   }, [status]);
 
-  const spread = vw >= 1024 && numPages > 1;
-  const norm = target => {
-    const clamped = Math.max(1, Math.min(target, numPages));
-    if (!spread) return clamped;
-    if (clamped === 1) return 1;
-    return clamped % 2 === 0 ? clamped : clamped - 1;
+  const { spread, anchor, shown } = unitBookPagination(layout, vw, numPages, page);
+  const norm = target => unitBookPagination(layout, vw, numPages, target).anchor;
+  const goTo = target => {
+    const nextPage = norm(Number(target) || 1);
+    setPage(nextPage); setSel(null);
+    if (continuous) stageRef.current?.querySelector(`[data-scroll-page="${nextPage}"]`)?.scrollIntoView({ block: 'start', behavior: 'instant' });
   };
-  const anchor = norm(page);
-  const shown = !spread ? [anchor] : anchor === 1 ? [1] : (anchor + 1 <= numPages ? [anchor, anchor + 1] : [anchor]);
-  const goTo = target => { setPage(norm(Number(target) || 1)); setSel(null); };
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const frame = requestAnimationFrame(() => {
+      if (continuous) stageRef.current?.querySelector(`[data-scroll-page="${anchor}"]`)?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      else if (stageRef.current) { stageRef.current.scrollTop = 0; stageRef.current.scrollLeft = 0; }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [layout, status]);
   const next = () => { const last = shown[shown.length - 1]; if (last < numPages) goTo(last + 1); };
   const prev = () => { if (shown[0] > 1) goTo(shown[0] - 1); };
 
@@ -6599,7 +6634,7 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
 
   useEffect(() => {
     const onKey = event => {
-      if (event.target && /^(INPUT|TEXTAREA)$/.test(event.target.tagName) && event.target.type !== 'range') return;
+      if (event.target && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) && event.target.type !== 'range') return;
       if (event.key === 'Escape') { if (panel) setPanel(null); else onClose(); }
       else if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); next(); }
       else if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); prev(); }
@@ -6710,6 +6745,7 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed) return;
     if (zoom > 1) return;
+    if (continuous) { if (Math.abs(event.clientX - g.x) < 10 && Math.abs(event.clientY - g.y) < 10 && Date.now() - g.t < 350) setControls(value => !value); return; }
     const dx = event.clientX - g.x;
     const dy = event.clientY - g.y;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (dx < 0) next(); else prev(); return; }
@@ -6747,6 +6783,10 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
     h('input', { type: 'range', min: 1, max: numPages, value: shown[0], 'aria-label': 'Faqja', onChange: event => goTo(event.target.value), className: 'w-full accent-brand-600 cursor-pointer' }));
   const actBtn = (key, label, d, onClick) => h('button', { key, type: 'button', onClick, className: 'flex-1 flex flex-col items-center gap-1 py-2 text-secondary hover:text-primary cursor-pointer' }, icon(d, 'w-[22px] h-[22px]'), h('span', { className: 'text-[11px] font-semibold' }, label));
 
+  const layoutSelect = h('select', {
+    value: layout, 'aria-label': 'Pamja e librit', onChange: event => changeLayout(event.target.value),
+    className: 'h-9 max-w-[132px] rounded-xl border border-default input-bg text-primary text-[12px] font-semibold px-2 cursor-pointer'
+  }, h('option', { value: 'auto' }, 'Automatike'), h('option', { value: 'page' }, 'Një faqe'), h('option', { value: 'spread', disabled: vw < 768 }, 'Dy faqe'), h('option', { value: 'scroll' }, 'Rrjedhje'));
   const topBar = controls
     ? h('div', { className: 'flex items-center gap-2 px-3 lg:px-5 h-14 lg:h-16 shrink-0 modal-bg border-b border-black/5 dark:border-white/10' },
       h('button', { type: 'button', onClick: onClose, 'aria-label': 'Kthehu te lënda', className: 'h-10 pl-1 pr-3 rounded-full flex items-center gap-1 text-primary lg:text-brand-600 lg:dark:text-brand-300 hover-surface cursor-pointer shrink-0' },
@@ -6756,6 +6796,7 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
         h('div', { className: 'text-[14px] font-bold text-primary truncate' }, title)),
       h('div', { className: 'hidden lg:flex flex-1 justify-center' }, h('div', { className: 'flex gap-1 p-1 rounded-full bg-black/[0.05] dark:bg-white/10' }, segment)),
       h('div', { className: 'flex items-center gap-0.5 shrink-0' },
+        layoutSelect,
         topIconBtn('search', 'Kërko në libër', ic.search, () => setPanel({ kind: 'search' })),
         topIconBtn('mark', isMarked ? 'Hiq faqeshënuesin' : 'Shto faqeshënues', ic.mark, toggleBookmark, isMarked),
         h('div', { className: 'hidden lg:flex items-center gap-1 rounded-full border border-default px-1 h-10 ml-1' },
@@ -6773,7 +6814,7 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
         scrubber,
         h('button', { type: 'button', onClick: next, disabled: shown[shown.length - 1] >= numPages, 'aria-label': 'Faqja tjetër', className: 'text-primary disabled:opacity-30 cursor-pointer' }, icon(ic.right, 'w-5 h-5')),
         h('div', { className: 'text-[13px] text-tertiary tabular-nums w-44 text-right' }, `Faqe${shown.length > 1 ? 't' : 'ja'} ${pageLabel} nga ${numPages}`)),
-      h('div', { className: 'lg:hidden px-4 pt-3 pb-3' },
+      h('div', { className: 'lg:hidden px-4 pt-1.5 pb-1.5' },
         h('div', { className: 'flex items-center gap-3' }, h('span', { className: 'text-[11.5px] text-tertiary tabular-nums' }, '1'), scrubber, h('span', { className: 'text-[11.5px] text-tertiary tabular-nums' }, numPages)),
         h('div', { className: 'text-center text-[12.5px] text-tertiary mt-0.5' }, `Faqja ${pageLabel} nga ${numPages} · ${pct}%`),
         h('div', { className: 'flex mt-1' },
@@ -6856,13 +6897,16 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
   else if (status === 'error') stageContent = h('div', { className: 'm-auto max-w-sm text-center px-6 space-y-4' },
     h('p', { className: 'text-[15px] text-primary' }, errorText),
     h('button', { type: 'button', onClick: onClose, className: 'h-11 px-6 rounded-xl bg-brand-600 text-white text-sm font-semibold cursor-pointer' }, 'Kthehu te lënda'));
+  else if (continuous && stage.w <= 24) stageContent = h('div', { className: 'm-auto text-[14px] text-tertiary' }, 'Duke hapur librin…');
+  else if (continuous) stageContent = h('div', { className: 'flex flex-col items-center gap-3 mx-auto', style: { padding: 12, minWidth: '100%' } },
+    Array.from({ length: numPages }, (_, i) => h(UnitBookScrollPage, { key: i + 1, pdf: pdfDoc, pageNum: i + 1, width: Math.max(1, Math.min(stage.w - 24, 900)), zoom, highlights, rootRef: stageRef, onVisible: num => setPage(num) })));
   else stageContent = h('div', { className: 'm-auto flex items-center justify-center', style: { gap: 2, padding: spread ? '20px 36px' : '12px' } },
     shown.map(num => h(UnitBookPage, { key: num, pdf: pdfDoc, pageNum: num, boxW, boxH, zoom, highlights })));
 
   return ReactDOM.createPortal(h('div', { className: 'fixed inset-0 z-[70] flex flex-col bg-slate-200 dark:bg-slate-900', role: 'dialog', 'aria-label': `Libri: ${title}` },
     topBar,
     h('div', { className: 'relative flex-1 min-h-0' },
-      h('div', { ref: stageRef, onPointerDown, onPointerUp, className: 'absolute inset-0 overflow-auto flex', style: { touchAction: zoom > 1 ? 'auto' : 'pan-y', overscrollBehavior: 'contain' } }, stageContent),
+      h('div', { ref: stageRef, 'data-book-layout': layout, onPointerDown, onPointerUp, onPointerCancel: () => { gesture.current = null; }, className: 'absolute inset-0 overflow-auto flex', style: { touchAction: zoom > 1 ? 'auto' : 'pan-y', overscrollBehavior: 'contain' } }, stageContent),
       spread && status === 'ready' && shown[0] > 1 ? h('button', { type: 'button', onClick: prev, 'aria-label': 'Faqja e mëparshme', className: 'absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-lg flex items-center justify-center text-primary cursor-pointer' }, icon(ic.left, 'w-5 h-5')) : null,
       spread && status === 'ready' && shown[shown.length - 1] < numPages ? h('button', { type: 'button', onClick: next, 'aria-label': 'Faqja tjetër', className: 'absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-lg flex items-center justify-center text-primary cursor-pointer' }, icon(ic.right, 'w-5 h-5')) : null),
     bottomBar,
@@ -9059,6 +9103,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const holdingRef = useRef(false);
   const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
   const [started, setStarted] = useState(false);
+  const [nativeUi, setNativeUi] = useState(false);
   const send = (func, args = []) => {
     try { frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*'); } catch {}
   };
@@ -9113,13 +9158,14 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const toggleMute = () => { send(st.muted ? 'unMute' : 'mute'); setSt(s => ({ ...s, muted: !s.muted })); };
   const h = React.createElement;
   const iconBtn = 'w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center shrink-0 cursor-pointer transition-colors';
-  return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), className: 'course-video-player flex flex-col gap-3 shrink-0' },
+  return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), 'data-native-ui': String(nativeUi), className: 'course-video-player flex flex-col gap-3 shrink-0' },
     h('div', { className: 'course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
       h('iframe', {
         ref: frameRef,
         src: embedSrc,
         title,
         onLoad,
+        allowFullScreen: true,
         scrolling: 'no',
         allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
         className: 'w-full h-full border-0 bg-black'
@@ -9137,10 +9183,18 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       h('button', {
         type: 'button',
         onClick: togglePlay,
-        className: 'absolute inset-0 w-full h-full cursor-pointer bg-transparent',
+        className: 'story-play-surface absolute inset-0 w-full h-full cursor-pointer bg-transparent',
+        hidden: nativeUi,
+        tabIndex: nativeUi ? -1 : 0,
         'aria-label': st.playing ? 'Ndal videon' : 'Luaj videon'
       })
     ),
+    h('button', {
+      type: 'button', className: 'story-native-toggle', 'aria-pressed': nativeUi,
+      'aria-label': nativeUi ? 'Kthehu te kontrolli me prekje' : 'Titrat dhe cilësimet e YouTube',
+      title: nativeUi ? 'Kthehu te kontrolli me prekje' : 'Titrat dhe cilësimet e YouTube',
+      onClick: () => setNativeUi(value => !value)
+    }, nativeUi ? '✓' : 'CC'),
     /* Kontrollet poshtë videos */
     h('div', { className: 'story-player-controls flex items-center gap-3 px-1' },
       h('button', { type: 'button', onClick: togglePlay, className: `${iconBtn} story-play-control`, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
@@ -11168,6 +11222,26 @@ function AcademyApp({
     type: 'task'
   });
   const [studentTab, setStudentTab] = useState('exams');
+  React.useLayoutEffect(() => {
+    const nav = document.querySelector('nav.mobile-nav');
+    if (!nav) return;
+    const pill = nav.querySelector('.mobile-nav-active');
+    const measure = () => {
+      const button = nav.querySelector('[aria-current="page"]');
+      if (!pill || !button || !nav.clientWidth) { if (pill) pill.style.opacity = '0'; return; }
+      pill.style.opacity = '';
+      pill.style.width = `${button.offsetWidth}px`;
+      pill.style.height = `${button.offsetHeight}px`;
+      pill.style.transform = `translate(${button.offsetLeft}px,${button.offsetTop}px)`;
+      nav.dataset.activeReady = 'true';
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(nav);
+    window.addEventListener('resize', measure);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [view, studentTab]);
+
   navCtxRef.current = { view, studentTab };
   const navPreviousLabel = () => {
     const prev = navStackRef.current[navStackRef.current.length - 1];
@@ -12752,6 +12826,7 @@ function AcademyApp({
   const [courseVideoFeedOpen, setCourseVideoFeedOpen] = useState(false);
   const [courseVideoFeedIndex, setCourseVideoFeedIndex] = useState(0);
   const [storyFit, setStoryFit] = useState('auto');
+  useEffect(() => { if (courseVideoFeedOpen) setStoryFit('auto'); }, [courseVideoFeedOpen]);
   const [viewedStoryIds, setViewedStoryIds] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem('u_viewed_story_ids_v1') || '[]');
@@ -19653,7 +19728,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const READ_ICONS = { book: "M3 5h6a3 3 0 013 3v12a2 2 0 00-2-2H3zM21 5h-6a3 3 0 00-3 3v12a2 2 0 012-2h7z", bulb: "M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0012 3z", list: "M5 6h14M5 12h14M5 18h9", bolt: "M13 3L5 14h6l-1 7 8-11h-6z" };
     const practiceSub = [cards.length ? `${cards.length} kartela` : null, quizzes.length ? `${quizzes.length} pyetje` : null].filter(Boolean).join(' · ') || 'Së shpejti';
     const renderCoursePath = () => {
-      if (!chapters.length) return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-5" },
+      if (!chapters.length) return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
         lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
         lh("div", { className: "card-surface border border-default rounded-3xl p-6 text-center space-y-4" },
           lh("p", { className: "text-secondary" }, "Materialet e kësaj lënde ende nuk janë shtuar."),
@@ -19683,7 +19758,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }
         return lh("section", { className: "card-surface border border-default rounded-[22px] p-4 shadow-sm" },
           lh("div", { className: "flex items-center gap-3.5" },
-            lh("div", { className: "w-12 h-14 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
+            lh("div", { className: "w-11 h-11 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
             lh("div", { className: "min-w-0 flex-1" },
               lh("div", { className: "text-[15px] font-bold text-primary truncate" }, 'Materiali i lëndës'),
               lh("div", { className: "text-[12.5px] text-tertiary mt-0.5" }, [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · ')))),
@@ -19692,36 +19767,37 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             lh("span", { className: "text-[12.5px] tabular-nums text-tertiary" }, `${progressPct}%`)),
           lh("button", { type: "button", onClick: () => openCourseReader(readTarget), className: "w-full h-11 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold mt-3.5 cursor-pointer" },
             allChaptersRead ? 'Lexo nga fillimi →' : pathStarted ? `Vazhdo me Kapitullin ${pathTargetIdx + 1} →` : 'Fillo leximin →'),
-          lh("button", { type: "button", disabled: bookBusy, onClick: pickCourseBook, className: `w-full h-11 mt-2.5 rounded-xl border-2 border-dashed border-brand-600/40 text-brand-600 dark:text-brand-300 text-sm font-semibold flex items-center justify-center gap-2 bg-brand-600/5 ${bookBusy ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:border-brand-600/70'}` },
+          lh("button", { type: "button", disabled: bookBusy, onClick: pickCourseBook, title: "Libri ruhet vetëm në pajisjen tënde", className: `w-full h-10 mt-2 rounded-xl border border-dashed border-brand-600/40 text-brand-600 dark:text-brand-300 text-sm font-semibold flex items-center justify-center gap-2 bg-brand-600/5 ${bookBusy ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:border-brand-600/70'}` },
             lessonIcon("M12 16V4M7 9l5-5 5 5M4 20h16", "w-[18px] h-[18px]"), bookBusy ? 'Duke ngarkuar librin…' : 'Ngarko librin (PDF)'),
-          lh("p", { className: "text-[12px] text-tertiary mt-2 text-center" }, 'Libri ruhet vetëm në pajisjen tënde dhe lexohet faqe për faqe.'));
+          lh("p", { className: "sr-only" }, 'Libri ruhet vetëm në pajisjen tënde.'));
       };
       const tile = (key, title, sub, icon, onClick) => lh("button", {
         key, type: "button", onClick,
         className: "text-left card-surface border border-default rounded-2xl p-4 shadow-sm hover:border-brand-300 transition-colors cursor-pointer"
       },
         lh("span", { className: "w-10 h-10 rounded-xl bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center" }, lessonIcon(icon, "w-5 h-5")),
-        lh("span", { className: "block text-[15px] font-bold text-primary mt-3" }, title),
+        lh("span", { className: "block text-[15px] font-bold text-primary mt-2" }, title),
         lh("span", { className: "block text-[12.5px] text-tertiary mt-0.5 leading-snug" }, sub));
-      return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-5" },
+      return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
         lh("input", { type: "file", accept: "application/pdf,.pdf", className: "hidden", ref: bookInputRef, "aria-hidden": "true", tabIndex: -1, onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
         lh("div", null,
           lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
           lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`, course.prof || null].filter(Boolean).join(' · '))),
 
+        renderMaterialCard(),
+
         pathTarget && !allChaptersRead ? lh("button", {
           type: "button",
           onClick: () => startLesson(pathTargetIdx),
-          className: "w-full flex items-center gap-3.5 card-surface border border-default rounded-2xl px-4 py-3.5 text-left shadow-sm hover:border-brand-300 transition-colors cursor-pointer"
+          className: "w-full flex items-center gap-3 card-surface border border-default rounded-2xl px-3.5 py-2.5 text-left hover:border-brand-300 transition-colors cursor-pointer"
         },
-          lh("span", { className: "w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0" }, lessonIcon(LESSON_ICONS.arrow, "w-5 h-5")),
+          lh("span", { className: "w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0" }, lessonIcon(LESSON_ICONS.arrow, "w-5 h-5")),
           lh("span", { className: "flex-1 min-w-0" },
-            lh("span", { className: "block text-[11.5px] font-semibold tracking-wider text-brand-600 dark:text-brand-300" }, 'HAPI I RADHËS'),
+            lh("span", { className: "block text-[11.5px] font-semibold tracking-wider text-brand-600 dark:text-brand-300" }, 'VAZHDO MËSIMIN'),
             lh("span", { className: "block text-[15px] font-bold text-primary truncate" }, chapterTitleOf(pathTarget, pathTargetIdx)),
             lh("span", { className: "block text-[13px] text-tertiary mt-0.5" }, `Kapitulli ${pathTargetIdx + 1} · Hapi ${pathTargetStep + 1} nga ${Math.max(1, pathTargetPlan.steps.length)}`)),
           lessonIcon(LESSON_ICONS.chev, "w-4 h-4 text-tertiary shrink-0")) : null,
 
-        renderMaterialCard(),
 
         lh("section", { className: "space-y-2" },
           lh("h2", { className: "text-[13px] font-semibold text-tertiary" }, 'Si dëshiron ta mësosh'),
@@ -20016,7 +20092,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       className: "course-detail-page w-full max-w-3xl mx-auto px-5 sm:px-6 pt-2 sm:pt-4 pb-28 anim-fade-up"
     },
       /* SHIRITI I SIPËRM: × · progresi me segmente · ⋯ */
-      /*#__PURE__*/React.createElement("div", { className: "relative flex items-center gap-3 sm:gap-4 h-12 mb-8 sm:mb-12" },
+      /*#__PURE__*/React.createElement("div", { className: "relative flex items-center gap-3 sm:gap-4 h-12 mb-3 sm:mb-4" },
         /*#__PURE__*/React.createElement("button", {
           type: "button",
           onClick: () => { if (currentTab === 'path') goBackOr('courses'); else { setCourseLessonDone(null); openCourseTab('path'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
@@ -33472,14 +33548,15 @@ Nënshkrimi: _____________________`;
     const curVideo = courseVideoFeed[courseVideoFeedIndex] || courseVideoFeed[0];
     if (!curVideo) return null;
     const total = courseVideoFeed.length;
-    const fullPicture = storyFit === 'contain' || (storyFit === 'auto' && curVideo.kind === 'article');
+    const fullPicture = storyFit !== 'cover';
     const h = React.createElement;
 
     return h(ModalPortal, null,
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
-        'data-fit': storyFit,
+        'data-fit': fullPicture ? 'contain' : 'cover',
+        'data-story-kind': curVideo.kind || 'video',
         isPlaying: videoLivePlaying,
         onPlayingChange: setVideoLivePlaying,
         holdLabel: appearanceText('Në pauzë', 'Paused'),
@@ -33566,7 +33643,7 @@ Nënshkrimi: _____________________`;
                     key: `yt_${video.id || idx}`,
                     title: video.title,
                     poster: src.thumbnail,
-                    embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=0&iv_load_policy=3&fs=0&disablekb=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
+                    embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=1&iv_load_policy=3&fs=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
                   })
                 : h('div', { 'data-story-player': src?.provider || 'native', 'data-playing': String(videoLivePlaying), className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
                   isActive
@@ -36591,10 +36668,10 @@ Nënshkrimi: _____________________`;
     "aria-hidden": isMobileNavHidden ? true : undefined,
     inert: isMobileNavHidden ? "" : undefined,
     className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${isMobileNavHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", { className: "mobile-nav-active active-surface", "aria-hidden": true }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setView('home'),
     "aria-current": view === 'home' ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'home' ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'home' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -36610,7 +36687,7 @@ Nënshkrimi: _____________________`;
       setView('week');
     },
     "aria-current": view === 'week' ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'week' ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'week' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -36631,7 +36708,7 @@ Nënshkrimi: _____________________`;
       setView('courses');
     },
     "aria-current": ['courses', 'course', 'topic-explain', 'session'].includes(view) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${['courses', 'course', 'topic-explain', 'session'].includes(view) ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${['courses', 'course', 'topic-explain', 'session'].includes(view) ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -36646,7 +36723,7 @@ Nënshkrimi: _____________________`;
       setView('student');
     },
     "aria-current": view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -36659,7 +36736,7 @@ Nënshkrimi: _____________________`;
     onClick: () => setView('settings'),
     "aria-label": "Profili dhe cilësimet",
     "aria-current": (['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-')) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${(['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-')) ? 'text-brand-600 active-surface' : 'text-secondary'}`
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${(['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-')) ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
