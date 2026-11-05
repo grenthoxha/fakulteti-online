@@ -138,7 +138,7 @@
 
 /* Videos open as a contained player; filling the screen is an explicit choice. */
 .course-video-stories[data-story-kind="video"][data-fit="contain"] { background:rgba(3,8,16,.92); }
-.course-video-stories[data-story-kind="video"][data-fit="contain"] .story-shell { width:min(820px,calc(100% - 24px)); height:min(640px,calc(100dvh - 32px)); border-radius:20px; background:#0d131e; box-shadow:0 20px 80px #0008; }
+.course-video-stories[data-story-kind="video"][data-fit="contain"] .story-shell { width:min(820px,calc(100% - 24px)); height:min(calc(100dvh - 32px),calc(clamp(200px,calc((100vw - 48px) * .5625),448px) + 192px)); border-radius:20px; background:#0d131e; box-shadow:0 20px 80px #0008; }
 .course-video-stories[data-story-kind="video"][data-fit="contain"] #course-video-scroll-feed { border-radius:20px; }
 .course-video-stories[data-story-kind="video"][data-fit="contain"] #course-video-scroll-feed .course-video-player { inset:68px 12px 124px; width:calc(100% - 24px); height:calc(100% - 192px); }
 .course-video-stories[data-story-kind="video"][data-fit="contain"] #course-video-scroll-feed .course-video-player .course-video-frame { inset:0; width:100%; height:100%; border-radius:10px; }
