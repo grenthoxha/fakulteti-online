@@ -8891,6 +8891,70 @@ const buildUnitLessonPlan = (chapter, quiz, courseTitle) => {
   const allSteps = question ? readSteps.concat([{ kind: 'check', title: 'Pyetje e shpejtë', item: question.item, index: question.index, minutes: 1 }]) : readSteps;
   return { steps: allSteps, question };
 };
+// One direction lock and velocity rule for finger-driven page and story transitions.
+const unitSwipeCommit = (delta, velocity, extent) => {
+  if (Math.abs(delta) < 12) return 0;
+  if (Math.sign(velocity) !== Math.sign(delta) && Math.abs(velocity) > .18) return 0;
+  return Math.abs(delta) >= Math.max(50, extent * .23) || (Math.abs(delta) >= 24 && Math.abs(velocity) >= .45) ? (delta < 0 ? 1 : -1) : 0;
+};
+const unitSwipeClickGuard = { until: 0 };
+function bindUnitSwipe(root, { bothAxes = false, enabled = () => true, onStart, onMove, onEnd }) {
+  let pointer = null;
+  const excluded = target => {
+    if (target?.closest?.('input,select,textarea,[contenteditable="true"],[data-swipe-ignore],.story-topbar,.shorts-action-rail,.story-player-controls,.story-native-toggle')) return true;
+    for (let node = target; node && node !== root; node = node.parentElement) {
+      if (node.scrollWidth > node.clientWidth + 3 && typeof getComputedStyle === 'function' && /auto|scroll/.test(getComputedStyle(node).overflowX)) return true;
+    }
+    return false;
+  };
+  const finish = (event, cancelled = false, teardown = false) => {
+    const active = pointer; pointer = null;
+    if (!active) return;
+    try { if (root.hasPointerCapture?.(active.id)) root.releasePointerCapture(active.id); } catch {}
+    if (!active.session) return;
+    unitSwipeClickGuard.until = Date.now() + 450;
+    const sample = active.samples[0];
+    const elapsed = (event?.timeStamp ?? active.time) - sample.time;
+    const recent = (event?.timeStamp ?? active.time) - active.time < 100;
+    const velocity = recent && elapsed > 0 ? (active.delta - sample.delta) / elapsed : 0;
+    onEnd(active.session, { axis: active.axis, delta: active.delta, velocity, cancelled, teardown });
+  };
+  const down = event => {
+    if (event.isPrimary === false) { finish(event, true); return; }
+    if (event.button !== 0 || !enabled() || excluded(event.target)) return;
+    if (event.target?.tagName === 'VIDEO' && event.clientY > event.target.getBoundingClientRect().bottom - 48) return;
+    if (pointer) finish(event, true);
+    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp, axis: null, session: null, delta: 0, samples: [{ time: event.timeStamp, delta: 0 }] };
+  };
+  const move = event => {
+    if (!pointer || pointer.id !== event.pointerId) return;
+    const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y;
+    if (!pointer.axis) {
+      if (Math.hypot(dx, dy) < 10) return;
+      if (!bothAxes && Math.abs(dy) > Math.abs(dx)) { pointer = null; return; }
+      if (Math.max(Math.abs(dx),Math.abs(dy)) < Math.min(Math.abs(dx),Math.abs(dy)) * 1.2) return;
+      pointer.axis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+      pointer.session = onStart({ axis: pointer.axis, event });
+      if (!pointer.session) { pointer = null; return; }
+      try { root.setPointerCapture?.(event.pointerId); } catch {}
+    }
+    if (event.cancelable) event.preventDefault();
+    pointer.delta = pointer.axis === 'horizontal' ? dx : dy;
+    pointer.time = event.timeStamp;
+    pointer.samples.push({ time: event.timeStamp, delta: pointer.delta });
+    while (pointer.samples.length > 2 && pointer.samples[1].time < event.timeStamp - 80) pointer.samples.shift();
+    onMove(pointer.session, { axis: pointer.axis, delta: pointer.delta });
+  };
+  const up = event => { if (pointer?.id === event.pointerId) finish(event); };
+  const cancel = event => { if (!event || pointer?.id === event.pointerId) finish(event, true); };
+  const lost = event => { if (event.target === root) cancel(event); };
+  const click = event => { if (Date.now() < unitSwipeClickGuard.until) { event.preventDefault(); event.stopPropagation(); } };
+  const bindings = [['pointerdown', down], ['pointermove', move], ['pointerup', up], ['pointercancel', cancel], ['lostpointercapture', lost], ['click', click]];
+  bindings.forEach(([type, fn]) => root.addEventListener(type, fn, { capture: true, passive: false }));
+  const blur = () => finish(null, true);
+  window.addEventListener('blur', blur);
+  return () => { finish(null, true, true); bindings.forEach(([type,fn]) => root.removeEventListener(type,fn,true)); window.removeEventListener('blur',blur); };
+}
 const getVideoStorySwipeAction = (dx, dy) => {
   if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.2) return dx < 0 ? 'next' : 'previous';
   if (Math.abs(dy) > Math.abs(dx) * 1.2) {
@@ -8985,55 +9049,51 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
   };
 }
-function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', children, ...props }) {
+function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', children, ...props }) {
   const rootRef = useRef(null);
   const actionsRef = useRef(null);
-  actionsRef.current = { next: onNext, previous: onPrevious, close: onClose, playing: isPlaying, onPlayingChange };
+  actionsRef.current = { next: onNext, previous: onPrevious, settle: onSettle, close: onClose, playing: isPlaying, onPlayingChange };
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const removeHold = bindVideoStoryHold(root, { getPlaying: () => actionsRef.current.playing, onPlayingChange: playing => actionsRef.current.onPlayingChange?.(playing) });
-    let touch = null;
-    let suppressClickUntil = 0;
-    let wheelTotalX = 0;
-    let wheelTotalY = 0;
-    let lastWheelAt = 0;
-    let wheelFired = false;
-    let wheelLockedUntil = 0;
+    const feed = root.querySelector('#course-video-scroll-feed');
+    let wheelTotalX = 0, wheelTotalY = 0, lastWheelAt = 0, wheelFired = false, wheelLockedUntil = 0;
+    let edgeAnimation = null;
     const isControl = target => Boolean(target?.closest?.('input, select, textarea, [contenteditable="true"]'));
-    const onTouchStart = event => {
-      touch = null;
-      if (event.touches.length !== 1 || isControl(event.target)) return;
-      const point = event.touches[0];
-      // Keep the native video's bottom control bar available for seeking.
-      if (event.target?.tagName === 'VIDEO' && point.clientY > event.target.getBoundingClientRect().bottom - 48) return;
-      touch = { x: point.clientX, y: point.clientY, moved: false };
-    };
-    const onTouchMove = event => {
-      if (!touch) return;
-      if (event.touches.length !== 1) { touch = null; return; }
-      const point = event.touches[0];
-      if (Math.hypot(point.clientX - touch.x, point.clientY - touch.y) > 12) {
-        touch.moved = true;
-        if (event.cancelable) event.preventDefault();
+    const removeSwipe = bindUnitSwipe(root, {
+      bothAxes: true,
+      enabled: () => Boolean(feed && !feed.dataset.settling),
+      onStart: ({ axis }) => {
+        edgeAnimation?.cancel();
+        const index = Number(feed.dataset.activeIndex || 0);
+        const session = { index, axis, previousSnap: feed.style.scrollSnapType, previousBehavior: feed.style.scrollBehavior };
+        feed.dataset.dragging = 'true'; feed.dataset.axis = axis;
+        feed.style.scrollSnapType = 'none'; feed.style.scrollBehavior = 'auto';
+        feed.scrollLeft = axis === 'horizontal' ? index * feed.clientWidth : 0;
+        feed.scrollTop = axis === 'vertical' ? index * feed.clientHeight : 0;
+        return session;
+      },
+      onMove: (session, { delta }) => {
+        const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
+        const count = feed.children.length;
+        session.fromIndex = Math.max(0,Math.min(count - 1, session.index - Math.max(-1,Math.min(1,delta / Math.max(1,extent)))));
+        feed.scrollLeft = session.axis === 'horizontal' ? session.fromIndex * extent : 0;
+        feed.scrollTop = session.axis === 'vertical' ? session.fromIndex * extent : 0;
+        const edge = (session.index === 0 && delta > 0) || (session.index === count - 1 && delta < 0);
+        feed.style.transform = edge ? `translate${session.axis === 'horizontal' ? 'X' : 'Y'}(${delta * .16 / (1 + Math.abs(delta) / extent)}px)` : '';
+      },
+      onEnd: (session, { delta, velocity, cancelled, teardown }) => {
+        const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
+        const transform = feed.style.transform; feed.style.transform = '';
+        if (transform && !teardown && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) edgeAnimation = feed.animate?.([{transform},{transform:'none'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+        if (teardown) { delete feed.dataset.dragging; feed.style.scrollSnapType = session.previousSnap; feed.style.scrollBehavior = session.previousBehavior; return; }
+        const direction = cancelled ? 0 : unitSwipeCommit(delta,velocity,extent);
+        const target = Math.max(0,Math.min(feed.children.length - 1,session.index + direction));
+        const motion = { ...session, fromIndex: session.fromIndex ?? session.index, duration: Math.max(160,Math.min(340,280 - Math.abs(velocity) * 35)) };
+        (target > session.index ? actionsRef.current.next : target < session.index ? actionsRef.current.previous : actionsRef.current.settle)?.(session.axis,motion);
       }
-    };
-    const onTouchEnd = event => {
-      const start = touch;
-      touch = null;
-      if (!start || event.touches.length || !event.changedTouches.length) return;
-      const point = event.changedTouches[0];
-      const action = getVideoStorySwipeAction(point.clientX - start.x, point.clientY - start.y);
-      if (start.moved || action) {
-        suppressClickUntil = Date.now() + 450;
-        if (event.cancelable) event.preventDefault();
-      }
-      if (action) actionsRef.current[action]?.(Math.abs(point.clientY - start.y) > Math.abs(point.clientX - start.x) ? 'vertical' : 'horizontal');
-    };
-    const onTouchCancel = () => { touch = null; };
-    const onClick = event => {
-      if (Date.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); }
-    };
+    });
     const onWheel = event => {
       if (event.ctrlKey || isControl(event.target)) return;
       if (event.cancelable) event.preventDefault();
@@ -9052,13 +9112,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true,
       actionsRef.current[delta > 0 ? 'next' : 'previous']?.(Math.abs(wheelTotalY) >= Math.abs(wheelTotalX) ? 'vertical' : 'horizontal');
     };
     const active = { passive: false, capture: true };
-    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
-    root.addEventListener('touchmove', onTouchMove, active);
-    root.addEventListener('touchend', onTouchEnd, active);
-    root.addEventListener('touchcancel', onTouchCancel, true);
-    root.addEventListener('click', onClick, true);
     root.addEventListener('wheel', onWheel, active);
-    const feed = root.querySelector('#course-video-scroll-feed');
     const captions = Array.from(root.querySelectorAll?.('.course-video-caption') || []);
     const syncCaptionHeights = () => {
       if (feed) {
@@ -9084,12 +9138,9 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onClose, isPlaying = true,
     if (resizeObserver) { resizeObserver.observe(feed); captions.forEach(caption => resizeObserver.observe(caption)); }
     return () => {
       removeHold();
+      removeSwipe();
+      edgeAnimation?.cancel();
       resizeObserver?.disconnect();
-      root.removeEventListener('touchstart', onTouchStart, true);
-      root.removeEventListener('touchmove', onTouchMove, true);
-      root.removeEventListener('touchend', onTouchEnd, true);
-      root.removeEventListener('touchcancel', onTouchCancel, true);
-      root.removeEventListener('click', onClick, true);
       root.removeEventListener('wheel', onWheel, true);
     };
   }, []);
@@ -10890,6 +10941,8 @@ function AcademyApp({
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
   const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
 
+  const pageSwipeMotionRef = useRef(null);
+  const pageSwipeOverlayRef = useRef(null);
   const previousAnimatedViewRef = useRef(view);
   const pageAnimationRef = useRef(null);
   React.useLayoutEffect(() => {
@@ -10905,8 +10958,13 @@ function AcademyApp({
     const changed = previousAnimatedViewRef.current !== view;
     previousAnimatedViewRef.current = view;
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const swipe = pageSwipeMotionRef.current;
+    pageSwipeMotionRef.current = null;
+    if (swipe?.view !== view) { pageSwipeOverlayRef.current?.remove(); pageSwipeOverlayRef.current = null; }
     if (changed && !reducedMotion && typeof mainEl?.animate === 'function') {
-      pageAnimationRef.current = mainEl.animate([{ opacity: .65 }, { opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.22,1,.36,1)' });
+      pageAnimationRef.current = swipe?.view === view
+        ? mainEl.animate([{ transform: `translate3d(${swipe.from}px,0,0)` }, { transform: 'translate3d(0,0,0)' }], { duration: swipe.duration, easing: 'cubic-bezier(.22,1,.36,1)' })
+        : mainEl.animate([{ opacity: .65 }, { opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.22,1,.36,1)' });
     }
     return () => { pageAnimationRef.current?.cancel(); };
   }, [view, course]);
@@ -11247,6 +11305,65 @@ function AcademyApp({
     observer?.observe(nav);
     window.addEventListener('resize', measure);
     return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [view, studentTab]);
+
+  useEffect(() => {
+    const routes = ['home','week','courses','student','settings'];
+    const routeIndex = routes.indexOf(view);
+    const main = document.querySelector('main.app-main');
+    if (!main || routeIndex < 0 || (view === 'student' && studentTab !== 'exams') || actualRole === 'instructor') return;
+    const oldTouchAction = main.style.touchAction;
+    main.style.touchAction = 'pan-y pinch-zoom';
+    main.dataset.pageSwipe = 'true';
+    let settling = null;
+    const cleanStyle = () => { main.style.transform = ''; main.style.willChange = ''; main.style.userSelect = ''; };
+    const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const remove = bindUnitSwipe(main, {
+      enabled: () => window.innerWidth < 1024 && !settling && pageAnimationRef.current?.playState !== 'running' && !document.querySelector('[role="dialog"][aria-modal="true"]'),
+      onStart: () => {
+        pageAnimationRef.current?.cancel(); pageSwipeOverlayRef.current?.remove(); pageSwipeOverlayRef.current = null;
+        main.style.willChange = 'transform'; main.style.userSelect = 'none';
+        return { width: main.clientWidth, offset: 0 };
+      },
+      onMove: (session, { delta }) => {
+        const atEdge = (routeIndex === 0 && delta > 0) || (routeIndex === routes.length - 1 && delta < 0);
+        session.offset = atEdge ? delta * .16 / (1 + Math.abs(delta) / session.width) : Math.max(-session.width,Math.min(session.width,delta));
+        main.style.transform = `translate3d(${session.offset}px,0,0)`;
+      },
+      onEnd: (session, { delta, velocity, cancelled, teardown }) => {
+        if (teardown) { cleanStyle(); return; }
+        const direction = cancelled ? 0 : unitSwipeCommit(delta,velocity,session.width);
+        const targetIndex = routeIndex + direction;
+        if (!direction || targetIndex < 0 || targetIndex >= routes.length) {
+          const from = main.style.transform;
+          cleanStyle();
+          if (!reduced()) { settling = main.animate([{ transform: from },{ transform:'translate3d(0,0,0)' }],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'}); settling.finished.then(() => { settling = null; },() => { settling = null; }); }
+          return;
+        }
+        const duration = Math.max(180, Math.min(320, 300 - Math.abs(velocity) * 40));
+        if (!reduced()) {
+          // Keep a noninteractive snapshot moving out as the destination moves in.
+          const rect = main.getBoundingClientRect(), top = Math.max(0,document.querySelector('header.app-header')?.getBoundingClientRect().bottom || 0);
+          const overlay = document.createElement('div');
+          overlay.className = 'page-swipe-outgoing'; overlay.setAttribute('aria-hidden','true'); overlay.setAttribute('inert','');
+          Object.assign(overlay.style,{position:'fixed',left:`${rect.left - session.offset}px`,top:`${top}px`,width:`${session.width}px`,height:`${Math.max(0,window.innerHeight-top)}px`,overflow:'hidden',pointerEvents:'none',zIndex:'10'});
+          const snapshot = main.cloneNode(true);
+          snapshot.removeAttribute('id'); snapshot.removeAttribute('data-view'); snapshot.removeAttribute('data-page-swipe');
+          snapshot.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+          snapshot.querySelectorAll('iframe,video,audio,script,[role="dialog"]').forEach(node => node.remove());
+          Object.assign(snapshot.style,{position:'absolute',left:'0',top:`${rect.top-top}px`,width:`${session.width}px`,height:`${rect.height}px`,margin:'0',transform:`translate3d(${session.offset}px,0,0)`,willChange:'transform'});
+          overlay.appendChild(snapshot); document.body.appendChild(overlay);
+          pageSwipeOverlayRef.current = overlay;
+          const outgoing = snapshot.animate([{transform:`translate3d(${session.offset}px,0,0)`},{transform:`translate3d(${-direction*session.width}px,0,0)`}],{duration,easing:'cubic-bezier(.22,1,.36,1)',fill:'forwards'});
+          outgoing.finished.then(() => { overlay.remove(); if (pageSwipeOverlayRef.current === overlay) pageSwipeOverlayRef.current = null; },() => overlay.remove());
+          pageSwipeMotionRef.current = { view: routes[targetIndex], from: direction*session.width + session.offset, duration };
+        }
+        cleanStyle();
+        if (routes[targetIndex] === 'student') setStudentTab('exams');
+        setView(routes[targetIndex]);
+      }
+    });
+    return () => { remove(); settling?.cancel(); cleanStyle(); main.style.touchAction = oldTouchAction; delete main.dataset.pageSwipe; };
   }, [view, studentTab]);
 
   navCtxRef.current = { view, studentTab };
@@ -18893,14 +19010,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }));
     setCourseVideoComposerOpen(true);
   };
-  const scrollToVideoFeedSlide = (targetIndex, axis = 'horizontal') => {
+  const scrollToVideoFeedSlide = (targetIndex, axis = 'horizontal', motion = null) => {
     const safeIndex = Math.max(0, Math.min(targetIndex, Math.max(0, courseVideoFeed.length - 1)));
-    if (safeIndex === courseVideoFeedIndex || courseVideoFeedAnimationRef.current) return;
+    if ((!motion && safeIndex === courseVideoFeedIndex) || courseVideoFeedAnimationRef.current) return;
     const feed = document.getElementById('course-video-scroll-feed');
     if (!feed) { setCourseVideoFeedIndex(safeIndex); return; }
     const vertical = axis === 'vertical';
-    const previousSnap = feed.style.scrollSnapType;
-    const previousBehavior = feed.style.scrollBehavior;
+    const previousSnap = motion?.previousSnap ?? feed.style.scrollSnapType;
+    const previousBehavior = motion?.previousBehavior ?? feed.style.scrollBehavior;
     feed.style.scrollSnapType = 'none';
     feed.style.scrollBehavior = 'auto';
     feed.dataset.axis = vertical ? 'vertical' : 'horizontal';
@@ -18911,10 +19028,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const restore = () => {
       feed.style.scrollSnapType = previousSnap;
       feed.style.scrollBehavior = previousBehavior;
+      delete feed.dataset.dragging; delete feed.dataset.settling;
       courseVideoFeedScrollLockRef.current = 0;
       courseVideoFeedAnimationRef.current = null;
     };
-    position(courseVideoFeedIndex);
+    const fromIndex = motion?.fromIndex ?? courseVideoFeedIndex;
+    feed.dataset.settling = 'true';
+    position(fromIndex);
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       position(safeIndex);
       restore();
@@ -18928,9 +19048,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     let startedAt = null;
     const animate = now => {
       if (startedAt === null) startedAt = now;
-      const progress = Math.min(1, (now - startedAt) / 420);
+      const progress = Math.min(1, (now - startedAt) / (motion?.duration || 420));
       const eased = progress * progress * (3 - 2 * progress);
-      position(courseVideoFeedIndex + (safeIndex - courseVideoFeedIndex) * eased);
+      position(fromIndex + (safeIndex - fromIndex) * eased);
       if (progress < 1) animation.frame = requestAnimationFrame(animate);
       else { position(safeIndex); restore(); setCourseVideoFeedIndex(safeIndex); }
     };
@@ -33564,11 +33684,13 @@ Nënshkrimi: _____________________`;
         className: "course-video-stories fixed inset-0 z-[99999] bg-black text-white select-none",
         'data-fit': fullPicture ? 'contain' : 'cover',
         'data-story-kind': curVideo.kind || 'video',
+        style: { touchAction: 'none', overscrollBehavior: 'none' },
         isPlaying: videoLivePlaying,
         onPlayingChange: setVideoLivePlaying,
         holdLabel: appearanceText('Në pauzë', 'Paused'),
-        onNext: axis => scrollToVideoFeedSlide(courseVideoFeedIndex + 1, axis),
-        onPrevious: axis => scrollToVideoFeedSlide(courseVideoFeedIndex - 1, axis),
+        onNext: (axis, motion) => scrollToVideoFeedSlide(courseVideoFeedIndex + 1, axis, motion),
+        onPrevious: (axis, motion) => scrollToVideoFeedSlide(courseVideoFeedIndex - 1, axis, motion),
+        onSettle: (axis, motion) => scrollToVideoFeedSlide(courseVideoFeedIndex, axis, motion),
         onClose: () => setCourseVideoFeedOpen(false),
         role: "dialog",
         "aria-modal": "true",
@@ -33613,7 +33735,7 @@ Nënshkrimi: _____________________`;
               }
             },
             onScroll: e => {
-              if (Date.now() < courseVideoFeedScrollLockRef.current) return;
+              if (Date.now() < courseVideoFeedScrollLockRef.current || e.currentTarget.dataset.dragging === 'true') return;
               const el = e.currentTarget;
               const idx = el.dataset.axis === 'vertical'
                 ? Math.round(el.scrollTop / (el.clientHeight || 1))
