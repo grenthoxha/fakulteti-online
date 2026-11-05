@@ -9104,6 +9104,13 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
   const [started, setStarted] = useState(false);
   const [nativeUi, setNativeUi] = useState(false);
+  const playerUrl = useMemo(() => {
+    const url = new URL(embedSrc);
+    url.searchParams.set('controls', nativeUi ? '1' : '0');
+    url.searchParams.set('start', String(Math.floor(st.t)));
+    url.searchParams.set('autoplay', st.playing ? '1' : '0');
+    return url.href;
+  }, [embedSrc, nativeUi]);
   const send = (func, args = []) => {
     try { frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*'); } catch {}
   };
@@ -9162,7 +9169,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
     h('div', { className: 'course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
       h('iframe', {
         ref: frameRef,
-        src: embedSrc,
+        src: playerUrl,
         title,
         onLoad,
         allowFullScreen: true,
