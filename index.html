@@ -1215,12 +1215,12 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-mobile-fit-2">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-mobile-fit-3">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
 
-  <script src="./assets/editorial-content.js?v=20261104-2"></script>
+  <script src="./assets/editorial-content.js?v=20261105-portrait-1"></script>
   <script src="./assets/student-support.js?v=20261006-8"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
@@ -15224,7 +15224,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const courseVideoFeed = [
     ...publishedArticles.filter(item => item.image).map(item => ({
       id: `article_${item.id}`, kind: 'article', articleId: item.id, title: item.title,
-      summary: item.summary, thumbnail: item.image, category: 'Artikuj', topicTitle: item.title,
+      summary: item.summary, thumbnail: item.image, portraitThumbnail: item.portraitImage, category: 'Artikuj', topicTitle: item.title,
       author: item.author, duration: `${item.minutes} min lexim`, url: ''
     })),
     ...userAndCourseVideos,
@@ -33850,14 +33850,14 @@ Nënshkrimi: _____________________`;
     const isPhoto = curVideo.kind === 'article';
     const photoFullscreen = isPhoto && storyFit !== 'contain';
     const fullPicture = isPhoto || storyFit !== 'cover';
-    const fitLabel = isPhoto ? (photoFullscreen ? appearanceText('Shfaq fotografinë e plotë', 'Show the whole photo') : appearanceText('Mbush ekranin me fotografinë', 'Fill screen with photo')) : (!fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'));
+    const fitLabel = isPhoto ? (storyFit === 'cover' ? appearanceText('Shfaq fotografinë e plotë', 'Show the whole photo') : appearanceText('Mbush ekranin me fotografinë', 'Fill screen with photo')) : (!fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'));
     const h = React.createElement;
 
     return h(ModalPortal, null,
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
-        'data-fit': isPhoto ? (photoFullscreen ? 'cover' : 'contain') : fullPicture ? 'contain' : 'cover',
+        'data-fit': isPhoto ? (storyFit === 'cover' ? 'cover' : 'contain') : fullPicture ? 'contain' : 'cover',
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
         'data-media-layout': 'phone-fit',
@@ -33891,8 +33891,8 @@ Nënshkrimi: _____________________`;
                 onChange: event => scrollToVideoFeedSlide(Number(event.target.value), 'vertical')
               }, courseVideoFeed.map((video, idx) => h('option', { key: video.id || idx, value: idx }, `${idx + 1} / ${total}`)))),
             h('button', {
-              type: 'button', onClick: () => setStoryFit(isPhoto ? (photoFullscreen ? 'contain' : 'auto') : (fullPicture ? 'cover' : 'contain')),
-              className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': isPhoto ? photoFullscreen : !fullPicture,
+              type: 'button', onClick: () => setStoryFit(isPhoto ? (storyFit === 'cover' ? 'auto' : 'cover') : (fullPicture ? 'cover' : 'contain')),
+              className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': isPhoto ? storyFit === 'cover' : !fullPicture,
               'aria-label': fitLabel,
               title: fitLabel
             }, h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' })))),
@@ -33947,7 +33947,9 @@ Nënshkrimi: _____________________`;
                 video.thumbnail && h('img', { src: video.thumbnail, alt: '', 'aria-hidden': true, className: 'story-backdrop', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
                 /* Only active media plays; the fit button can reveal the whole picture. */
                 video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' },
-                  h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
+                  h('picture', { className: 'story-photo-picture' },
+                    video.portraitThumbnail && h('source', { media: '(max-aspect-ratio: 3/4)', srcSet: video.portraitThumbnail }),
+                    h('img', { src: video.thumbnail, alt: video.title, className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy' })),
                   h('button', { type: 'button', className: 'story-photo-surface absolute inset-0 w-full h-full bg-transparent', 'aria-label': appearanceText('Shfaq ose fsheh detajet e fotografisë', 'Show or hide photo details'), tabIndex: isActive ? 0 : -1 }))
                 : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
                 ? h(UnitYouTubeReelPlayer, {
