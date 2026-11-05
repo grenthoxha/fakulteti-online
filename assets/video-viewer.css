@@ -97,3 +97,8 @@
 @media(prefers-reduced-motion:reduce) {
   .course-video-stories *,.course-video-stories *::before { animation:none !important; transition:none !important; }
 }
+
+/* Photos fill the available screen on opening, without cropping their text. */
+.tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] .story-shell { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; }
+.tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] #course-video-scroll-feed .course-video-frame > img { object-fit:contain; }
+.tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] .shorts-desktop-nav { right:16px; }
