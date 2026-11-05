@@ -98,7 +98,51 @@
   .course-video-stories *,.course-video-stories *::before { animation:none !important; transition:none !important; }
 }
 
-/* Photos fill the available screen on opening, without cropping their text. */
+/* Preserve the previous viewer until the new markup is deployed. */
 .tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] .story-shell { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; }
 .tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] #course-video-scroll-feed .course-video-frame > img { object-fit:contain; }
 .tiktok-viewer.course-video-stories[data-photo-fullscreen="true"] .shorts-desktop-nav { right:16px; }
+
+/* Phone media uses the viewport; controls appear on demand. */
+.tiktok-viewer[data-media-layout="phone-fit"] .story-topbar,.tiktok-viewer[data-media-layout="phone-fit"] .shorts-action-rail,.tiktok-viewer[data-media-layout="phone-fit"] .course-video-caption,.tiktok-viewer[data-media-layout="phone-fit"] .story-player-controls > *,.tiktok-viewer[data-media-layout="phone-fit"] .story-native-toggle,.tiktok-viewer[data-media-layout="phone-fit"] .shorts-desktop-nav { transition:opacity .18s ease,visibility .18s ease; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-controls-visible="false"] :is(.story-topbar,.shorts-action-rail,.course-video-caption,.story-player-controls > *,.story-native-toggle,.shorts-desktop-nav) { opacity:0 !important; visibility:hidden !important; pointer-events:none !important; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-controls-visible="false"] .story-shell::before,.tiktok-viewer[data-media-layout="phone-fit"][data-controls-visible="false"] .story-slide::after { opacity:0; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-controls-visible="true"] #course-video-scroll-feed .story-play-control { opacity:1; pointer-events:auto; }
+.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-surface { z-index:2; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-fullscreen-control { position:absolute; z-index:8; bottom:40px; right:60px; width:40px; height:40px; background:#0006; }
+.tiktok-viewer[data-media-layout="phone-fit"]:fullscreen .story-shell { width:100%; height:100%; max-height:none; max-width:none; border-radius:0; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .story-shell { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] #course-video-scroll-feed .course-video-frame > img { object-fit:cover; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .shorts-desktop-nav { right:16px; }
+/* Photo titles and actions belong to their own panel, outside the picture. */
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] :is(.story-shell::before,.story-slide::after,.tiktok-feed-heading,.shorts-position) { display:none; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] #course-video-scroll-feed .course-video-caption { bottom:64px; max-height:min(28dvh,220px); padding:14px 18px 10px; background:#101722; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .shorts-author { display:none; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .shorts-action-rail { bottom:0; left:0; right:0; height:64px; display:flex; flex-direction:row; justify-content:flex-end; gap:22px; padding:6px 18px; background:#101722; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .shorts-action { width:auto; flex-direction:row; gap:4px; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .shorts-action-icon svg { width:23px; height:23px; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"][data-controls-visible="true"] #course-video-scroll-feed .story-slide[data-story-kind="article"] > .course-video-frame { inset:0 0 auto; height:calc(100% - var(--story-caption-height,120px) - 64px); transform:none; }
+@media (max-width:767px), (orientation:landscape) and (max-height:600px) {
+  .tiktok-viewer[data-media-layout="phone-fit"].course-video-stories { box-sizing:border-box; width:100%; height:100dvh; padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); background:#000; }
+  .tiktok-viewer[data-media-layout="phone-fit"].course-video-stories .story-shell { width:100%; height:100%; max-height:none; max-width:none; border-radius:0; box-shadow:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .course-video-player,.tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .course-video-frame,.tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .course-video-player.course-video-frame { inset:0; top:0; width:100%; height:100%; transform:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-play-control { top:50%; width:58px; height:58px; background:#0007; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-player-controls input[type="range"] { bottom:10px; height:26px; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-time { display:block; position:absolute; z-index:8; bottom:45px; font-size:12px; text-shadow:0 1px 4px #000; }
+  .tiktok-viewer[data-media-layout="phone-fit"] .story-time--current { left:16px; }
+  .tiktok-viewer[data-media-layout="phone-fit"] .story-time--total { left:65px; color:#ffffff90; }
+  .tiktok-viewer[data-media-layout="phone-fit"] .story-time--total::before { content:"/ "; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-mute-control { bottom:40px; width:40px; height:40px; background:#0006; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-mute-control::before { display:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-mute-control svg { background:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="video"] #course-video-scroll-feed .course-video-caption { bottom:102px; max-height:135px; padding-top:10px; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="video"] .shorts-action-rail { bottom:112px; gap:14px; }
+  .tiktok-viewer[data-media-layout="phone-fit"] .shorts-desktop-nav { display:none; }
+}
+@media (orientation:landscape) and (max-height:600px) {
+  .tiktok-viewer[data-media-layout="phone-fit"] .tiktok-feed-heading,.tiktok-viewer[data-media-layout="phone-fit"] .shorts-position,.tiktok-viewer[data-media-layout="phone-fit"] .shorts-author,.tiktok-viewer[data-media-layout="phone-fit"] .shorts-summary,.tiktok-viewer[data-media-layout="phone-fit"] .story-scroll-cue { display:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="video"] #course-video-scroll-feed .course-video-caption { bottom:79px; max-height:38px; padding:0 125px 0 16px; }
+  .tiktok-viewer[data-media-layout="phone-fit"] .shorts-title { font-size:12px; -webkit-line-clamp:1; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="video"] .shorts-action-rail { bottom:76px; flex-direction:row; gap:14px; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .shorts-title { -webkit-line-clamp:2; }
+}
