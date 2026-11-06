@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Fakulteti Online</title>
   <meta name="description" content="Fakulteti Online — platformë akademike për studentë dhe profesorë.">
   <link rel="icon" type="image/png" href="./assets/fakulteti-online-logo.png?v=6">
@@ -42,6 +42,25 @@
         document.documentElement.classList.remove('dark');
       }
     })();
+  </script>
+
+  <script id="unit-page-scale">
+    function bindUnitPageScale(doc, win) {
+      const touchDevice = () => (win.navigator?.maxTouchPoints || 0) > 0 || Boolean(win.matchMedia?.('(pointer: coarse)').matches);
+      const prevent = event => { if (event.cancelable) event.preventDefault(); };
+      const pinch = event => { if (event.touches?.length > 1) prevent(event); };
+      const gesture = event => { if (touchDevice()) prevent(event); };
+      const options = { passive: false };
+      doc.addEventListener('touchstart', pinch, options);
+      doc.addEventListener('touchmove', pinch, options);
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => doc.addEventListener(type, gesture, options));
+      return () => {
+        doc.removeEventListener('touchstart', pinch);
+        doc.removeEventListener('touchmove', pinch);
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => doc.removeEventListener(type, gesture));
+      };
+    }
+    bindUnitPageScale(document, window);
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -83,6 +102,7 @@
       --shadow-md: 0 14px 40px -24px rgba(34,44,82,0.28), 0 4px 14px -8px rgba(34,44,82,0.12);
     }
     html { scroll-behavior: smooth; background: var(--page); }
+    html, body { touch-action: pan-x pan-y; }
     body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; transition: background-color 0.3s, color 0.3s; letter-spacing: -0.008em; min-width: 0; overflow-x: clip; }
     button, input, textarea, select { font: inherit; }
     button, summary, a { -webkit-tap-highlight-color: transparent; }
@@ -11491,7 +11511,7 @@ function AcademyApp({
     const main = document.querySelector('main.app-main');
     if (!main || routeIndex < 0 || (view === 'student' && studentTab !== 'exams') || actualRole === 'instructor') return;
     const oldTouchAction = main.style.touchAction;
-    main.style.touchAction = 'pan-y pinch-zoom';
+    main.style.touchAction = 'pan-y';
     main.dataset.pageSwipe = 'true';
     let settling = null;
     const cleanStyle = () => { main.style.transform = ''; main.style.willChange = ''; main.style.userSelect = ''; };
@@ -12599,7 +12619,16 @@ function AcademyApp({
   const [scheduleProgramFilter, setScheduleProgramFilter] = useState(() => getInitialScheduleProgram(studentFullName || studentName));
   useEffect(() => { setScheduleProgramFilter(socialWorkScheduleUser ? 'social-work' : 'personal'); }, [socialWorkScheduleUser]);
   const [scheduleProgramData, setScheduleProgramData] = useState(() => FilozofikuDailyStore.getData());
-  useEffect(() => FilozofikuDailyStore.subscribe(setScheduleProgramData), []);
+  useEffect(() => {
+    const unsubscribe = FilozofikuDailyStore.subscribe(setScheduleProgramData);
+    setScheduleProgramData(FilozofikuDailyStore.getData());
+    return unsubscribe;
+  }, []);
+  useEffect(() => {
+    if (view !== 'week' || scheduleProgramFilter === 'personal') return;
+    setScheduleProgramData(FilozofikuDailyStore.getData());
+    FilozofikuDailyStore.refresh();
+  }, [view, scheduleProgramFilter]);
   const [scheduleScope, setScheduleScope] = useState('today');
   const [scheduleSelectedDayKey, setScheduleSelectedDayKey] = useState(null);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
@@ -33516,7 +33545,7 @@ Nënshkrimi: _____________________`;
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
-          const count = scheduleMinDaySessions(day.id).length;
+          const count = scheduleProgramFilter === 'personal' ? scheduleMinDaySessions(day.id).length : getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id).length;
           return ce("button", {
             key: day.key, type: "button", role: "tab", "aria-selected": isSel,
             "aria-label": `${day.label}, ${formatDateSq(day.key, { day: 'numeric', month: 'long' })}${count ? `, ${count} orë` : ''}`,
