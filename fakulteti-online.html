@@ -1248,6 +1248,7 @@
 <body class="min-h-screen">
   <div id="root"></div>
 
+  <script src="./assets/official-room-bookings.js?v=20261106-1"></script>
   <script src="./assets/editorial-content.js?v=20261105-portrait-1"></script>
   <script src="./assets/student-support.js?v=20261006-8"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
@@ -9486,6 +9487,7 @@ function isValidFilozofikuRoomsData(data) {
   });
 }
 const FilozofikuDailyStore = (() => {
+  const bookings = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings : null;
   const RETRY_MS = 15 * 60 * 1000;
   const urls = ['https://raw.githubusercontent.com/filozofiku/filozofiku.github.io/main/WinterF_rooms_days_vertical.html', FILOZOFIKU_SOURCE_URL];
   let currentData = FILOZOFIKU_ROOMS_FALLBACK;
@@ -9494,7 +9496,9 @@ const FilozofikuDailyStore = (() => {
   const listeners = new Set(), syncListeners = new Set();
   const snapshot = () => ({ lastSuccessAt, lastAttemptAt, sourceUrl, error, refreshing, nextRefreshAt: lastSuccessAt ? lastSuccessAt + FILOZOFIKU_REFRESH_MS : null });
   const notifySync = () => syncListeners.forEach(fn => { try { fn(snapshot()); } catch {} });
-  const notifyData = () => listeners.forEach(fn => { try { fn(currentData); } catch {} });
+  const dataWithBookings = () => bookings ? bookings.enrich(currentData) : currentData;
+  const notifyData = () => listeners.forEach(fn => { try { fn(dataWithBookings()); } catch {} });
+  if (bookings) bookings.subscribe(notifyData);
   const readSnapshot = raw => {
     try {
       const saved = JSON.parse(raw);
@@ -9527,7 +9531,7 @@ const FilozofikuDailyStore = (() => {
   };
   function refresh({ force = false } = {}) {
     if (inflight) return inflight;
-    if (!force && !isDue()) { schedule(Boolean(error)); return Promise.resolve({ ok: true, skipped: true, data: currentData, checkedAt: lastSuccessAt }); }
+    if (!force && !isDue() && (!bookings || bookings.isFresh())) { schedule(Boolean(error)); return Promise.resolve({ ok: true, skipped: true, data: dataWithBookings(), checkedAt: lastSuccessAt }); }
     refreshing = true; lastAttemptAt = Date.now(); error = ''; notifySync();
     inflight = (async () => {
       try {
@@ -9538,8 +9542,10 @@ const FilozofikuDailyStore = (() => {
         if (!parsed) throw new Error('Burimi zyrtar nuk u rifreskua. Po shfaqen të dhënat e fundit të ruajtura.');
         currentData = parsed; lastSuccessAt = Date.now(); sourceUrl = usedUrl;
         try { localStorage.setItem(FILOZOFIKU_DAILY_SYNC_KEY, JSON.stringify({ data: currentData, lastSuccessAt, sourceUrl })); } catch {}
+        const bookingResult = bookings ? await bookings.refreshWeek(bookings.localDate(), { force }) : { ok: true };
         notifyData();
-        return { ok: true, data: currentData, checkedAt: lastSuccessAt };
+        if (!bookingResult.ok) throw new Error('Rezervimet zyrtare nuk u rifreskuan.');
+        return { ok: true, data: dataWithBookings(), checkedAt: lastSuccessAt };
       } catch (failure) {
         error = failure.message;
         return { ok: false, data: currentData, checkedAt: lastSuccessAt };
@@ -9565,7 +9571,8 @@ const FilozofikuDailyStore = (() => {
     });
   }
   return {
-    getData: () => currentData, getSyncState: snapshot, refresh,
+    getData: dataWithBookings, getSyncState: snapshot, refresh,
+    ensureWeek: date => bookings ? bookings.refreshWeek(date) : Promise.resolve({ ok: true }),
     subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); },
     subscribeSync: fn => { syncListeners.add(fn); return () => syncListeners.delete(fn); }
   };
@@ -9640,7 +9647,7 @@ function computeFilozofikuFreeSummary(customData) {
   }
   const s = live.currentSlotIdx;
   const e = s + 1;
-  const free = data.rooms.filter(room => !room.e.some(ev => ev.d === live.actualDayIdx && ev.s < e && ev.e > s));
+  const free = data.rooms.filter(room => !getFilozofikuRoomEvents(data, room, live.actualDayIdx).some(ev => ev.s < e && ev.e > s));
   return {
     freeCount: free.length,
     occupiedCount: data.rooms.length - free.length,
@@ -9651,13 +9658,26 @@ function computeFilozofikuFreeSummary(customData) {
   };
 }
 
-function getFilozofikuProgramSessions(data, program, dayId) {
+function getFilozofikuDateForDay(dayIdx, now = new Date()) {
+  const date = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.localDate(now) : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const day = new Date(date + 'T12:00:00Z');
+  day.setUTCDate(day.getUTCDate() - (day.getUTCDay() + 6) % 7 + Number(dayIdx));
+  return day.toISOString().slice(0, 10);
+}
+function getFilozofikuRoomEvents(data, room, dayIdx, date = getFilozofikuDateForDay(dayIdx)) {
+  const recurring = (room.e || []).filter(event => event.d === Number(dayIdx));
+  const dated = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.events(data, date).filter(event => event.room === (room.l || room.n)) : [];
+  return [...recurring, ...dated].sort((a, b) => a.s - b.s || a.e - b.e);
+}
+
+function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofikuDateForDay(Number(dayId) - 1)) {
   const groupPattern = program === 'social-work' ? /\bpune sociale\s*-\s*1ba\b/ : program === 'psychology' ? /\bpsikologji\s*-\s*3ba\b/ : null;
   if (!groupPattern || !data) return [];
   const normalize = text => String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return (data.rooms || []).flatMap(room => (room.e || [])
-    .filter(event => event.d === Number(dayId) - 1 && groupPattern.test(normalize(event.g)))
-    .map(event => ({ ...event, room: room.l || room.n, start: data.times[event.s], end: data.times[event.e] })))
+  const recurring = (data.rooms || []).flatMap(room => (room.e || []).filter(event => event.d === Number(dayId) - 1).map(event => ({ ...event, room: room.l || room.n })));
+  const dated = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.events(data, date) : [];
+  return [...recurring, ...dated].filter(event => groupPattern.test(normalize(event.g)))
+    .map(event => ({ ...event, start: data.times[event.s], end: data.times[event.e] }))
     .filter(event => event.start && event.end)
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
@@ -9674,7 +9694,7 @@ function RoomRefreshButton({ busy, compact = false, onClick }) {
   return ReactDOM.createPortal(h('button', {
     type: 'button', disabled: busy, 'aria-busy': busy, onClick,
     'aria-label': 'Rifresko sallat e lira', title: 'Rifresko', className: 'rooms-refresh-floating' + (compact ? ' is-compact' : '')
-  }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: busy ? 'animate-spin' : '' }, h('path', { d: 'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17' }))), document.body);
+  }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: busy ? 'animate-spin' : '' }, h('path', { d: 'M20 8a8 8 0 1 0 1 4M20 3v5h-5' }))), document.body);
 }
 
 function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactMode = false }) {
@@ -9682,6 +9702,11 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
   const [data, setData] = useState(() => FilozofikuDailyStore.getData());
   const [syncState, setSyncState] = useState(() => FilozofikuDailyStore.getSyncState());
   const [refreshNotice, setRefreshNotice] = useState('');
+  useEffect(() => {
+    if (!refreshNotice) return;
+    const timer = setTimeout(() => setRefreshNotice(''), 3000);
+    return () => clearTimeout(timer);
+  }, [refreshNotice]);
   const [nowDate, setNowDate] = useState(() => new Date());
 
   useEffect(() => {
@@ -9750,10 +9775,10 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
 
   // Evaluate a room on any target day (targetDayIdx) at the currently viewed time
   const evaluateRoomForDayAndViewedTime = (room, targetDayIdx) => {
-    const dayEvents = room.e.filter(ev => ev.d === targetDayIdx).sort((a, b) => a.s - b.s);
+    const dayEvents = getFilozofikuRoomEvents(data, room, targetDayIdx, getFilozofikuDateForDay(targetDayIdx, nowDate));
 
     // Real-time status RIGHT NOW (on actualDayIdx at currentClockLabel)
-    const todayEvents = room.e.filter(ev => ev.d === liveInfo.actualDayIdx).sort((a, b) => a.s - b.s);
+    const todayEvents = getFilozofikuRoomEvents(data, room, liveInfo.actualDayIdx, getFilozofikuDateForDay(liveInfo.actualDayIdx, nowDate));
     let isFreeRightNow = true;
     let rightNowEvent = null;
     if (liveInfo.isWeekday && liveInfo.isWithinScheduleHours && liveInfo.currentSlotIdx !== null) {
@@ -9944,7 +9969,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
   const professorsEvaluated = useMemo(() => {
     const map = new Map();
     for (const room of data.rooms) {
-      for (const ev of room.e) {
+      for (const ev of data.days.flatMap((_, d) => getFilozofikuRoomEvents(data, room, d, getFilozofikuDateForDay(d, nowDate)))) {
         if (!ev.p) continue;
         const formatted = formatFilozofikuProf(ev.p);
         const names = formatted.split(/\s*·\s*/).filter(Boolean);
@@ -10030,7 +10055,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
   );
 
   const buildDayTimelineSegments = (room, dIdx) => {
-    const evs = room.e.filter(ev => ev.d === dIdx).sort((a, b) => a.s - b.s);
+    const evs = getFilozofikuRoomEvents(data, room, dIdx, getFilozofikuDateForDay(dIdx, nowDate));
     const segments = [];
     let cursor = 0;
     for (const ev of evs) {
@@ -10071,14 +10096,11 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     /* Controls Bar */
     h('section', { className: 'card-surface rounded-2xl border border-default p-3.5 sm:p-4 space-y-3' },
 
-      h('p', { className: 'text-[11px] text-secondary leading-5' },
-        syncState.lastSuccessAt ? h(React.Fragment, null, 'Përditësuar: ', h('time', { dateTime: new Date(syncState.lastSuccessAt).toISOString() }, new Intl.DateTimeFormat('sq-AL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(syncState.lastSuccessAt)))) : 'Ende pa përditësim',
-        ' · Çdo 8 orë'),
       h(RoomRefreshButton, {
         busy: syncState.refreshing, compact: compactMode,
         onClick: async () => { setRefreshNotice(''); if (compactMode) setNowLive(); const result = await FilozofikuDailyStore.refresh({ force: true }); if (result.ok) setRefreshNotice('Sallat u përditësuan.'); }
       }),
-      h('p', { role: 'status', 'aria-live': 'polite', className: 'text-xs leading-5 ' + (syncState.error ? 'text-amber-700 dark:text-amber-300' : 'text-secondary'), hidden: !syncState.error && !refreshNotice && !syncState.refreshing }, syncState.refreshing ? 'Po rifreskohen sallat…' : syncState.error ? 'Rifreskimi nuk u krye. Po shfaqen të dhënat e fundit të ruajtura.' : refreshNotice),
+      refreshNotice && h('p', { role: 'status', 'aria-live': 'polite', className: 'text-xs leading-5 text-secondary' }, refreshNotice),
 
       /* Status Filter + Profesorët Tab + Search */
       h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5' },
@@ -11284,6 +11306,12 @@ function AcademyApp({
     try { const stored = JSON.parse(localStorage.getItem('u_recent_searches') || '[]'); return Array.isArray(stored) ? stored.filter(item => typeof item === 'string').slice(0, 6) : []; } catch { return []; }
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const headerHomeLabel = freeRoomsHomeUser ? 'Shko te Sallat e Lira' : 'Shko te Kreu';
+  const openHeaderHome = () => {
+    setSidebarOpen(false);
+    if (freeRoomsHomeUser && onRoomsHome) onRoomsHome();
+    else setView(freeRoomsHomeUser ? 'freerooms' : 'home');
+  };
   const [isDesktopViewport, setIsDesktopViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(min-width: 1024px)').matches : true);
 
   useEffect(() => {
@@ -15007,6 +15035,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       [key]: previous[key] === status ? '' : status
     }));
   };
+  useEffect(() => {
+    if (view === 'week' && scheduleProgramFilter !== 'personal' && academicWeekDays[0]?.key) FilozofikuDailyStore.ensureWeek(academicWeekDays[0].key);
+  }, [view, scheduleProgramFilter, scheduleWeekOffset, scheduleProgramData]);
   const activeAcademicWeekDays = academicWeekDays.filter(day => scopedSchedule.some(item => Number(item.dayOfWeek) === day.id));
   const activeAcademicWeekSessions = (() => {
     const seen = new Set();
@@ -33568,7 +33599,7 @@ Nënshkrimi: _____________________`;
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
-          const count = scheduleProgramFilter === 'personal' ? scheduleMinDaySessions(day.id).length : getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id).length;
+          const count = scheduleProgramFilter === 'personal' ? scheduleMinDaySessions(day.id).length : getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id, day.key).length;
           return ce("button", {
             key: day.key, type: "button", role: "tab", "aria-selected": isSel,
             "aria-label": `${day.label}, ${formatDateSq(day.key, { day: 'numeric', month: 'long' })}${count ? `, ${count} orë` : ''}`,
@@ -33583,7 +33614,7 @@ Nënshkrimi: _____________________`;
   const renderProgramScheduleDay = () => {
     const h = React.createElement;
     const day = getScheduleMinSelectedDay();
-    const sessions = getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id);
+    const sessions = getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id, day.key);
     const programName = scheduleProgramFilter === 'social-work' ? 'Punë Sociale · Viti I' : 'Psikologji · Viti III';
     return h('section', { className: 'space-y-3', 'aria-label': `Orari i ${programName}` },
       h('div', null,
@@ -34601,7 +34632,8 @@ Nënshkrimi: _____________________`;
     className: "px-4 h-16 border-b border-default flex items-center justify-between flex-shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     type: "button",
-    onClick: () => setView(isInstructorAccount ? 'instructor' : 'home'),
+    onClick: openHeaderHome,
+    "aria-label": headerHomeLabel,
     className: "unit-brand-lockup flex items-center gap-2.5 cursor-pointer text-left hover:opacity-80 transition-opacity"
   }, /*#__PURE__*/React.createElement("div", {
     className: "unit-brand-mark unit-brand-mark--nav"
@@ -34877,14 +34909,17 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("path", {
     d: "M4 7h16M4 12h16M4 17h16"
   }))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setView(isInstructorAccount ? 'instructor' : 'home'),
-    "aria-label": isInstructorAccount ? "Hap lëndën time" : "Shko te Kreu",
+    onClick: openHeaderHome,
+    "aria-label": headerHomeLabel,
     className: "unit-brand-mark unit-brand-mark--header flex lg:hidden items-center justify-center"
   }, /*#__PURE__*/React.createElement(Logo, {
     size: 18,
     color: "#fff"
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "unit-brand-name text-sm font-extrabold text-primary tracking-tight block lg:hidden min-w-0"
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: openHeaderHome,
+    "aria-label": `${studentName} — ${headerHomeLabel}`,
+    className: "unit-brand-name text-sm font-extrabold text-primary tracking-tight block lg:hidden min-w-0 text-left bg-transparent border-0 p-0"
   }, profileNameParts.length ? /*#__PURE__*/React.createElement("span", {
     className: "block min-w-0 leading-tight"
   }, /*#__PURE__*/React.createElement("span", {
@@ -37545,6 +37580,8 @@ function bindBujarRoomsResume(doc, win, refresh) {
 function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
   const h = React.createElement;
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [roomsHomeRevision, setRoomsHomeRevision] = useState(0);
+  const openRoomsHome = () => { setRoomsHomeRevision(value => value + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   useEffect(() => bindBujarRoomsResume(document, window, options => FilozofikuDailyStore.refresh(options)), []);
   const toggleTheme = () => {
     const next = !isDark; setIsDark(next);
@@ -37553,12 +37590,13 @@ function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
   };
   return h('div', { className: 'bujar-rooms-shell min-h-screen text-primary', 'data-rooms-fast-start': 'true' },
     h('header', { className: 'bujar-rooms-header' },
-      h('img', { src: isDark ? './assets/fakulteti-online-logo-dark.png?v=6' : './assets/fakulteti-online-logo.png?v=6', alt: 'Fakulteti Online', className: 'w-9 h-9 object-contain shrink-0' }),
-      h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-xs text-secondary' }, 'Studenti'), h('p', { className: 'text-sm font-semibold truncate' }, studentName)),
+      h('button', { type: 'button', onClick: openRoomsHome, 'aria-label': 'Shko te Sallat e Lira', className: 'flex flex-1 min-w-0 items-center gap-3 text-left bg-transparent border-0 p-0' },
+        h('img', { src: isDark ? './assets/fakulteti-online-logo-dark.png?v=6' : './assets/fakulteti-online-logo.png?v=6', alt: 'Fakulteti Online', className: 'w-9 h-9 object-contain shrink-0' }),
+        h('span', { className: 'flex-1 min-w-0' }, h('span', { className: 'block text-xs text-secondary' }, 'Studenti'), h('span', { className: 'block text-sm font-semibold truncate' }, studentName))),
       h('button', { type: 'button', onClick: toggleTheme, className: 'w-10 h-10 rounded-xl hover-surface text-secondary', 'aria-label': isDark ? 'Aktivizo pamjen e çelët' : 'Aktivizo pamjen e errët' }, isDark ? '☀️' : '🌙'),
       h('button', { type: 'button', onClick: onOpenApp, className: 'w-10 h-10 rounded-xl input-bg border border-default flex items-center justify-center text-brand-700 dark:text-brand-300', 'aria-label': 'Hap aplikacionin e plotë', title: 'Aplikacioni' }, h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z' })))),
     /(?:^\?|&)install=1(?:&|$)/.test(window.location.search) && h(UnitInstallButton, { variant: 'banner', uiLanguage, className: 'mx-4 mt-3' }),
-    h('main', { className: 'min-w-0' }, h(FilozofikuFreeRoomsPage, { onBack: onOpenApp, initialStatusFilter: 'free', compactMode: true })));
+    h('main', { className: 'min-w-0' }, h(FilozofikuFreeRoomsPage, { key: roomsHomeRevision, onBack: onOpenApp, initialStatusFilter: 'free', compactMode: true })));
 }
 
 /* ──────── ROOT ──────── */
