@@ -9483,7 +9483,7 @@ const FilozofikuDailyStore = (() => {
   const isDue = () => !lastSuccessAt || Date.now() < lastSuccessAt || Date.now() - lastSuccessAt >= FILOZOFIKU_REFRESH_MS;
   const schedule = (failed = false) => {
     clearTimeout(timer);
-    const delay = failed ? RETRY_MS : isDue() ? 50 : Math.max(1000, lastSuccessAt + FILOZOFIKU_REFRESH_MS - Date.now());
+    const delay = failed ? Math.max(1000, lastAttemptAt + RETRY_MS - Date.now()) : isDue() ? 50 : Math.max(1000, lastSuccessAt + FILOZOFIKU_REFRESH_MS - Date.now());
     timer = setTimeout(() => { refresh({ force: failed }); }, delay);
   };
   const fetchData = async url => {
@@ -9499,7 +9499,7 @@ const FilozofikuDailyStore = (() => {
   };
   function refresh({ force = false } = {}) {
     if (inflight) return inflight;
-    if (!force && !isDue()) { schedule(); return Promise.resolve({ ok: true, skipped: true, data: currentData, checkedAt: lastSuccessAt }); }
+    if (!force && !isDue()) { schedule(Boolean(error)); return Promise.resolve({ ok: true, skipped: true, data: currentData, checkedAt: lastSuccessAt }); }
     refreshing = true; lastAttemptAt = Date.now(); error = ''; notifySync();
     inflight = (async () => {
       try {
