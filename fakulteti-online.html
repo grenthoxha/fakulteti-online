@@ -9682,6 +9682,16 @@ function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofiku
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
 
+function getFilozofikuDayReplacements(data, date, query = '') {
+  if (typeof FilozofikuBookings === 'undefined') return [];
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  return FilozofikuBookings.events(data, date)
+    .filter(event => event.date === date && /z[ea]vendes/.test(normalize(event.a)))
+    .filter(event => words.every(word => normalize([event.t, event.room, event.p, event.g].join(' ')).includes(word)))
+    .sort((a, b) => a.s - b.s || a.room.localeCompare(b.room, 'sq') || a.t.localeCompare(b.t, 'sq'));
+}
+
 function searchFilozofikuProfessors(professors, query) {
   const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const words = normalize(query).split(/\s+/).filter(Boolean);
@@ -9937,6 +9947,9 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     });
   }, [data, useLiveClock, startIdx, endIdx, liveInfo]);
 
+  const replacementsDate = useLiveClock && typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.localDate(nowDate) : getFilozofikuDateForDay(dayIdx, nowDate);
+  const dayReplacements = useMemo(() => getFilozofikuDayReplacements(data, replacementsDate), [data, replacementsDate]);
+  const filteredReplacements = useMemo(() => getFilozofikuDayReplacements(data, replacementsDate, searchQuery), [data, replacementsDate, searchQuery]);
   const freeCount = roomsEvaluated.filter(r => r.isFree).length;
   const occupiedCount = roomsEvaluated.length - freeCount;
   const totalFreeSeats = roomsEvaluated.filter(r => r.isFree).reduce((acc, r) => acc + (Number(r.seats) || 0), 0);
@@ -10109,7 +10122,8 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
             { id: 'all', label: 'Të gjitha (' + data.rooms.length + ')' },
             { id: 'free', label: 'Të lira (' + freeCount + ')' },
             { id: 'occupied', label: 'Të zëna (' + occupiedCount + ')' },
-            { id: 'professors', label: 'Profesorët (' + professorsEvaluated.length + ')' }
+            { id: 'professors', label: 'Profesorët (' + professorsEvaluated.length + ')' },
+            { id: 'replacements', label: 'Zëvendësimet (' + dayReplacements.length + ')' }
           ].map(tab => h('button', {
             key: tab.id,
             type: 'button',
@@ -10139,7 +10153,21 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     ),
 
     /* Professors Grid (when statusFilter === 'professors') OR Rooms Grid */
-    (statusFilter === 'professors' || showProfessorSearch)
+    statusFilter === 'replacements'
+      ? h('section', { 'aria-label': 'Zëvendësimet e ditës', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
+          filteredReplacements.length
+            ? filteredReplacements.map(event => h('article', {
+                key: `${event.id}:${event.s}:${event.room}`, className: 'card-surface rounded-2xl border border-default p-4 space-y-2'
+              },
+                h('div', { className: 'flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-primary' },
+                  h('span', { className: 'tabular-nums' }, `${data.times[event.s]}–${data.times[event.e]}`),
+                  h('span', null, event.room)),
+                h('h3', { className: 'text-sm font-bold text-primary' }, event.t),
+                event.p && h('p', { className: 'text-xs text-secondary' }, formatFilozofikuProf(event.p)),
+                event.g && h('p', { className: 'text-xs text-secondary' }, event.g)))
+            : h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center text-sm font-bold text-primary col-span-full' },
+                dayReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime për këtë ditë.'))
+      : (statusFilter === 'professors' || showProfessorSearch)
       ? (professorsToShow.length === 0
           ? h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center space-y-2' },
               h('div', { className: 'text-sm font-bold text-primary' }, 'Nuk u gjet asnjë profesor'),
