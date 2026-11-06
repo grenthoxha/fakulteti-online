@@ -406,6 +406,14 @@
     .nav-course-list > summary::after { content: "\2193"; font-size: 0.8rem; transition: transform .2s ease; }
     .nav-course-list[open] > summary::after { content: "\2191"; }
     .mobile-nav { box-shadow: 0 -12px 30px -22px rgba(15,23,42,0.48); }
+    .rooms-refresh-floating { position:fixed; right:1rem; bottom:calc(4.75rem + env(safe-area-inset-bottom,0px)); z-index:40; display:grid; place-items:center; width:3rem; height:3rem; border:1px solid rgba(255,255,255,.18); border-radius:1rem; background:rgb(var(--brand-rgb)); color:#fff; box-shadow:0 6px 18px rgba(var(--brand-rgb),.24); cursor:pointer; transition:transform .2s ease,opacity .2s ease; }
+    .rooms-refresh-floating:hover { transform:translateY(-2px); }
+    .rooms-refresh-floating:disabled { opacity:.65; cursor:wait; }
+    .rooms-refresh-floating:focus-visible { outline:2px solid rgb(var(--brand-rgb)); outline-offset:3px; }
+    .rooms-refresh-floating.is-compact { bottom:calc(1rem + env(safe-area-inset-bottom,0px)); }
+    .bujar-rooms-header { position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:.75rem; height:calc(4rem + env(safe-area-inset-top,0px)); padding:env(safe-area-inset-top,0px) 1rem 0; background:var(--surface); border-bottom:1px solid var(--line); }
+    @media(min-width:768px) and (max-width:1023px) { .rooms-refresh-floating { right:1.5rem; bottom:calc(5.5rem + env(safe-area-inset-bottom,0px)); } }
+    @media(min-width:1024px) { .rooms-refresh-floating { right:1.5rem; bottom:1.5rem; } }
     .home-messages-floating { display: none; }
     /* Scoped quick-access group messaging preview; no changes to other screens. */
     .unit-messages-overlay { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: flex-end; padding: 1.5rem; background: rgba(8,15,30,.32); }
@@ -9546,6 +9554,7 @@ const FilozofikuDailyStore = (() => {
     const catchUp = () => { if (typeof document === 'undefined' || !document.hidden) refresh(); };
     window.addEventListener('focus', catchUp);
     window.addEventListener('online', catchUp);
+    window.addEventListener('pageshow', catchUp);
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', catchUp);
     window.addEventListener('storage', event => {
       if (event.key !== FILOZOFIKU_DAILY_SYNC_KEY) return;
@@ -9660,7 +9669,15 @@ function searchFilozofikuProfessors(professors, query) {
   return professors.filter(prof => words.every(word => normalize(prof.name).includes(word)));
 }
 
-function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all' }) {
+function RoomRefreshButton({ busy, compact = false, onClick }) {
+  const h = React.createElement;
+  return ReactDOM.createPortal(h('button', {
+    type: 'button', disabled: busy, 'aria-busy': busy, onClick,
+    'aria-label': 'Rifresko sallat e lira', title: 'Rifresko', className: 'rooms-refresh-floating' + (compact ? ' is-compact' : '')
+  }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: busy ? 'animate-spin' : '' }, h('path', { d: 'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17' }))), document.body);
+}
+
+function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactMode = false }) {
   const h = React.createElement;
   const [data, setData] = useState(() => FilozofikuDailyStore.getData());
   const [syncState, setSyncState] = useState(() => FilozofikuDailyStore.getSyncState());
@@ -9712,6 +9729,14 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all' }) {
       setEndIdx(Math.min(data.times.length - 1, fresh.currentSlotIdx + 4));
     }
   };
+
+  useEffect(() => {
+    if (!compactMode) return;
+    const resumeClock = () => { if (!document.hidden) setNowLive(); };
+    document.addEventListener('visibilitychange', resumeClock);
+    window.addEventListener('pageshow', resumeClock);
+    return () => { document.removeEventListener('visibilitychange', resumeClock); window.removeEventListener('pageshow', resumeClock); };
+  }, [compactMode, data.times]);
 
   const applyPreset = (fromStr, toStr) => {
     const s = data.times.indexOf(fromStr);
@@ -10025,7 +10050,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all' }) {
     /* Top Header */
     h('div', { className: 'flex items-center justify-between gap-3 pb-3 border-b border-default' },
       h('div', { className: 'flex items-center gap-3 min-w-0' },
-        h('button', {
+        !compactMode && h('button', {
           type: 'button',
           onClick: onBack,
           'aria-label': 'Kthehu',
@@ -10046,19 +10071,14 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all' }) {
     /* Controls Bar */
     h('section', { className: 'card-surface rounded-2xl border border-default p-3.5 sm:p-4 space-y-3' },
 
-      h('div', { className: 'flex items-start justify-between gap-3 pb-3 border-b border-default' },
-        h('div', { className: 'min-w-0 space-y-1' },
-          h('a', { href: FILOZOFIKU_SOURCE_URL, target: '_blank', rel: 'noopener noreferrer', className: 'text-xs font-semibold text-brand-700 dark:text-brand-300' }, 'Burimi zyrtar ↗'),
-          h('p', { className: 'text-[11px] text-secondary leading-5' },
-            syncState.lastSuccessAt ? h(React.Fragment, null, 'Kontrolluar: ', h('time', { dateTime: new Date(syncState.lastSuccessAt).toISOString() }, new Intl.DateTimeFormat('sq-AL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(syncState.lastSuccessAt)))) : 'Ende pa verifikim nga burimi',
-            ' · Çdo 8 orë')),
-        h('button', {
-          type: 'button', disabled: syncState.refreshing, 'aria-busy': syncState.refreshing,
-          onClick: async () => { setRefreshNotice(''); const result = await FilozofikuDailyStore.refresh({ force: true }); if (result.ok) setRefreshNotice('Burimi u kontrollua me sukses.'); },
-          'aria-label': 'Rifresko të dhënat nga burimi zyrtar',
-          className: 'min-h-10 px-3 rounded-xl border border-default input-bg text-brand-700 dark:text-brand-300 text-xs font-semibold flex items-center gap-2 shrink-0 disabled:opacity-60 disabled:cursor-wait'
-        }, h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true, className: syncState.refreshing ? 'animate-spin' : '' }, h('path', { d: 'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17' })), syncState.refreshing ? 'Po rifreskohet…' : 'Rifresko')),
-      h('p', { role: 'status', 'aria-live': 'polite', className: 'text-xs leading-5 ' + (syncState.error ? 'text-amber-700 dark:text-amber-300' : 'text-secondary'), hidden: !syncState.error && !refreshNotice && !syncState.refreshing }, syncState.refreshing ? 'Po kontrollohet orari nga burimi zyrtar…' : syncState.error || refreshNotice),
+      h('p', { className: 'text-[11px] text-secondary leading-5' },
+        syncState.lastSuccessAt ? h(React.Fragment, null, 'Përditësuar: ', h('time', { dateTime: new Date(syncState.lastSuccessAt).toISOString() }, new Intl.DateTimeFormat('sq-AL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(syncState.lastSuccessAt)))) : 'Ende pa përditësim',
+        ' · Çdo 8 orë'),
+      h(RoomRefreshButton, {
+        busy: syncState.refreshing, compact: compactMode,
+        onClick: async () => { setRefreshNotice(''); if (compactMode) setNowLive(); const result = await FilozofikuDailyStore.refresh({ force: true }); if (result.ok) setRefreshNotice('Sallat u përditësuan.'); }
+      }),
+      h('p', { role: 'status', 'aria-live': 'polite', className: 'text-xs leading-5 ' + (syncState.error ? 'text-amber-700 dark:text-amber-300' : 'text-secondary'), hidden: !syncState.error && !refreshNotice && !syncState.refreshing }, syncState.refreshing ? 'Po rifreskohen sallat…' : syncState.error ? 'Rifreskimi nuk u krye. Po shfaqen të dhënat e fundit të ruajtura.' : refreshNotice),
 
       /* Status Filter + Profesorët Tab + Search */
       h('div', { className: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5' },
@@ -10486,6 +10506,8 @@ function AcademyApp({
   studentFullName,
   initialBranch,
   initialYear,
+  initialView = null,
+  onRoomsHome,
   actualRole,
   onLogout,
   onProfileUpdate,
@@ -11114,7 +11136,7 @@ function AcademyApp({
     return s ? Number(s) : null;
   });
   const [course, setCourse] = useState(null);
-  const [view, setViewRaw] = useState(() => getInitialAcademyView(actualRole, studentFullName || studentName)); // home | course | settings | exam
+  const [view, setViewRaw] = useState(() => initialView || getInitialAcademyView(actualRole, studentFullName || studentName)); // home | course | settings | exam
   /* Historia e navigimit: "kthehu" të çon gjithmonë aty ku ishe më parë */
   const navStackRef = useRef([]);
   const navCtxRef = useRef({ view: 'home', studentTab: 'exams' });
@@ -11134,7 +11156,8 @@ function AcademyApp({
     }
     setViewRaw(next);
   }, []);
-  useEffect(() => { if (freeRoomsHomeUser && actualRole !== 'instructor') setView('freerooms'); }, [freeRoomsHomeUser, actualRole]);
+  useEffect(() => { if (freeRoomsHomeUser && actualRole !== 'instructor' && !initialView) setView('freerooms'); }, [freeRoomsHomeUser, actualRole, initialView]);
+  useEffect(() => { if (view === 'freerooms' && onRoomsHome) onRoomsHome(); }, [view, onRoomsHome]);
   useEffect(() => { if (socialWorkScheduleUser && actualRole !== 'instructor') setView('week'); }, [socialWorkScheduleUser, actualRole]);
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
   const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
@@ -37503,6 +37526,41 @@ Nënshkrimi: _____________________`;
   }));
 }
 
+function bindBujarRoomsResume(doc, win, refresh) {
+  let wasHidden = doc.hidden, lastRequest = -Infinity;
+  const check = () => {
+    if (doc.hidden || Date.now() - lastRequest < 1500) return;
+    lastRequest = Date.now();
+    refresh({ force: true });
+  };
+  const visible = () => { if (wasHidden && !doc.hidden) check(); wasHidden = doc.hidden; };
+  const restored = event => { if (event.persisted) check(); };
+  doc.addEventListener('visibilitychange', visible);
+  win.addEventListener('pageshow', restored);
+  win.addEventListener('focus', check);
+  win.addEventListener('online', check);
+  check();
+  return () => { doc.removeEventListener('visibilitychange', visible); win.removeEventListener('pageshow', restored); win.removeEventListener('focus', check); win.removeEventListener('online', check); };
+}
+function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
+  const h = React.createElement;
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => bindBujarRoomsResume(document, window, options => FilozofikuDailyStore.refresh(options)), []);
+  const toggleTheme = () => {
+    const next = !isDark; setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try { localStorage.setItem('u_theme', next ? 'dark' : 'light'); } catch {}
+  };
+  return h('div', { className: 'bujar-rooms-shell min-h-screen text-primary', 'data-rooms-fast-start': 'true' },
+    h('header', { className: 'bujar-rooms-header' },
+      h('img', { src: isDark ? './assets/fakulteti-online-logo-dark.png?v=6' : './assets/fakulteti-online-logo.png?v=6', alt: 'Fakulteti Online', className: 'w-9 h-9 object-contain shrink-0' }),
+      h('div', { className: 'flex-1 min-w-0' }, h('p', { className: 'text-xs text-secondary' }, 'Studenti'), h('p', { className: 'text-sm font-semibold truncate' }, studentName)),
+      h('button', { type: 'button', onClick: toggleTheme, className: 'w-10 h-10 rounded-xl hover-surface text-secondary', 'aria-label': isDark ? 'Aktivizo pamjen e çelët' : 'Aktivizo pamjen e errët' }, isDark ? '☀️' : '🌙'),
+      h('button', { type: 'button', onClick: onOpenApp, className: 'w-10 h-10 rounded-xl input-bg border border-default flex items-center justify-center text-brand-700 dark:text-brand-300', 'aria-label': 'Hap aplikacionin e plotë', title: 'Aplikacioni' }, h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z' })))),
+    /(?:^\?|&)install=1(?:&|$)/.test(window.location.search) && h(UnitInstallButton, { variant: 'banner', uiLanguage, className: 'mx-4 mt-3' }),
+    h('main', { className: 'min-w-0' }, h(FilozofikuFreeRoomsPage, { onBack: onOpenApp, initialStatusFilter: 'free', compactMode: true })));
+}
+
 /* ──────── ROOT ──────── */
 function App() {
   const [uiLanguage, setUiLanguage] = useState(() => activeUiLanguage);
@@ -37521,6 +37579,15 @@ function App() {
     return s ? Number(s) : null;
   });
   const [actualRole, setActualRole] = useState(() => localStorage.getItem('u_role') || 'student');
+  const [roomsAppExpanded, setRoomsAppExpanded] = useState(false);
+  const roomsHomeAccount = prefersFreeRoomsHome(studentFullName || studentName);
+  useEffect(() => {
+    if (!roomsHomeAccount) return;
+    const resume = () => { if (!document.hidden && (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)) setRoomsAppExpanded(false); };
+    const restore = event => { if (event.persisted) resume(); };
+    document.addEventListener('visibilitychange', resume); window.addEventListener('pageshow', restore);
+    return () => { document.removeEventListener('visibilitychange', resume); window.removeEventListener('pageshow', restore); };
+  }, [roomsHomeAccount]);
   activeUiLanguage = uiLanguage;
   const handleLanguageChange = language => {
     const safeLanguage = language === 'en' ? 'en' : 'sq';
@@ -37566,6 +37633,7 @@ function App() {
     setSelectedYear(yId);
   };
   const handleLogout = () => {
+    setRoomsAppExpanded(false);
     setStudentName(null);
     setStudentFullName('');
     localStorage.removeItem('u_real_name');
@@ -37606,7 +37674,12 @@ function App() {
     uiLanguage: uiLanguage,
     onLanguageChange: handleLanguageChange
   });
+  if (roomsHomeAccount && !roomsAppExpanded) return React.createElement(BujarRoomsApp, {
+    studentName, uiLanguage, onOpenApp: () => setRoomsAppExpanded(true)
+  });
   return /*#__PURE__*/React.createElement(AcademyApp, {
+    initialView: roomsHomeAccount && roomsAppExpanded ? (actualRole === 'instructor' ? 'instructor' : 'home') : null,
+    onRoomsHome: roomsHomeAccount ? () => setRoomsAppExpanded(false) : undefined,
     studentName: studentName,
     studentFullName: studentFullName,
     initialBranch: selectedBranch,
