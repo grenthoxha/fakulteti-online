@@ -1248,7 +1248,7 @@
 <body class="min-h-screen">
   <div id="root"></div>
 
-  <script src="./assets/official-room-bookings.js?v=20261106-1"></script>
+  <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261105-portrait-1"></script>
   <script src="./assets/student-support.js?v=20261006-8"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
@@ -9531,7 +9531,7 @@ const FilozofikuDailyStore = (() => {
   };
   function refresh({ force = false } = {}) {
     if (inflight) return inflight;
-    if (!force && !isDue() && (!bookings || bookings.isFresh())) { schedule(Boolean(error)); return Promise.resolve({ ok: true, skipped: true, data: dataWithBookings(), checkedAt: lastSuccessAt }); }
+    if (!force && !isDue() && (!bookings || bookings.isFresh('all'))) { schedule(Boolean(error)); return Promise.resolve({ ok: true, skipped: true, data: dataWithBookings(), checkedAt: lastSuccessAt }); }
     refreshing = true; lastAttemptAt = Date.now(); error = ''; notifySync();
     inflight = (async () => {
       try {
@@ -9542,7 +9542,7 @@ const FilozofikuDailyStore = (() => {
         if (!parsed) throw new Error('Burimi zyrtar nuk u rifreskua. Po shfaqen të dhënat e fundit të ruajtura.');
         currentData = parsed; lastSuccessAt = Date.now(); sourceUrl = usedUrl;
         try { localStorage.setItem(FILOZOFIKU_DAILY_SYNC_KEY, JSON.stringify({ data: currentData, lastSuccessAt, sourceUrl })); } catch {}
-        const bookingResult = bookings ? await bookings.refreshWeek(bookings.localDate(), { force }) : { ok: true };
+        const bookingResult = bookings ? await bookings.refreshAll({ force }) : { ok: true };
         notifyData();
         if (!bookingResult.ok) throw new Error('Rezervimet zyrtare nuk u rifreskuan.');
         return { ok: true, data: dataWithBookings(), checkedAt: lastSuccessAt };
@@ -9572,7 +9572,7 @@ const FilozofikuDailyStore = (() => {
   }
   return {
     getData: dataWithBookings, getSyncState: snapshot, refresh,
-    ensureWeek: date => bookings ? bookings.refreshWeek(date) : Promise.resolve({ ok: true }),
+    ensureWeek: date => bookings ? bookings.refreshAll() : Promise.resolve({ ok: true }),
     subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); },
     subscribeSync: fn => { syncListeners.add(fn); return () => syncListeners.delete(fn); }
   };
@@ -9682,14 +9682,14 @@ function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofiku
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
 
-function getFilozofikuDayReplacements(data, date, query = '') {
+function getFilozofikuReplacements(data, query = '') {
   if (typeof FilozofikuBookings === 'undefined') return [];
   const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const words = normalize(query).split(/\s+/).filter(Boolean);
-  return FilozofikuBookings.events(data, date)
-    .filter(event => event.date === date && /z[ea]vendes/.test(normalize(event.a)))
-    .filter(event => words.every(word => normalize([event.t, event.room, event.p, event.g].join(' ')).includes(word)))
-    .sort((a, b) => a.s - b.s || a.room.localeCompare(b.room, 'sq') || a.t.localeCompare(b.t, 'sq'));
+  return FilozofikuBookings.allEvents(data)
+    .filter(event => /z[ea]vendes/.test(normalize(event.a)))
+    .filter(event => words.every(word => normalize([event.date, event.t, event.room, event.p, event.g].join(' ')).includes(word)))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.s - b.s || a.room.localeCompare(b.room, 'sq') || a.t.localeCompare(b.t, 'sq'));
 }
 
 function searchFilozofikuProfessors(professors, query) {
@@ -9947,9 +9947,8 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     });
   }, [data, useLiveClock, startIdx, endIdx, liveInfo]);
 
-  const replacementsDate = useLiveClock && typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.localDate(nowDate) : getFilozofikuDateForDay(dayIdx, nowDate);
-  const dayReplacements = useMemo(() => getFilozofikuDayReplacements(data, replacementsDate), [data, replacementsDate]);
-  const filteredReplacements = useMemo(() => getFilozofikuDayReplacements(data, replacementsDate, searchQuery), [data, replacementsDate, searchQuery]);
+  const allReplacements = useMemo(() => getFilozofikuReplacements(data), [data]);
+  const filteredReplacements = useMemo(() => getFilozofikuReplacements(data, searchQuery), [data, searchQuery]);
   const freeCount = roomsEvaluated.filter(r => r.isFree).length;
   const occupiedCount = roomsEvaluated.length - freeCount;
   const totalFreeSeats = roomsEvaluated.filter(r => r.isFree).reduce((acc, r) => acc + (Number(r.seats) || 0), 0);
@@ -10123,7 +10122,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
             { id: 'free', label: 'Të lira (' + freeCount + ')' },
             { id: 'occupied', label: 'Të zëna (' + occupiedCount + ')' },
             { id: 'professors', label: 'Profesorët (' + professorsEvaluated.length + ')' },
-            { id: 'replacements', label: 'Zëvendësimet (' + dayReplacements.length + ')' }
+            { id: 'replacements', label: 'Zëvendësimet (' + allReplacements.length + ')' }
           ].map(tab => h('button', {
             key: tab.id,
             type: 'button',
@@ -10154,11 +10153,12 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
 
     /* Professors Grid (when statusFilter === 'professors') OR Rooms Grid */
     statusFilter === 'replacements'
-      ? h('section', { 'aria-label': 'Zëvendësimet e ditës', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
+      ? h('section', { 'aria-label': 'Zëvendësimet', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
           filteredReplacements.length
             ? filteredReplacements.map(event => h('article', {
-                key: `${event.id}:${event.s}:${event.room}`, className: 'card-surface rounded-2xl border border-default p-4 space-y-2'
+                key: `${event.id}:${event.date}:${event.s}:${event.room}`, className: 'card-surface rounded-2xl border border-default p-4 space-y-2'
               },
+                h('time', { dateTime: event.date, className: 'block text-xs font-semibold text-secondary' }, new Intl.DateTimeFormat('sq-AL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Warsaw' }).format(new Date(event.date + 'T12:00:00Z'))),
                 h('div', { className: 'flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-primary' },
                   h('span', { className: 'tabular-nums' }, `${data.times[event.s]}–${data.times[event.e]}`),
                   h('span', null, event.room)),
@@ -10166,7 +10166,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
                 event.p && h('p', { className: 'text-xs text-secondary' }, formatFilozofikuProf(event.p)),
                 event.g && h('p', { className: 'text-xs text-secondary' }, event.g)))
             : h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center text-sm font-bold text-primary col-span-full' },
-                dayReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime për këtë ditë.'))
+                allReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime.'))
       : (statusFilter === 'professors' || showProfessorSearch)
       ? (professorsToShow.length === 0
           ? h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center space-y-2' },
