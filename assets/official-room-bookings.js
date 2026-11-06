@@ -51,7 +51,7 @@
     return bookings.flatMap(booking => {
       // publicBookings is the faculty's confirmed projection; cancelled entries disappear from it.
       if (booking.status && !['confirmed', 'approved', 'konfirmuar', 'e konfirmuar'].includes(String(booking.status).toLowerCase())) return [];
-      if (!dates.includes(booking.date) || !text(booking.title)) throw Error('Rezervim zyrtar i pavlefshëm.');
+      if (!validDate(booking.date) || (dates && !dates.includes(booking.date)) || !text(booking.title)) throw Error('Rezervim zyrtar i pavlefshëm.');
       const room = rooms.find(r => r.id === booking.roomId);
       if (booking.roomId && !room) throw Error('Salla e rezervimit nuk u gjet.');
       const slots = booking.periodIds?.map(id => periods.find(p => p.id === id));
@@ -67,26 +67,28 @@
     });
   }
   function validRows(rows, dates) {
-    return Array.isArray(rows) && rows.every(row => row && dates.includes(row.date) && text(row.id) && text(row.room) && text(row.title) && Array.isArray(row.groups) && row.groups.every(x => typeof x === 'string') && Array.isArray(row.teachers) && row.teachers.every(x => typeof x === 'string') && Array.isArray(row.slots) && row.slots.length && row.slots.every(s => validTime(s.start) && validTime(s.end) && s.end > s.start));
+    return Array.isArray(rows) && rows.every(row => row && validDate(row.date) && (!dates || dates.includes(row.date)) && text(row.id) && text(row.room) && text(row.title) && Array.isArray(row.groups) && row.groups.every(x => typeof x === 'string') && Array.isArray(row.teachers) && row.teachers.every(x => typeof x === 'string') && Array.isArray(row.slots) && row.slots.length && row.slots.every(s => validTime(s.start) && validTime(s.end) && s.end > s.start));
   }
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    for (const [key, entry] of Object.entries(saved)) if (validDate(key) && entry && Number.isFinite(entry.checkedAt) && entry.checkedAt <= Date.now() + 60000 && validRows(entry.rows, weekDates(key))) weeks[key] = entry;
+    for (const [key, entry] of Object.entries(saved)) if ((key === 'all' || validDate(key)) && entry && Number.isFinite(entry.checkedAt) && entry.checkedAt <= Date.now() + 60000 && validRows(entry.rows, key === 'all' ? null : weekDates(key))) weeks[key] = entry;
   } catch {}
   function isFresh(date = localDate()) {
-    const checkedAt = weeks[weekDates(date)[0]]?.checkedAt;
+    const checkedAt = date === 'all' ? weeks.all?.checkedAt : Math.max(weeks.all?.checkedAt || 0, weeks[weekDates(date)[0]]?.checkedAt || 0);
     return !!checkedAt && Date.now() >= checkedAt && Date.now() - checkedAt < TTL;
   }
   function refreshWeek(date = localDate(), { force = false } = {}) {
-    const dates = weekDates(date), key = dates[0];
+    const dates = date === 'all' ? null : weekDates(date), key = dates ? dates[0] : 'all';
+    if (key !== 'all' && pending.has('all')) return pending.get('all');
     if (pending.has(key)) return pending.get(key);
     if (!force && isFresh(date)) return Promise.resolve({ ok: true, skipped: true });
     const task = (async () => {
       try {
-        const query = { structuredQuery: { from: [{ collectionId: 'publicBookings' }], where: { compositeFilter: { op: 'AND', filters: [
+        const query = { structuredQuery: { from: [{ collectionId: 'publicBookings' }] } };
+        if (dates) query.structuredQuery.where = { compositeFilter: { op: 'AND', filters: [
           { fieldFilter: { field: { fieldPath: 'date' }, op: 'GREATER_THAN_OR_EQUAL', value: { stringValue: dates[0] } } },
           { fieldFilter: { field: { fieldPath: 'date' }, op: 'LESS_THAN_OR_EQUAL', value: { stringValue: dates[6] } } }
-        ] } } } };
+        ] } };
         const [rooms, periods, catalog, result] = await Promise.all([collection('rooms'), collection('periods'), request(BASE + '/resourceCatalog/current').then(documentData), request(BASE + ':runQuery', query)]);
         if (!Array.isArray(result) || result.some(item => item.error)) throw Error('Përgjigjja e rezervimeve është e pavlefshme.');
         const rows = normalizeBookings(result.filter(item => item.document).map(item => documentData(item.document)), rooms, periods, catalog, dates);
@@ -106,13 +108,21 @@
     const days = ['e diel', 'e hene', 'e marte', 'e merkure', 'e enjte', 'e premte', 'e shtune'];
     const normalize = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     const d = data.days.findIndex(day => normalize(day) === days[new Date(date + 'T12:00:00Z').getUTCDay()]);
-    return (data.bookingWeeks?.[weekDates(date)[0]]?.rows || []).filter(row => row.date === date).flatMap(row => row.slots.map(slot => {
+    const specific = data.bookingWeeks?.[weekDates(date)[0]], all = data.bookingWeeks?.all;
+    const snapshot = all && (!specific || all.checkedAt >= specific.checkedAt) ? all : specific;
+    return (snapshot?.rows || []).filter(row => row.date === date).flatMap(row => row.slots.map(slot => {
       const s = data.times.indexOf(slot.start), e = data.times.indexOf(slot.end);
       if (s < 0 || e <= s) return null;
       return { id: row.id, booking: true, date, d, s, e, t: row.title, a: row.type, g: row.groups.join(' · '), p: row.teachers.join(' · '), room: row.room };
     }).filter(Boolean));
   }
-  root.FilozofikuBookings = { localDate, weekDates, events, refreshWeek, isFresh,
+  function allEvents(data) {
+    const all = data.bookingWeeks?.all;
+    if (!all) return [];
+    const snapshot = { ...data, bookingWeeks: { all } };
+    return [...new Set(all.rows.map(row => row.date))].flatMap(date => events(snapshot, date));
+  }
+  root.FilozofikuBookings = { localDate, weekDates, events, allEvents, refreshWeek, refreshAll: options => refreshWeek('all', options), isFresh,
     enrich: data => ({ ...data, bookingWeeks: weeks }),
     subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); } };
 })(window);
