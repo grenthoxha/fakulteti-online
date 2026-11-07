@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-1">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-2">
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -33334,8 +33334,7 @@ Nënshkrimi: _____________________`;
         h('div', { className:'home-services-heading-main' },
           h('span', { className:'home-services-heading-icon', 'aria-hidden':true }, unitUiIcon('M3 9l9-6 9 6H3zM5 11v7M10 11v7M14 11v7M19 11v7M3 21h18M3 18h18','w-6 h-6')),
           h('div', { className:'home-services-heading-copy' },
-            h('h2', null, appearanceText('Shërbimet Studentore','Student Services')),
-            h('p', null, appearanceText('Dokumente, kërkesa dhe shërbime të tjera','Documents, requests and other services')))),
+            h('h2', null, appearanceText('Shërbimet Studentore','Student Services')))),
         h('button', { type:'button', onClick:()=>setView('studentservices'), className:'home-services-all' }, appearanceText('Të gjitha','View all'), h('span', { 'aria-hidden':true }, '→'))),
       h('div', { className:'home-services-grid-reference' }, services.map(service=>h('button', {
         key:service.id, type:'button', onClick:()=>setView(service.id), className:'home-service-reference',
@@ -33435,12 +33434,12 @@ Nënshkrimi: _____________________`;
 
     return ce('div',{className:'home-tasks-reference'},
       ce('div',{className:'home-reference-heading'},
-        ce('div',null,ce('h2',null,appearanceText('Detyrat','Tasks')),ce('p',null,appearanceText(`Sot, ${openList.length} aktive`,`Today, ${openList.length} active`))),
+        ce('div',null,ce('h2',null,appearanceText('Detyrat','Tasks'))),
         ce('button',{type:'button',onClick:()=>q.open?setTodayQuickTask(previous=>({...previous,open:false})):openTodayQuickTask(),'aria-expanded':q.open,'aria-label':q.open?'Mbyll shtimin e detyrës':'Shto detyrë',className:'home-tasks-add'},unitUiIcon(q.open?'M6 6l12 12M18 6L6 18':'M12 5v14M5 12h14','w-6 h-6'))),
       form,
       primary&&ce('div',{className:'home-task-featured'},
-        ce('button',{type:'button',onClick:()=>toggleDailyRoutine(primary),'aria-label':`Shëno si të kryer: ${primary.title}`,className:'home-task-featured-icon'},unitUiIcon('M12 7c-3-3-7-3-10-2v14c3-1 7-1 10 2 3-3 7-3 10-2V5c-3-1-7-1-10 2zM12 7v14','w-7 h-7')),
-        ce('div',{className:'home-task-featured-copy'},ce('span',{className:'home-task-eyebrow'},appearanceText('Detyra e radhës','Next task')),ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
+        ce('button',{type:'button',onClick:()=>toggleDailyRoutine(primary),'aria-label':`Shëno si të kryer: ${primary.title}`,'aria-pressed':false,className:'home-task-check'},unitUiIcon('M5 12.5l4.5 4.5L19 7.5','w-3.5 h-3.5')),
+        ce('div',{className:'home-task-featured-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
         ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4'),appearanceText(pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo',pomo.taskId===primary.id&&pomo.endsAt?'Continue':'Start')),
         expandedAllTasks&&actions(primary)),
       openShown.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Më pas','Up next')),ce('div',{className:'home-task-later-list'},openShown.map(row))),
