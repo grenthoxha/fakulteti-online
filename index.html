@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-1">
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -31689,120 +31690,7 @@ Nënshkrimi: _____________________`;
         )
       ),
 
-      /* A compact bridge from Home to nearby services, one daily perk and one useful warning */
-      /*#__PURE__*/React.createElement("section", {
-        "data-home-section": "student-services",
-        className: "card-surface rounded-2xl border border-default p-3.5 sm:p-5 shadow-2xs"
-      },
-        /* Section Header */
-        /*#__PURE__*/React.createElement("div", {
-          className: "flex items-center justify-between gap-3 mb-3.5"
-        },
-          /* Left: Title + Subtitle */
-          /*#__PURE__*/React.createElement("div", { className: "min-w-0" },
-            /*#__PURE__*/React.createElement("div", { className: "flex items-center gap-1.5" },
-              /*#__PURE__*/React.createElement("span", { className: "text-base", "aria-hidden": "true" }, "🏢"),
-              /*#__PURE__*/React.createElement("h2", {
-                className: "text-sm sm:text-base font-extrabold text-primary tracking-tight leading-tight"
-              }, appearanceText('Shërbimet Studentore', 'Student Services'))
-            )
-          ),
-          /* Right: All Services Link */
-          /*#__PURE__*/React.createElement("button", {
-            type: "button",
-            onClick: () => setView('studentservices'),
-            className: "text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline shrink-0 cursor-pointer inline-flex items-center gap-1"
-          }, appearanceText('Të gjitha shërbimet →', 'All services →'))
-        ),
-
-        /* Services Carousel (Horizontal scroll on mobile, responsive grid on desktop) */
-        /*#__PURE__*/React.createElement("div", {
-          className: "services-carousel flex gap-2.5 overflow-x-auto overscroll-x-contain pb-1.5 snap-x snap-mandatory"
-        }, [
-          (() => {
-            const fs = computeFilozofikuFreeSummary();
-            return {
-              id: 'freerooms',
-              title: appearanceText('Sallat e Lira', 'Free Classrooms'),
-              detail: appearanceText('Fakulteti Filozofik', 'Faculty of Philosophy'),
-              badge: `${fs.freeCount}/${fs.totalCount} të lira`,
-              badgeClass: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
-              icon: '🏛️',
-              open: () => setView('freerooms')
-            };
-          })(),
-          {
-            id: 'housing',
-            title: appearanceText('Banesat', 'Housing'),
-            detail: appearanceText('Shpallje studentore', 'Student listings'),
-            badge: '12 aktive',
-            badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-            icon: '🏠',
-            open: () => setView('housing')
-          },
-          {
-            id: 'books',
-            title: appearanceText('Skripta & Libra', 'Books & Notes'),
-            detail: appearanceText('Tregu & Shkëmbimi', 'Marketplace'),
-            badge: appearanceText('Falas & Këmbim', 'Free & Swap'),
-            badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-            icon: '📚',
-            open: () => setView('books')
-          },
-          {
-            id: 'scholarship',
-            title: appearanceText('Simulatori i Bursës', 'Scholarship Calculator'),
-            detail: 'Pragu 9.00 UP',
-            badge: 'Kalkulator',
-            badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-            icon: '🎓',
-            open: () => setView('scholarship')
-          },
-          {
-            id: 'studygroups',
-            title: appearanceText('Grupet e Studimit', 'Study Groups'),
-            detail: appearanceText('Bibliotekë & Online', 'Library & Online'),
-            badge: appearanceText('Bashkohu', 'Join'),
-            badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
-            icon: '👥',
-            open: () => setView('studygroups')
-          },
-          {
-            id: 'urbantraffic',
-            title: appearanceText('Trafiku Urban', 'Urban Transit'),
-            detail: 'Linjat 4, 3, 1',
-            badge: 'Orari Real',
-            badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
-            icon: '🚌',
-            open: () => setView('urbantraffic')
-          },
-          {
-            id: 'studentperks',
-            title: appearanceText('Zbritjet Studentore', 'Student Discounts'),
-            detail: appearanceText('Kafiteri & Fitnese', 'Cafes & Gyms'),
-            badge: '-20% deri -50%',
-            badgeClass: 'bg-pink-500/10 text-pink-700 dark:text-pink-400',
-            icon: '🏷️',
-            open: () => setView('studentperks')
-          }
-        ].filter(srv => ['freerooms', 'books', 'housing', 'urbantraffic'].includes(srv.id))
-        .sort((a, b) => ['freerooms', 'books', 'housing', 'urbantraffic'].indexOf(a.id) - ['freerooms', 'books', 'housing', 'urbantraffic'].indexOf(b.id))
-        .map(srv => /*#__PURE__*/React.createElement("button", {
-          key: srv.id,
-          type: "button",
-          onClick: srv.open,
-          className: "snap-start shrink-0 w-40 sm:w-44 min-w-0 p-2.5 sm:p-3 rounded-xl input-bg border border-default hover:border-brand-400 hover:shadow-xs transition-all text-center flex flex-col items-center justify-between gap-1 cursor-pointer group"
-        },
-          /* Icon */
-          /*#__PURE__*/React.createElement("span", { className: "text-2xl mb-1 group-hover:scale-110 transition-transform", "aria-hidden": "true" }, srv.icon),
-          /* Name */
-          /*#__PURE__*/React.createElement("span", { className: "block text-xs font-bold text-primary group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-1" }, srv.title),
-          /* Subtitle */
-          /*#__PURE__*/React.createElement("span", { className: "block text-[10px] text-secondary line-clamp-1" }, srv.detail),
-          /* Badge */
-          /*#__PURE__*/React.createElement("span", { className: 'mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide bg-brand-500/10 text-brand-700 dark:text-brand-300' }, srv.badge)
-        )))
-      ),
+      renderHomeServicesReference(),
 
     );
     // Reorder actual keyed sections so keyboard and screen-reader order match the layout.
@@ -33431,72 +33319,83 @@ Nënshkrimi: _____________________`;
           bgLayers, display, header, taskLine, bottomBar, sideCol, lockBar, settingsPanel)));
   };
 
+  const renderHomeServicesReference = () => {
+    const h = React.createElement;
+    const services = [
+      { id:'freerooms', title:appearanceText('Sallat e Lira','Free Classrooms'), detail:appearanceText('Orari, sallat dhe vendet e lira','Schedules and available classrooms'), icon:'M5 5h14v16H5zM5 9h14M8 3v4M16 3v4' },
+      { id:'books', title:appearanceText('Skripta & Libra','Books & Notes'), detail:appearanceText('Materiale mësimore dhe literatura','Study materials and literature'), icon:'M3 7l9-4 9 4-9 4-9-4zM3 12l9 4 9-4M3 17l9 4 9-4' },
+      { id:'housing', title:appearanceText('Banesat','Housing'), detail:appearanceText('Banesa dhe cimerë për studentë','Student housing and roommates'), icon:'M3 11l9-8 9 8M5 10v11h14V10M9 21v-8h6v8' },
+      { id:'scholarship', title:appearanceText('Simulatori i Bursës','Scholarship Calculator'), detail:appearanceText('Llogarit mundësitë për bursë','Explore scholarship eligibility'), icon:'M2 8l10-5 10 5-10 5-10-5zM6 10v7c4 3 8 3 12 0v-7M22 8v8' },
+      { id:'studygroups', title:appearanceText('Grupet e Studimit','Study Groups'), detail:appearanceText('Mësoni bashkë, online ose në kampus','Study together, online or on campus'), icon:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0' },
+      { id:'urbantraffic', title:appearanceText('Trafiku Urban','Urban Transit'), detail:appearanceText('Linjat, stacionet dhe oraret','Routes, stops and timetables'), icon:'M5 4h14v14H5zM5 10h14M9 4v6M15 4v6M7 18v3M17 18v3M8 14h.01M16 14h.01' }
+    ];
+    return h('section', { 'data-home-section':'student-services', className:'home-services-reference' },
+      h('div', { className:'home-reference-heading' },
+        h('div', { className:'home-services-heading-main' },
+          h('span', { className:'home-services-heading-icon', 'aria-hidden':true }, unitUiIcon('M3 9l9-6 9 6H3zM5 11v7M10 11v7M14 11v7M19 11v7M3 21h18M3 18h18','w-6 h-6')),
+          h('div', { className:'home-services-heading-copy' },
+            h('h2', null, appearanceText('Shërbimet Studentore','Student Services')),
+            h('p', null, appearanceText('Dokumente, kërkesa dhe shërbime të tjera','Documents, requests and other services')))),
+        h('button', { type:'button', onClick:()=>setView('studentservices'), className:'home-services-all' }, appearanceText('Të gjitha','View all'), h('span', { 'aria-hidden':true }, '→'))),
+      h('div', { className:'home-services-grid-reference' }, services.map(service=>h('button', {
+        key:service.id, type:'button', onClick:()=>setView(service.id), className:'home-service-reference',
+        style:{ '--service-bg':'rgba(var(--brand-rgb), .1)', '--service-ink':'rgb(var(--brand-rgb))' }
+      },
+        h('span', { className:'home-service-icon', 'aria-hidden':true }, unitUiIcon(service.icon,'w-6 h-6')),
+        unitUiIcon('M9 5l7 7-7 7','home-service-chevron'),
+        h('span', { className:'home-service-title' }, service.title),
+        h('span', { className:'home-service-description' }, service.detail)))));
+  };
+
   const renderTodayTasksMinimal = () => {
     const ce = React.createElement;
-    const line = 'border-t border-black/5 dark:border-white/10';
-    const PRIORITY = {
-      p1: { label: 'E rëndësishme', dot: 'bg-red-500', text: 'text-red-700 dark:text-red-400' },
-      p2: { label: 'E lartë', dot: 'bg-orange-500', text: 'text-orange-700 dark:text-orange-400' },
-      p3: { label: 'Mesatare', dot: 'bg-sky-500', text: 'text-sky-700 dark:text-sky-400' }
-    };
     const doneToday = visibleDailyRoutines.filter(routineIsDoneToday);
     const openList = displayedDailyRoutines;
-    const limit = !expandedAllTasks && openList.length > 4;
-    const openShown = limit ? openList.slice(0, 4) : openList;
+    const primary = openList[0] || null;
+    const remaining = openList.slice(1);
+    const openShown = expandedAllTasks ? remaining : remaining.slice(0,2);
     const total = visibleDailyRoutines.length;
     const q = todayQuickTask;
-    const closeMenu = e => { const d = e.currentTarget.closest('details'); if (d) d.removeAttribute('open'); };
-    const menuItem = (txt, onClick, cls = 'text-primary') => ce("button", {
-      type: "button",
-      onClick: e => { closeMenu(e); onClick(); },
-      className: `w-full min-h-10 px-3 rounded-lg text-left text-sm font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer ${cls}`
-    }, txt);
-
-    const row = (routine, i) => {
-      const isDone = routineIsDoneToday(routine);
-      const pr = PRIORITY[routine.priority || 'p4'];
-      const courseObj = routine.courseId ? allCourses.find(c => c.id === routine.courseId) : null;
-      const projectObj = routine.projectId ? customProjects.find(p => p.id === routine.projectId) : null;
-      const subtasks = routine.subtasks || [];
-      const subDone = subtasks.filter(s => s.done).length;
-      
-      const isNow = !isDone && scheduledDailyRoutine && scheduledDailyRoutine.id === routine.id;
-      const meta = [
-        projectObj ? projectObj.title : courseObj ? courseObj.title : null,
-        routine.time || null,
-        routine.minutes ? `${routine.minutes} min` : null,
-        subtasks.length ? `${subDone}/${subtasks.length} hapa` : null,
-      ].filter(Boolean);
-      return ce("div", { key: routine.id, className: `${i ? line : ''} ${recentlyAddedRoutineId === routine.id ? 'anim-fade-up' : ''}` },
-        ce("div", { className: "flex items-center gap-3.5 py-3" },
-          ce("button", {
-            type: "button",
-            onClick: () => toggleDailyRoutine(routine),
-            "aria-label": isDone ? `Shëno si të pakryer: ${routine.title}` : `Shëno si të kryer: ${routine.title}`,
-            "aria-pressed": isDone,
-            className: `w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center shrink-0 cursor-pointer ${isDone ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-300 dark:border-slate-600 text-transparent'}`
-          }, unitUiIcon("M5 12.5l4.5 4.5L19 7.5", "w-3.5 h-3.5")),
-          ce("button", { type: "button", onClick: () => editDailyRoutine(routine), className: "flex-1 min-w-0 text-left cursor-pointer" },
-            ce("span", { className: `block text-[15px] font-semibold leading-snug ${isDone ? 'text-tertiary line-through' : 'text-primary'}` }, routine.title),
-            (meta.length > 0 || (pr && !isDone) || isNow) && ce("span", { className: "flex flex-wrap items-center gap-x-1.5 text-[13px] text-tertiary mt-0.5" },
-              isNow && ce("span", { className: "font-semibold text-emerald-700 dark:text-emerald-400" }, "Tani"),
-              isNow && meta.length > 0 && ce("span", { "aria-hidden": "true" }, "·"),
-              pr && !isDone && ce("span", { className: `inline-flex items-center gap-1.5 font-medium ${pr.text}` }, ce("span", { className: `w-1.5 h-1.5 rounded-full ${pr.dot}` }), pr.label),
-              pr && !isDone && meta.length > 0 && ce("span", { "aria-hidden": "true" }, "·"),
-              meta.length > 0 && ce("span", { className: "tabular-nums" }, meta.join(' · ')))),
-          ce("details", { className: "relative shrink-0" },
-            ce("summary", { className: "list-none [&::-webkit-details-marker]:hidden w-9 h-9 -mr-1.5 rounded-lg flex items-center justify-center text-tertiary hover:text-primary cursor-pointer", "aria-label": `Veprimet për: ${routine.title}` },
-              unitUiIcon("M5 12h.01M12 12h.01M19 12h.01", "w-5 h-5")),
-            ce("div", { className: "absolute right-0 top-full z-40 mt-1 w-48 p-1.5 rounded-xl modal-bg border border-default shadow-xl" },
-              !isDone && null,
-              !isDone && menuItem("Shtyje për nesër", () => postponeDailyRoutine(routine.id)),
-              menuItem("Ndrysho", () => editDailyRoutine(routine)),
-              menuItem("Fshij", () => setRoutinePendingRemoval(routine), 'text-red-700 dark:text-red-400')))),
-        subtasks.length > 0 && !isDone && ce("div", { className: "pl-[38px] pb-3 -mt-1 space-y-1" },
-          subtasks.map(st => ce("label", { key: st.id, className: "flex items-center gap-2.5 min-h-8 text-[13px] cursor-pointer" },
-            ce("input", { type: "checkbox", checked: !!st.done, onChange: () => toggleRoutineSubtask(routine.id, st.id), className: "w-4 h-4 rounded accent-brand-600 cursor-pointer shrink-0" }),
-            ce("span", { className: `flex-1 min-w-0 ${st.done ? 'text-tertiary line-through' : 'text-secondary'}` }, st.title),
-            st.time && ce("span", { className: "text-tertiary tabular-nums" }, st.time)))));
+    const clockIcon = () => unitUiIcon('M12 8v5l3 2M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z','w-4 h-4');
+    const metadata = routine => ce('span', { className:'home-task-meta' }, clockIcon(), [routine.time, routine.minutes ? `${routine.minutes} min` : null].filter(Boolean).join(' · '));
+    const closeMenu = event => { const menu=event.currentTarget.closest('details'); if(menu)menu.removeAttribute('open'); };
+    const menuItem = (label,onClick,danger=false) => ce('button', { type:'button', onClick:event=>{closeMenu(event);onClick();}, className:`w-full min-h-10 px-3 rounded-lg text-left text-sm font-medium hover-surface cursor-pointer ${danger?'text-red-700 dark:text-red-400':'text-primary'}` }, label);
+    const actions = routine => ce('details', { className:'home-task-menu' },
+      ce('summary', { 'aria-label':`Veprimet për: ${routine.title}` }, unitUiIcon('M5 12h.01M12 12h.01M19 12h.01','w-5 h-5')),
+      ce('div', { className:'absolute right-0 top-full z-40 mt-1 w-48 p-1.5 rounded-xl modal-bg border border-default shadow-xl' },
+        menuItem(routineIsDoneToday(routine)?'Shëno si të pakryer':'Shëno si të kryer',()=>toggleDailyRoutine(routine)),
+        !routineIsDoneToday(routine)&&menuItem('Shtyje për nesër',()=>postponeDailyRoutine(routine.id)),
+        menuItem('Ndrysho',()=>editDailyRoutine(routine)),
+        menuItem('Fshij',()=>setRoutinePendingRemoval(routine),true)));
+    const extras = routine => {
+      if(!expandedAllTasks)return null;
+      const courseObj = routine.courseId?allCourses.find(course=>course.id===routine.courseId):null;
+      const projectObj = routine.projectId?customProjects.find(project=>project.id===routine.projectId):null;
+      const subtasks=routine.subtasks||[];
+      return ce(React.Fragment,null,
+        (projectObj||courseObj)&&ce('p',{className:'home-task-extra'},projectObj?.title||courseObj?.title),
+        subtasks.length>0&&!routineIsDoneToday(routine)&&ce('div',{className:'home-task-subtasks'},subtasks.map(subtask=>ce('label',{key:subtask.id,className:'flex items-center gap-2 text-xs text-secondary cursor-pointer'},
+          ce('input',{type:'checkbox',checked:!!subtask.done,onChange:()=>toggleRoutineSubtask(routine.id,subtask.id),className:'w-4 h-4 accent-brand-600'}),
+          ce('span',{className:subtask.done?'line-through':''},subtask.title),subtask.time&&ce('span',{className:'ml-auto tabular-nums'},subtask.time)))));
+    };
+    const row = routine => {
+      const isDone=routineIsDoneToday(routine);
+      return ce('div',{key:routine.id,className:'home-task-row'},
+        ce('div',{className:'home-task-row-main'},
+          ce('button',{type:'button',onClick:()=>toggleDailyRoutine(routine),'aria-label':`${isDone?'Shëno si të pakryer':'Shëno si të kryer'}: ${routine.title}`,'aria-pressed':isDone,className:`home-task-check${isDone?' is-done':''}`},unitUiIcon('M5 12.5l4.5 4.5L19 7.5','w-3.5 h-3.5')),
+          ce('div',{className:'home-task-row-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(routine),className:`home-task-title${isDone?' is-done':''}`},routine.title),metadata(routine)),
+          expandedAllTasks&&actions(routine)),extras(routine));
+    };
+    const startTask = routine => {
+      // Keep an existing focus session intact; otherwise start this task's duration.
+      if(pomo.endsAt&&pomo.taskId!==routine.id){setPomoOpen(true);return;}
+      const now=Date.now(),seconds=Math.max(5,Number(routine.minutes)||pomoSettings.focus||25)*60;
+      setPomoNow(now);
+      setPomo(previous=>{
+        if(previous.taskId===routine.id&&previous.phase==='focus'&&!previous.done){const left=previous.endsAt?Math.max(1,Math.ceil((previous.endsAt-now)/1000)):previous.left;return{...previous,left,endsAt:now+left*1000};}
+        return{phase:'focus',total:seconds,left:seconds,endsAt:now+seconds*1000,cycle:0,taskId:routine.id,done:false};
+      });
+      setPomoOpen(true);
     };
 
     const form = q.open && ce("form", {
@@ -33534,48 +33433,25 @@ Nënshkrimi: _____________________`;
           ce("button", { type: "button", onClick: () => setTodayQuickTask(prev => ({ ...prev, open: false })), className: "h-10 px-4 rounded-xl text-sm font-semibold text-secondary cursor-pointer bg-transparent" }, "Anulo"),
           ce("button", { type: "submit", className: "h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto"))));
 
-    const footerBtn = (txt, icon, onClick, extra = '') => ce("button", { type: "button", onClick, className: `${extra} h-12 flex items-center justify-center gap-2 text-sm font-semibold text-brand-600 dark:text-brand-300 cursor-pointer` }, unitUiIcon(icon, "w-[17px] h-[17px]"), txt);
-
-    const pomoRunning = !!pomo.endsAt;
-    const pomoStarted = pomoRunning || pomo.left !== pomo.total;
-    const pomoBtn = ce("button", {
-      type: "button",
-      onClick: () => setPomoOpen(true),
-      "aria-haspopup": "dialog",
-      title: "Pomodoro",
-      "aria-label": pomoStarted ? `Pomodoro, ${pomoFmt(pomoLeftSecs())} ${pomo.phase === 'focus' ? 'fokus' : 'pushim'}${pomoRunning ? '' : ', në pauzë'}` : "Hap Pomodoro",
-      className: `h-9 ${pomoStarted ? 'px-3' : 'w-9 justify-center'} rounded-full ${pomo.phase === 'focus' ? 'bg-brand-600/10 text-brand-700 dark:text-brand-300 hover:bg-brand-600/15' : 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600/15'} cursor-pointer inline-flex items-center gap-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2`
-    }, ...(pomoStarted
-      ? [ce("span", { className: `w-1.5 h-1.5 rounded-full bg-current ${pomoRunning ? 'animate-pulse' : 'opacity-40'}` }), ce("span", { className: "tabular-nums" }, pomoFmt(pomoLeftSecs()))]
-      : [unitUiIcon("M12 8v5l3 2M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z", "w-[18px] h-[18px]")]));
-
-    return ce('div', { className: 'card-surface border border-default rounded-3xl shadow-2xs relative px-[18px] pt-[18px] pb-2' },
-      ce("div", { className: "flex items-center justify-between gap-3 pb-3 mb-2 border-b border-default" },
-        ce("h2", { className: "text-base font-[650] tracking-tight text-primary" }, "Detyrat"),
-        ce("div", { className: "flex items-center gap-2" },
-          pomoBtn,
-        ce("button", {
-          type: "button",
-          onClick: () => q.open ? setTodayQuickTask(prev => ({ ...prev, open: false })) : openTodayQuickTask(),
-          "aria-expanded": q.open,
-          "aria-label": q.open ? "Mbyll shtimin e detyrës" : "Shto detyrë",
-          title: q.open ? "Mbyll" : "Shto detyrë",
-          className: "w-9 h-9 rounded-full bg-brand-600 hover:bg-brand-500 text-white cursor-pointer inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-        }, unitUiIcon(q.open ? "M6 6l12 12M18 6L6 18" : "M12 5v14M5 12h14", "w-4 h-4")))),
-      ce("div", { className: "overflow-visible" },
-        ce("div", null,
-          form,
-          openShown.map((r, i) => row(r, i)),
-          limit && ce("button", { type: "button", onClick: () => setExpandedAllTasks(true), className: `w-full h-11 text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer ${line}` }, `Shfaq edhe ${openList.length - 4}`),
-          expandedAllTasks && openList.length > 4 && ce("button", { type: "button", onClick: () => setExpandedAllTasks(false), className: `w-full h-11 text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer ${line}` }, "Shfaq më pak"),
-          doneToday.map((r, i) => row(r, openShown.length + i)),
-          total === 0 && !q.open && ce("div", { className: "py-6 text-center" },
-            ce("div", { className: "text-[15px] font-semibold text-primary" }, "Asnjë detyrë për sot"),
-            ce("p", { className: "text-[13px] text-tertiary mt-1" }, "Shto çfarë do të bësh sot, me orë dhe kohëzgjatje."),
-            ce("button", { type: "button", onClick: openTodayQuickTask, className: "mt-3 h-10 px-5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Shto detyrën e parë"))),
-        ce("div", { className: "grid grid-cols-1 border-t border-black/5 dark:border-white/10" },
-          footerBtn("Raporti i ditës", "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6", () => { setReportSelectedDate(today); setRoutineReportModalOpen(true); }))));
+    return ce('div',{className:'home-tasks-reference'},
+      ce('div',{className:'home-reference-heading'},
+        ce('div',null,ce('h2',null,appearanceText('Detyrat','Tasks')),ce('p',null,appearanceText(`Sot, ${openList.length} aktive`,`Today, ${openList.length} active`))),
+        ce('button',{type:'button',onClick:()=>q.open?setTodayQuickTask(previous=>({...previous,open:false})):openTodayQuickTask(),'aria-expanded':q.open,'aria-label':q.open?'Mbyll shtimin e detyrës':'Shto detyrë',className:'home-tasks-add'},unitUiIcon(q.open?'M6 6l12 12M18 6L6 18':'M12 5v14M5 12h14','w-6 h-6'))),
+      form,
+      primary&&ce('div',{className:'home-task-featured'},
+        ce('button',{type:'button',onClick:()=>toggleDailyRoutine(primary),'aria-label':`Shëno si të kryer: ${primary.title}`,className:'home-task-featured-icon'},unitUiIcon('M12 7c-3-3-7-3-10-2v14c3-1 7-1 10 2 3-3 7-3 10-2V5c-3-1-7-1-10 2zM12 7v14','w-7 h-7')),
+        ce('div',{className:'home-task-featured-copy'},ce('span',{className:'home-task-eyebrow'},appearanceText('Detyra e radhës','Next task')),ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
+        ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4'),appearanceText(pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo',pomo.taskId===primary.id&&pomo.endsAt?'Continue':'Start')),
+        expandedAllTasks&&actions(primary)),
+      openShown.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Më pas','Up next')),ce('div',{className:'home-task-later-list'},openShown.map(row))),
+      expandedAllTasks&&doneToday.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Të kryera','Completed')),ce('div',{className:'home-task-later-list'},doneToday.map(row))),
+      !primary&&!q.open&&ce('div',{className:'home-tasks-empty'},ce('strong',{className:'text-sm'},appearanceText(total?'Detyrat e sotme u përfunduan':'Asnjë detyrë për sot',total?'Today’s tasks are complete':'No tasks for today')),!total&&ce('p',null,appearanceText('Shto çfarë do të bësh sot.','Add what you plan to do today.')),!total&&ce('button',{type:'button',onClick:openTodayQuickTask,className:'home-task-start'},appearanceText('Shto detyrën e parë','Add your first task'))),
+      ce('button',{type:'button',className:'home-tasks-all','aria-expanded':expandedAllTasks,onClick:()=>setExpandedAllTasks(value=>!value)},appearanceText(expandedAllTasks?'Shfaq më pak':'Shiko të gjitha',expandedAllTasks?'Show less':'View all'),ce('span',{'aria-hidden':true},expandedAllTasks?'↑':'→')),
+      expandedAllTasks&&ce('div',{className:'home-tasks-tools'},
+        ce('button',{type:'button',onClick:()=>{setReportSelectedDate(today);setRoutineReportModalOpen(true);}},unitUiIcon('M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6','w-4 h-4'),appearanceText('Raporti i ditës','Daily report')),
+        ce('button',{type:'button',onClick:()=>setPomoOpen(true)},clockIcon(),appearanceText('Kohëmatësi','Timer'))));
   };
+
 
   /* ══ ORARI · pamja minimale ══ */
   const scheduleMinDaySessions = dayId => scopedSchedule
