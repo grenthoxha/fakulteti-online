@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-3">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-4">
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -33442,7 +33442,7 @@ Nënshkrimi: _____________________`;
         ce('div',{className:'home-task-featured-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
         ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4'),appearanceText(pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo',pomo.taskId===primary.id&&pomo.endsAt?'Continue':'Start')),
         expandedAllTasks&&actions(primary)),
-      openShown.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Më pas','Up next')),ce('div',{className:'home-task-later-list'},openShown.map(row))),
+      openShown.length>0&&ce('div',{className:'home-task-later-list'},openShown.map(row)),
       expandedAllTasks&&doneToday.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Të kryera','Completed')),ce('div',{className:'home-task-later-list'},doneToday.map(row))),
       !primary&&!q.open&&ce('div',{className:'home-tasks-empty'},ce('strong',{className:'text-sm'},appearanceText(total?'Detyrat e sotme u përfunduan':'Asnjë detyrë për sot',total?'Today’s tasks are complete':'No tasks for today')),!total&&ce('p',null,appearanceText('Shto çfarë do të bësh sot.','Add what you plan to do today.')),!total&&ce('button',{type:'button',onClick:openTodayQuickTask,className:'home-task-start'},appearanceText('Shto detyrën e parë','Add your first task'))),
       ce('button',{type:'button',className:'home-tasks-all','aria-expanded':expandedAllTasks,onClick:()=>setExpandedAllTasks(value=>!value)},appearanceText(expandedAllTasks?'Shfaq më pak':'Shiko të gjitha',expandedAllTasks?'Show less':'View all'),ce('span',{'aria-hidden':true},expandedAllTasks?'↑':'→')),
