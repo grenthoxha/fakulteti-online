@@ -14,6 +14,38 @@
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-6">
+  <style id="profile-refinement">
+    .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
+    .profile-minimal.profile-refined > * {margin-top:0 !important;}
+    .profile-refined .profile-overview {gap:12px;padding:2px 0 6px;}
+    .profile-refined .profile-overview-avatar {width:54px;height:54px;background:rgba(var(--brand-rgb),.08);color:rgb(var(--brand-rgb));border:1px solid rgba(var(--brand-rgb),.12);box-shadow:0 0 0 4px rgba(var(--brand-rgb),.025);}
+    .profile-refined .profile-overview-name {font-size:20px;line-height:1.3;letter-spacing:-.03em;}
+    .profile-refined .profile-overview-edit {flex-shrink:0;padding:7px 10px;min-height:34px;border:1px solid rgba(var(--brand-rgb),.13);border-radius:10px;background:rgba(var(--brand-rgb),.045);font-size:12px;}
+    .profile-refined .profile-student-card {min-height:88px;padding:16px;gap:12px;border-radius:20px;background:linear-gradient(115deg,var(--surface),rgba(var(--brand-rgb),.045));border-color:rgba(var(--brand-rgb),.14);box-shadow:0 6px 16px -14px rgba(15,23,42,.35);}
+    .profile-refined .profile-card-preview {box-shadow:0 3px 7px -5px rgba(15,23,42,.4);}
+    .profile-refined .profile-card-qr {width:36px;height:36px;border-radius:11px;}
+    .profile-refined .profile-student-card > span:nth-child(2) > span + span {margin-top:4px;letter-spacing:.025em;}
+    .profile-refined .profile-quick-link {height:auto;min-height:58px;padding:12px 14px;gap:11px;border-radius:16px;box-shadow:0 3px 10px -10px rgba(15,23,42,.3);}
+    .profile-refined .profile-quick-link > svg:first-child {width:32px;height:32px;padding:7px;border-radius:10px;color:rgb(var(--brand-rgb));background:rgba(var(--brand-rgb),.07);}
+    .profile-refined .profile-progress-link {display:grid;grid-template-columns:32px minmax(0,1fr) 16px;column-gap:11px;row-gap:3px;}
+    .profile-refined .profile-progress-link > svg:first-child {grid-column:1;grid-row:1 / 3;}
+    .profile-refined .profile-progress-link > span:nth-child(2) {grid-column:2;grid-row:1;min-width:0;font-weight:550;line-height:1.4;}
+    .profile-refined .profile-progress-link > span:nth-child(3) {grid-column:2;grid-row:2;line-height:1.4;}
+    .profile-refined .profile-progress-link > svg:last-child {grid-column:3;grid-row:1 / 3;}
+    .profile-refined .profile-menu-group {padding-top:6px;}
+    .profile-refined .profile-section-label {margin:0 0 8px 4px;font-size:12px;font-weight:600;letter-spacing:.015em;}
+    .profile-refined .profile-menu-card {padding:0 14px;border-radius:18px;box-shadow:0 3px 10px -12px rgba(15,23,42,.3);}
+    .profile-refined .profile-menu-row {min-height:52px;gap:12px;line-height:1.4;}
+    .profile-refined .profile-menu-row > span.flex-1 {padding-block:10px;}
+    .profile-refined :is(.profile-student-card,.profile-quick-link,.profile-overview-edit,.profile-menu-row) {transition:background-color .18s ease,border-color .18s ease;}
+    .profile-refined :is(.profile-student-card,.profile-quick-link,.profile-menu-row):focus-visible {outline:2px solid rgba(var(--brand-rgb),.65);outline-offset:3px;}
+    .dark .profile-refined .profile-overview-avatar {background:rgba(var(--brand-rgb),.16);color:#9fc5f2;border-color:rgba(159,197,242,.18);}
+    .dark .profile-refined .profile-student-card {background:linear-gradient(115deg,#151f30,#17253b);border-color:rgba(159,197,242,.16);}
+    .dark .profile-refined .profile-quick-link > svg:first-child {background:rgba(109,164,229,.12);color:#9fc5f2;}
+    @media(hover:hover) {.profile-refined :is(.profile-quick-link,.profile-menu-row):hover {background-color:rgba(var(--brand-rgb),.045);}.profile-refined .profile-student-card:hover {border-color:rgba(var(--brand-rgb),.35);}}
+    @media(max-width:359px) {.profile-minimal.profile-refined {padding-inline:14px;}.profile-refined .profile-card-preview {width:60px;}.profile-refined .profile-overview-name {font-size:18px;}}
+    @media(prefers-reduced-motion:reduce) {.profile-refined :is(.profile-student-card,.profile-quick-link,.profile-overview-edit,.profile-menu-row) {transition:none;}}
+  </style>
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -14049,11 +14081,11 @@ function AcademyApp({
     const branchObj = (typeof BRANCHES !== 'undefined' ? BRANCHES : []).find(b => b.id === branchId) || { label: 'Psikologji' };
     const yearLabel = (typeof yr !== 'undefined' && yr && yr.label) ? yr.label : ('Viti ' + yearId);
     const divider = ' border-t border-slate-100 dark:border-slate-800';
-    const rowCls = 'w-full flex items-center gap-3.5 min-h-[54px] text-left text-[15px] text-primary cursor-pointer bg-transparent';
-    const cardCls = 'card-surface border border-default rounded-[18px] px-4';
+    const rowCls = 'profile-menu-row w-full flex items-center gap-3.5 min-h-[54px] text-left text-[15px] text-primary cursor-pointer bg-transparent';
+    const cardCls = 'profile-menu-card card-surface border border-default rounded-[18px] px-4';
     const icon = d => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'text-slate-500 dark:text-slate-400 flex-shrink-0' }, h('path', { d }));
     const chevron = () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true, className: 'text-slate-400 dark:text-slate-500 flex-shrink-0' }, h('path', { d: 'M9 6l6 6-6 6' }));
-    const label = txt => h('div', { className: 'text-[13px] font-semibold text-secondary mb-2.5' }, txt);
+    const label = txt => h('div', { className: 'profile-section-label text-[13px] font-semibold text-secondary mb-2.5' }, txt);
     const groups = [
       { id: 'study', name: t('Studimi', 'Study'), items: [
         { view: 'articles', label: t('Artikujt', 'Articles'), icon: 'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5' },
@@ -14077,15 +14109,15 @@ function AcademyApp({
       ]}
     ];
     const completedProfileExams = enrolledCourses.filter(course => done.includes(course.id));
-    return h('div', { className: 'profile-minimal w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
-      h('section', { className: 'flex items-center gap-3.5' },
-        h('div', { className: 'w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
+    return h('div', { className: 'profile-minimal profile-refined w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
+      h('section', { className: 'profile-overview flex items-center gap-3.5' },
+        h('div', { className: 'profile-overview-avatar w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
           profilePhoto ? h('img', { src: profilePhoto, alt: t('Fotografia e profilit', 'Profile photo'), className: 'w-full h-full object-cover' }) : profileInitials),
         h('div', { className: 'flex-1 min-w-0' },
-          h('div', { className: 'text-[19px] font-bold tracking-tight text-primary truncate' }, studentName || 'Student'),
+          h('div', { className: 'profile-overview-name text-[19px] font-bold tracking-tight text-primary truncate' }, studentName || 'Student'),
           studentFullName && studentName !== studentFullName && h('div', { className: 'text-xs text-secondary mt-0.5 truncate' }, studentFullName),
           h('div', { className: 'text-sm text-secondary mt-0.5' }, branchObj.label + ' · ' + yearLabel)),
-        h('button', { type: 'button', onClick: () => { profileNameRequestRef.current++; setProfileNameChecking(false); if (isEditingName && !profileNeedsRealName) setIsEditingName(false); else openProfileEditor(); }, 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', className: 'text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName && !profileNeedsRealName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
+        h('button', { type: 'button', onClick: () => { profileNameRequestRef.current++; setProfileNameChecking(false); if (isEditingName && !profileNeedsRealName) setIsEditingName(false); else openProfileEditor(); }, 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', className: 'profile-overview-edit text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName && !profileNeedsRealName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
       (isEditingName || profileNeedsRealName) && h('form', {
         id: 'profile-edit',
         'aria-label': t('Ndrysho profilin', 'Edit profile'),
@@ -14094,7 +14126,7 @@ function AcademyApp({
         className: 'card-surface border border-default rounded-[18px] p-4 space-y-4 anim-fade-up'
       },
         h('div', { className: 'flex items-center gap-3.5' },
-          h('div', { className: 'w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
+          h('div', { className: 'profile-overview-avatar w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
             profilePhoto ? h('img', { src: profilePhoto, alt: '', className: 'w-full h-full object-cover' }) : profileInitials),
           h('div', { className: 'flex flex-wrap items-center gap-1.5 min-w-0' },
             h('button', { type: 'button', onClick: () => profilePhotoInputRef.current?.click(), className: 'h-10 px-3.5 rounded-xl bg-black/[0.05] dark:bg-white/[0.07] text-sm font-semibold text-primary cursor-pointer' }, profilePhoto ? t('Ndrysho foton', 'Change photo') : t('Shto foton', 'Add photo')),
@@ -14113,8 +14145,8 @@ function AcademyApp({
           h('button', { type: 'submit', disabled: profileNameChecking, 'aria-busy': profileNameChecking, className: 'h-10 px-5 rounded-xl bg-brand-600 text-white text-sm font-semibold cursor-pointer disabled:opacity-60' }, profileNameChecking ? t('Po kontrollohet emri…', 'Checking name…') : t('Ruaj', 'Save')))),
       (() => {
         const card = getStudentCardData();
-        return h('button', { type: 'button', onClick: () => { setStudentCardSide('front'); setStudentCardOpen(true); }, className: 'w-full rounded-[18px] card-surface border border-default flex items-center gap-3.5 px-4 py-3 text-left cursor-pointer' },
-          h('span', { 'aria-hidden': true, className: 'relative w-[76px] h-12 rounded-[7px] border border-slate-200 dark:border-slate-600 bg-[#fdfdfc] overflow-hidden flex-shrink-0' },
+        return h('button', { type: 'button', onClick: () => { setStudentCardSide('front'); setStudentCardOpen(true); }, className: 'profile-student-card w-full rounded-[18px] card-surface border border-default flex items-center gap-3.5 px-4 py-3 text-left cursor-pointer' },
+          h('span', { 'aria-hidden': true, className: 'profile-card-preview relative w-[76px] h-12 rounded-[7px] border border-slate-200 dark:border-slate-600 bg-[#fdfdfc] overflow-hidden flex-shrink-0' },
             h('span', { className: 'absolute left-1.5 top-1.5 w-[30px] h-[3px] rounded bg-slate-900' }),
             h('span', { className: 'absolute left-1.5 top-[14px] w-[22px] h-[2px] rounded bg-slate-300' }),
             h('span', { className: 'absolute left-1.5 top-5 w-[26px] h-[2px] rounded bg-slate-300' }),
@@ -14124,23 +14156,23 @@ function AcademyApp({
           h('span', { className: 'flex-1 min-w-0' },
             h('span', { className: 'block text-[15px] font-semibold text-primary' }, t('Kartela e studentit', 'Student ID card')),
             h('span', { className: 'block text-[13px] text-secondary tabular-nums truncate' }, card.number)),
-          h('span', { className: 'w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center flex-shrink-0' },
+          h('span', { className: 'profile-card-qr w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center flex-shrink-0' },
             h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2' }))));
       })(),
-      h('button', { type: 'button', onClick: () => setView('academic-progress'), className: 'w-full min-h-[58px] rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
+      h('button', { type: 'button', onClick: () => setView('academic-progress'), className: 'profile-quick-link profile-progress-link w-full min-h-[58px] rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M4 20V10M10 20V4M16 20v-7M22 20H2'),
         h('span', { className: 'flex-1 text-left' }, t('Progresi dhe notat', 'Progress and grades')),
         h('span', { className: 'text-xs text-secondary tabular-nums' }, `${Number(pct) || 0}% · ${completedProfileExams.length} ${t('provime', 'exams')}`), chevron()),
-      h('button', { type: 'button', onClick: () => setView('studentservices'), className: 'w-full h-12 rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
+      h('button', { type: 'button', onClick: () => setView('studentservices'), className: 'profile-quick-link w-full h-12 rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M3 5h18v14H3zM8 10a2 2 0 1 1 0 .01M6 15c.5-1.2 1.4-2 2-2s1.5.8 2 2M14 10h4M14 14h3'),
         h('span', { className: 'flex-1 text-left' }, t('Shërbimet studentore', 'Student services')),
         chevron()),
-      groups.map(g => h('section', { key: g.name },
+      groups.map(g => h('section', { key: g.name, className: 'profile-menu-group' },
         label(g.name),
         h('div', { className: cardCls },
           g.items.map((it, i) => h('button', { key: it.view, type: 'button', onClick: () => setView(it.view), className: rowCls + (i ? divider : '') },
             icon(it.icon), h('span', { className: 'flex-1' }, it.label), chevron()))))),
-      h('section', null,
+      h('section', { className: 'profile-menu-group' },
         label(t('Cilësimet', 'Settings')),
         h('div', { className: cardCls },
           h('button', { type: 'button', role: 'switch', 'aria-checked': !!isDark, onClick: () => setIsDark(!isDark), className: rowCls },
