@@ -14,17 +14,18 @@
 .home-dashboard .home-reference-heading p {margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--muted);}
 .home-dashboard .home-tasks-add {display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border:1px solid rgba(75,130,212,.2);border-radius:12px;background:rgba(53,115,207,.1);color:#367bd0;cursor:pointer;}
 .dark .home-dashboard .home-tasks-add {background:#20314e;color:#86b8ff;border-color:#314768;box-shadow:inset 0 1px 3px rgba(255,255,255,.035);}
-.home-dashboard .home-task-featured {display:flex;align-items:center;gap:12px;margin-inline:-9px;padding:15px 12px;border:1px solid #c8d7ec;border-radius:19px;background:linear-gradient(115deg,#f0f5fc,#f6f8fc);box-shadow:inset 0 0 12px rgba(47,107,208,.02);}
+.home-dashboard .home-task-featured {display:flex;align-items:center;gap:13px;margin-inline:0;padding:10px 12px;border:1px solid #c8d7ec;border-radius:16px;background:linear-gradient(115deg,#f0f5fc,#f6f8fc);box-shadow:inset 0 0 12px rgba(47,107,208,.02);}
 .dark .home-dashboard .home-task-featured {background:linear-gradient(115deg,#1a273b,#192437);border-color:#354c6e;box-shadow:inset 0 0 12px rgba(92,154,255,.025),0 4px 10px -7px #000;}
 .home-dashboard .home-task-featured-copy {flex:1;min-width:0;}
 .home-dashboard .home-task-title {display:block;min-width:0;width:100%;padding:0;border:0;background:transparent;color:var(--ink);font-size:15px;font-weight:600;line-height:1.35;text-align:left;overflow-wrap:anywhere;cursor:pointer;}
-.home-dashboard .home-task-featured .home-task-title {font-size:16px;letter-spacing:-.02em;}
 .home-dashboard .home-task-meta {display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;}
 .home-dashboard .home-task-meta svg {width:14px;height:14px;flex-shrink:0;}
 .home-dashboard .home-task-start {display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgb(var(--brand-rgb));color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
 .home-dashboard .home-task-start svg {width:16px;height:16px;}
 .home-dashboard .home-tasks-later-label {margin:20px 0 8px;font-size:13px;font-weight:600;color:var(--muted);}
 .home-dashboard .home-task-later-list {display:grid;gap:7px;}
+.home-dashboard .home-task-featured + .home-task-later-list {margin-top:7px;}
+.home-dashboard .home-tasks-reference .home-reference-heading {margin-bottom:12px;}
 .home-dashboard .home-task-row {border:1px solid #e8edf4;border-radius:16px;background:#f7f9fc;padding:10px 12px;}
 .dark .home-dashboard .home-task-row {background:linear-gradient(110deg,#1b2536,#192233);border-color:rgba(255,255,255,.035);box-shadow:inset 0 1px 0 rgba(255,255,255,.015);}
 .home-dashboard .home-task-row-main {display:flex;align-items:center;gap:13px;min-width:0;}
@@ -35,8 +36,8 @@
 .home-dashboard .home-task-title.is-done {text-decoration:line-through;color:var(--muted);}
 .home-dashboard .home-task-subtasks {margin-top:10px;padding-left:36px;display:grid;gap:5px;}
 .home-dashboard .home-task-extra {margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5;}
-.home-dashboard .home-tasks-all {display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:40px;margin-top:17px;border:1px solid #d8e4f5;border-radius:13px;background:#f0f5fd;color:#2463ac;font-size:14px;font-weight:600;cursor:pointer;}
-.dark .home-dashboard .home-tasks-all {background:linear-gradient(115deg,#1d2b41,#1c293e);border-color:#30435f;color:#8ebeff;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
+.home-dashboard .home-tasks-all {display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;min-height:32px;margin-top:8px;padding:0;border:0;background:transparent;color:#2463ac;font-size:12px;font-weight:600;cursor:pointer;}
+.dark .home-dashboard .home-tasks-all {color:#8ebeff;}
 .home-dashboard .home-tasks-tools {display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line);}
 .home-dashboard .home-tasks-tools button {display:inline-flex;align-items:center;gap:6px;min-height:36px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;}
 .home-dashboard .home-task-menu {position:relative;flex-shrink:0;}
@@ -65,8 +66,6 @@
 .home-dashboard :is(.home-tasks-add,.home-task-title,.home-task-check,.home-task-start,.home-tasks-all,.home-services-all,.home-service-reference):focus-visible {outline:2px solid #5b9bea;outline-offset:3px;}
 @media(min-width:640px) {
   .home-dashboard .home-tasks-reference,.home-dashboard .home-services-reference {padding:22px;}
-  .home-dashboard .home-task-featured {padding:17px 16px;}
-  .home-dashboard .home-task-featured .home-task-title {font-size:18px;}
   .home-dashboard .home-service-reference {flex-basis:200px;min-height:158px;padding:17px;}
   .home-dashboard .home-service-icon {width:40px;height:40px;}
   .home-dashboard .home-service-title {font-size:16px;}
@@ -74,8 +73,6 @@
   .home-dashboard .home-service-chevron {right:15px;top:29px;}
 }
 @media(max-width:359px) {
-  .home-dashboard .home-task-featured {gap:8px;padding:12px 9px;}
-  .home-dashboard .home-task-featured .home-task-title {font-size:14px;}
   .home-dashboard .home-task-start {padding:0 9px;font-size:12px;}
   .home-dashboard .home-services-heading-icon {display:none;}
 }
