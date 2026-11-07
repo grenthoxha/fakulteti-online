@@ -1277,7 +1277,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261105-mobile-fit-3">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261107-minimal-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -9233,15 +9233,11 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
     };
     const active = { passive: false, capture: true };
     root.addEventListener('wheel', onWheel, active);
-    const captions = Array.from(root.querySelectorAll?.('.course-video-caption') || []);
     const syncCaptionHeights = () => {
       if (feed) {
         root.style.setProperty('--story-stage-width', `${feed.clientWidth}px`);
         root.style.setProperty('--story-stage-height', `${feed.clientHeight}px`);
       }
-      captions.forEach(caption => {
-        caption.closest('.story-slide')?.style.setProperty('--story-caption-height', `${caption.getBoundingClientRect().height}px`);
-      });
     };
     syncCaptionHeights();
     let feedWidth = feed?.clientWidth;
@@ -9255,7 +9251,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
       feed.scrollLeft = feed.dataset.axis === 'vertical' ? 0 : index * feedWidth;
       feed.scrollTop = feed.dataset.axis === 'vertical' ? index * feedHeight : 0;
     }) : null;
-    if (resizeObserver) { resizeObserver.observe(feed); captions.forEach(caption => resizeObserver.observe(caption)); }
+    if (resizeObserver) resizeObserver.observe(feed);
     return () => {
       removeHold();
       removeSwipe();
@@ -9337,7 +9333,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const h = React.createElement;
   const iconBtn = 'w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center shrink-0 cursor-pointer transition-colors';
   return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), 'data-native-ui': String(nativeUi), className: 'course-video-player flex flex-col gap-3 shrink-0' },
-    h('div', { className: 'course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
+    h('div', { className: 'story-video-window course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
       h('iframe', {
         ref: frameRef,
         src: playerUrl,
@@ -9364,8 +9360,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
         hidden: nativeUi,
         tabIndex: nativeUi ? -1 : 0,
         'aria-label': 'Shfaq ose fsheh kontrollet e videos'
-      })
-    ),
+      }),
     h('button', {
       type: 'button', className: 'story-native-toggle', 'aria-pressed': nativeUi,
       'aria-label': nativeUi ? 'Kthehu te kontrolli me prekje' : 'Titrat dhe cilësimet e YouTube',
@@ -9396,7 +9391,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
         h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
           h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
-    )
+    ))
   );
 }
 
@@ -33890,6 +33885,7 @@ Nënshkrimi: _____________________`;
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
         'data-media-layout': 'phone-fit',
+        'data-viewer-style': 'minimal',
         postKey: curVideo.id || courseVideoFeedIndex,
         style: { touchAction: 'none', overscrollBehavior: 'none' },
         isPlaying: videoLivePlaying,
@@ -33973,7 +33969,6 @@ Nënshkrimi: _____________________`;
                   'aria-label': appearanceText('Postimi tjetër', 'Next story'),
                   onClick: () => scrollToVideoFeedSlide(idx + 1)
                 }),
-                video.thumbnail && h('img', { src: video.thumbnail, alt: '', 'aria-hidden': true, className: 'story-backdrop', draggable: false, loading: isActive ? 'eager' : 'lazy' }),
                 /* Only active media plays; the fit button can reveal the whole picture. */
                 video.kind === 'article' ? h('div', { className: 'course-video-player course-video-frame relative w-full bg-black overflow-hidden' },
                   h('picture', { className: 'story-photo-picture' },
@@ -34047,12 +34042,6 @@ Nënshkrimi: _____________________`;
                     onClick: () => { setCourseVideoFeedOpen(false); openTopicExplainById(video.courseId, video.topicId, 'video'); }
                   }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1zM12 5v15' }))), h('span', null, appearanceText('Lënda', 'Course'))) : null),
                 h('div', { className: 'course-video-caption flex flex-col' },
-                  h('div', { className: 'shorts-author' },
-                    h('span', { className: 'shorts-author-mark', 'aria-hidden': true }, video.kind === 'article' ? 'A' : 'F'),
-                    h('span', null, video.kind === 'article' ? appearanceText('Artikuj', 'Articles') : getCategoryLabel(video.category || video.courseTitle || 'Psikologji'))),
-                  h('h2', { className: 'shorts-title' }, video.title),
-                  video.kind === 'article' && video.summary && h('p', { className: 'shorts-summary' }, video.summary),
-                  video.kind !== 'article' && h('div', { className: 'story-hold-hint' }, appearanceText('Mbaje shtypur videon për pauzë', 'Hold the video to pause')),
                   idx === 0 && idx < total - 1 && h('div', { className: 'story-scroll-cue' },
                     h('svg', { className: 'story-cue-mouse', width: 18, height: 26, viewBox: '0 0 24 28', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
                       h('rect', { x: 7, y: 1, width: 10, height: 16, rx: 5 }),
