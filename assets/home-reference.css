@@ -1,7 +1,7 @@
 /* Home task and service cards, matched to the supplied visual reference. */
 .app-main > .home-dashboard {padding-top:8px;}
 .home-dashboard .home-section-list {gap:8px;}
-html[data-density] main .home-dashboard > :not([hidden]) ~ .home-section-list {margin-top:8px;}
+html[data-density] main.app-main .home-dashboard > :not([hidden]) ~ .home-section-list {margin-top:8px;}
 .home-dashboard .home-videos-minimal {padding-block:2px;}
 .home-dashboard .home-tasks-add svg {width:18px;height:18px;}
 .home-dashboard .home-tasks-reference,
