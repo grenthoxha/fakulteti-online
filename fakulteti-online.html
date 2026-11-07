@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="./assets/fakulteti-online-logo.png?v=6">
   <link rel="shortcut icon" href="./assets/fakulteti-online-logo.png?v=6">
   <link rel="apple-touch-icon" sizes="160x160" href="./assets/apple-touch-icon.png?v=1">
-  <link rel="manifest" href="./manifest.webmanifest?v=2">
+  <link rel="manifest" href="./manifest.webmanifest?v=3">
   <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
@@ -47,8 +47,7 @@
     @media(max-width:359px) {.profile-minimal.profile-refined {padding-inline:14px;}.profile-refined .profile-card-preview {width:60px;}.profile-refined .profile-overview-name {font-size:18px;}}
     @media(prefers-reduced-motion:reduce) {.profile-refined :is(.profile-student-card,.profile-quick-link,.profile-overview-edit,.profile-menu-row) {transition:none;}}
   </style>
-  <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+  <meta id="unit-system-theme" name="theme-color" content="#f4f6fb">
   <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -76,6 +75,35 @@
         document.documentElement.classList.remove('dark');
       }
     })();
+  </script>
+
+  <style id="unit-system-bar-style">
+    html { background-color:var(--unit-system-bar,#f4f6fb); }
+    body::after { content:"";position:fixed;inset:auto 0 0;height:env(safe-area-inset-bottom,0px);background:var(--unit-system-bar,#f4f6fb);pointer-events:none;z-index:2147483647; }
+    @media(max-width:767px) { html .app-shell nav.mobile-nav { bottom:env(safe-area-inset-bottom,0px); } }
+    @media(min-width:768px) and (max-width:1023px) { html .app-shell nav.mobile-nav { bottom:calc(.75rem + env(safe-area-inset-bottom,0px)) !important; } }
+  </style>
+  <script id="unit-system-bar">
+    function bindUnitSystemChrome(doc, win) {
+      const root = doc.documentElement;
+      const meta = doc.querySelector('meta[name="theme-color"]');
+      const sync = () => {
+        const dark = root.classList.contains('dark');
+        const media = root.classList.contains('unit-media-open');
+        const color = media ? '#000000' : dark ? '#0b1020' : '#f4f6fb';
+        root.style.setProperty('--unit-system-bar', color);
+        root.style.colorScheme = dark || media ? 'dark' : 'light';
+        meta?.setAttribute('content', color);
+      };
+      sync();
+      const observer = new win.MutationObserver(sync);
+      observer.observe(root, { attributes:true, attributeFilter:['class'] });
+      const visible = () => { if (!doc.hidden) sync(); };
+      doc.addEventListener('visibilitychange', visible);
+      win.addEventListener('pageshow', sync);
+      return () => { observer.disconnect();doc.removeEventListener('visibilitychange',visible);win.removeEventListener('pageshow',sync); };
+    }
+    bindUnitSystemChrome(document, window);
   </script>
 
   <script id="unit-page-scale">
@@ -9172,6 +9200,10 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
   const rootRef = useRef(null);
   const actionsRef = useRef(null);
   actionsRef.current = { next: onNext, previous: onPrevious, settle: onSettle, close: onClose, playing: isPlaying, onPlayingChange };
+  useEffect(() => {
+    document.documentElement.classList.add('unit-media-open');
+    return () => document.documentElement.classList.remove('unit-media-open');
+  }, []);
   useEffect(() => rootRef.current ? bindVideoStoryChrome(rootRef.current) : undefined, [postKey]);
   useEffect(() => {
     const root = rootRef.current;

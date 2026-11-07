@@ -7,8 +7,8 @@
   "start_url": "./?source=homescreen",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f7fb",
-  "theme_color": "#1557b0",
+  "background_color": "#f4f6fb",
+  "theme_color": "#f4f6fb",
   "icons": [
     {
       "src": "./assets/fakulteti-online-logo-192.png",
