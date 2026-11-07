@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Fakulteti Online">
   <meta name="application-name" content="Fakulteti Online">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-6">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
     .profile-minimal.profile-refined > * {margin-top:0 !important;}
@@ -33473,7 +33473,7 @@ Nënshkrimi: _____________________`;
       primary&&ce('div',{className:'home-task-featured'},
         ce('button',{type:'button',onClick:()=>toggleDailyRoutine(primary),'aria-label':`Shëno si të kryer: ${primary.title}`,'aria-pressed':false,className:'home-task-check'},unitUiIcon('M5 12.5l4.5 4.5L19 7.5','w-3.5 h-3.5')),
         ce('div',{className:'home-task-featured-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
-        ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4'),appearanceText(pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo',pomo.taskId===primary.id&&pomo.endsAt?'Continue':'Start')),
+        ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4')),
         expandedAllTasks&&actions(primary)),
       openShown.length>0&&ce('div',{className:'home-task-later-list'},openShown.map(row)),
       expandedAllTasks&&doneToday.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Të kryera','Completed')),ce('div',{className:'home-task-later-list'},doneToday.map(row))),
