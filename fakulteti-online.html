@@ -9264,16 +9264,37 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
     React.createElement('span', { className: 'story-hold-indicator', 'aria-hidden': true },
       React.createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'currentColor' }, React.createElement('path', { d: 'M6 4h4v16H6zM14 4h4v16h-4z' })), holdLabel));
 }
+// YouTube exposes these caption options at runtime; only use tracks/languages it reports.
+function getYouTubeAlbanianCaptionTrack(captions) {
+  if (!captions || !Array.isArray(captions.options) || !captions.options.includes('track')) return null;
+  const tracks = Array.isArray(captions.tracklist) ? captions.tracklist.filter(track => track && typeof track.languageCode === 'string') : [];
+  const current = captions.track && typeof captions.track.languageCode === 'string' ? captions.track : null;
+  const direct = tracks.find(track => track.languageCode === 'sq') || (current?.languageCode === 'sq' ? current : null);
+  if (direct) { const choice = { ...direct }; delete choice.translationLanguage; return choice; }
+  const languages = Array.isArray(captions.translationLanguages) ? captions.translationLanguages : [];
+  const albanian = languages.find(language => language?.languageCode === 'sq');
+  if (!albanian) return null;
+  const translatable = tracks.filter(track => track.is_translateable !== false);
+  const source = translatable.find(track => track.languageCode === current?.languageCode)
+    || translatable.find(track => track.is_default) || translatable[0]
+    || (current && current.is_translateable !== false ? current : null);
+  if (!source) return null;
+  return { ...source, translationLanguage: { ...albanian } };
+}
 function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const frameRef = useRef(null);
   const playerRef = useRef(null);
   const holdingRef = useRef(false);
+  const captionPreferenceRef = useRef({ requested: false });
   const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
   const [started, setStarted] = useState(false);
   const [nativeUi, setNativeUi] = useState(false);
   const playerUrl = useMemo(() => {
     const url = new URL(embedSrc);
     url.searchParams.set('controls', nativeUi ? '1' : '0');
+    url.searchParams.set('hl', 'en');
+    url.searchParams.set('cc_load_policy', '1');
+    url.searchParams.set('cc_lang_pref', 'sq');
     url.searchParams.set('start', String(Math.floor(st.t)));
     url.searchParams.set('autoplay', st.playing ? '1' : '0');
     return url.href;
@@ -9299,6 +9320,18 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
       let data;
       try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
       if (!data || typeof data !== 'object') return;
+      if (data.event === 'initialDelivery') {
+        send('addEventListener', ['onApiChange']);
+        send('loadModule', ['captions']);
+      }
+      if (data.event === 'apiInfoDelivery' && !captionPreferenceRef.current.requested) {
+        const choice = getYouTubeAlbanianCaptionTrack(data.info?.captions);
+        if (choice) {
+          // One preference per iframe load, leaving later manual choices intact.
+          captionPreferenceRef.current.requested = true;
+          send('setOption', ['captions', 'track', choice]);
+        }
+      }
       if (data.event === 'onStateChange' && typeof data.info === 'number') {
         if (data.info === 1) setStarted(true);
         setSt(s => ({ ...s, playing: !holdingRef.current && (data.info === 1 || data.info === 3) }));
@@ -9318,6 +9351,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
     return () => window.removeEventListener('message', onMsg);
   }, []);
   const onLoad = () => {
+    captionPreferenceRef.current = { requested: false };
     const w = frameRef.current?.contentWindow;
     if (!w) return;
     const ping = () => { try { w.postMessage(JSON.stringify({ event: 'listening', id: 'unit-reel', channel: 'widget' }), '*'); } catch {} };
@@ -19215,8 +19249,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           const isFileProtocol = typeof window !== 'undefined' && window.location?.protocol === 'file:';
           const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
           const thumbUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-          const directBase = `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&enablejsapi=1&cc_load_policy=1&cc_lang_pref=sq&hl=sq`;
-          const bridgeBase = `https://cdn.embedly.com/widgets/media.html?src=${encodeURIComponent(`https://www.youtube.com/embed/${videoId}?feature=oembed`)}&url=${encodeURIComponent(watchUrl)}&image=${encodeURIComponent(thumbUrl)}&args=${encodeURIComponent('playsinline=1|rel=0|modestbranding=1|cc_load_policy=1|cc_lang_pref=sq|hl=sq')}&type=text%2Fhtml&schema=youtube`;
+          const directBase = `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&enablejsapi=1&cc_load_policy=1&cc_lang_pref=sq&hl=en`;
+          const bridgeBase = `https://cdn.embedly.com/widgets/media.html?src=${encodeURIComponent(`https://www.youtube.com/embed/${videoId}?feature=oembed`)}&url=${encodeURIComponent(watchUrl)}&image=${encodeURIComponent(thumbUrl)}&args=${encodeURIComponent('playsinline=1|rel=0|modestbranding=1|cc_load_policy=1|cc_lang_pref=sq|hl=en')}&type=text%2Fhtml&schema=youtube`;
           return {
             type: 'embed',
             provider: 'YouTube',
