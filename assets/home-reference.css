@@ -1,0 +1,90 @@
+/* Home task and service cards, matched to the supplied visual reference. */
+.home-dashboard .home-tasks-reference,
+.home-dashboard .home-services-reference {
+  min-width:0; padding:18px; border:1px solid #e1e7f0; border-radius:24px;
+  background:#fff; box-shadow:0 5px 18px -14px rgba(15,23,42,.3); color:var(--ink);
+}
+.dark .home-dashboard .home-tasks-reference,
+.dark .home-dashboard .home-services-reference {
+  background:linear-gradient(125deg,#151e2e 0%,#111a29 100%);
+  border-color:rgba(180,196,224,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 8px 26px -22px #000;
+}
+.home-dashboard .home-reference-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;}
+.home-dashboard .home-reference-heading h2 {margin:0;font-size:20px;font-weight:700;letter-spacing:-.025em;line-height:1.25;}
+.home-dashboard .home-reference-heading p {margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--muted);}
+.home-dashboard .home-tasks-add {display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border:1px solid rgba(75,130,212,.2);border-radius:12px;background:rgba(53,115,207,.1);color:#367bd0;cursor:pointer;}
+.dark .home-dashboard .home-tasks-add {background:#20314e;color:#86b8ff;border-color:#314768;box-shadow:inset 0 1px 3px rgba(255,255,255,.035);}
+.home-dashboard .home-task-featured {display:flex;align-items:center;gap:12px;margin-inline:-9px;padding:15px 12px;border:1px solid #c8d7ec;border-radius:19px;background:linear-gradient(115deg,#f0f5fc,#f6f8fc);box-shadow:inset 0 0 12px rgba(47,107,208,.02);}
+.dark .home-dashboard .home-task-featured {background:linear-gradient(115deg,#1a273b,#192437);border-color:#354c6e;box-shadow:inset 0 0 12px rgba(92,154,255,.025),0 4px 10px -7px #000;}
+.home-dashboard .home-task-featured-icon {display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:13px;background:#dceaff;color:#215ea8;cursor:pointer;border:0;}
+.dark .home-dashboard .home-task-featured-icon {background:#213a5a;color:#b6cfee;}
+.home-dashboard .home-task-featured-copy {flex:1;min-width:0;}
+.home-dashboard .home-task-eyebrow {display:block;font-size:10px;font-weight:600;line-height:1.3;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.home-dashboard .home-task-title {display:block;min-width:0;width:100%;padding:0;border:0;background:transparent;color:var(--ink);font-size:15px;font-weight:600;line-height:1.35;text-align:left;overflow-wrap:anywhere;cursor:pointer;}
+.home-dashboard .home-task-featured .home-task-title {font-size:16px;letter-spacing:-.02em;}
+.home-dashboard .home-task-meta {display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;}
+.home-dashboard .home-task-meta svg {width:14px;height:14px;flex-shrink:0;}
+.home-dashboard .home-task-start {display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;min-height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgb(var(--brand-rgb));color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.home-dashboard .home-task-start svg {width:16px;height:16px;}
+.home-dashboard .home-tasks-later-label {margin:20px 0 8px;font-size:13px;font-weight:600;color:var(--muted);}
+.home-dashboard .home-task-later-list {display:grid;gap:7px;}
+.home-dashboard .home-task-row {border:1px solid #e8edf4;border-radius:16px;background:#f7f9fc;padding:10px 12px;}
+.dark .home-dashboard .home-task-row {background:linear-gradient(110deg,#1b2536,#192233);border-color:rgba(255,255,255,.035);box-shadow:inset 0 1px 0 rgba(255,255,255,.015);}
+.home-dashboard .home-task-row-main {display:flex;align-items:center;gap:13px;min-width:0;}
+.home-dashboard .home-task-row-copy {flex:1;min-width:0;}
+.home-dashboard .home-task-check {display:grid;place-items:center;width:23px;height:23px;flex-shrink:0;border:1.7px solid #9daabf;border-radius:50%;background:transparent;color:transparent;cursor:pointer;}
+.dark .home-dashboard .home-task-check {border-color:#9ca9bc;}
+.home-dashboard .home-task-check.is-done {background:rgb(var(--brand-rgb));border-color:rgb(var(--brand-rgb));color:#fff;}
+.home-dashboard .home-task-title.is-done {text-decoration:line-through;color:var(--muted);}
+.home-dashboard .home-task-subtasks {margin-top:10px;padding-left:36px;display:grid;gap:5px;}
+.home-dashboard .home-task-extra {margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5;}
+.home-dashboard .home-tasks-all {display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:40px;margin-top:17px;border:1px solid #d8e4f5;border-radius:13px;background:#f0f5fd;color:#2463ac;font-size:14px;font-weight:600;cursor:pointer;}
+.dark .home-dashboard .home-tasks-all {background:linear-gradient(115deg,#1d2b41,#1c293e);border-color:#30435f;color:#8ebeff;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
+.home-dashboard .home-tasks-tools {display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line);}
+.home-dashboard .home-tasks-tools button {display:inline-flex;align-items:center;gap:6px;min-height:36px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;}
+.home-dashboard .home-task-menu {position:relative;flex-shrink:0;}
+.home-dashboard .home-task-menu summary {display:grid;place-items:center;width:28px;height:32px;list-style:none;color:var(--muted);cursor:pointer;}
+.home-dashboard .home-task-menu summary::-webkit-details-marker {display:none;}
+.home-dashboard .home-tasks-empty {padding:12px 4px 8px;text-align:center;}
+.home-dashboard .home-tasks-empty p {margin:7px 0 12px;color:var(--muted);font-size:13px;}
+.home-dashboard .home-services-reference .home-reference-heading {margin-bottom:18px;}
+.home-dashboard .home-services-heading-main {display:flex;align-items:center;gap:11px;min-width:0;}
+.home-dashboard .home-services-heading-copy {min-width:0;}
+.home-dashboard .home-services-heading-icon {display:grid;place-items:center;width:39px;height:39px;flex-shrink:0;border-radius:12px;background:rgba(var(--brand-rgb),.1);color:rgb(var(--brand-rgb));}
+.dark .home-dashboard .home-services-heading-icon {background:#20344e;color:#a5c8ef;}
+.home-dashboard .home-services-all {display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:0;border:0;background:transparent;color:#3176c5;font-size:13px;font-weight:600;cursor:pointer;}
+.dark .home-dashboard .home-services-all {color:#79b4ff;}
+.home-dashboard .home-services-grid-reference {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.home-dashboard .home-service-reference {position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;min-height:151px;padding:12px 11px;border:1px solid #e0e6ef;border-radius:18px;background:linear-gradient(125deg,#fafbfe,#f6f8fc);cursor:pointer;transition:border-color .2s ease,transform .2s ease;}
+.dark .home-dashboard .home-service-reference {background:linear-gradient(125deg,#182335,#172031);border-color:#2b3548;box-shadow:inset 0 1px 0 rgba(255,255,255,.025);}
+.home-dashboard .home-service-reference:hover {border-color:#6094d7;transform:translateY(-1px);}
+.home-dashboard .home-service-icon {display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--service-bg);color:var(--service-ink);flex-shrink:0;}
+.dark .home-dashboard .home-service-icon {background:rgba(89,137,194,.16);color:#9cbfe7;}
+.home-dashboard .home-service-icon svg {width:22px;height:22px;}
+.home-dashboard .home-service-chevron {position:absolute;right:10px;top:21px;color:#77859a;width:13px;height:13px;}
+.dark .home-dashboard .home-service-chevron {color:#c2cbd8;}
+.home-dashboard .home-service-title {margin-top:11px;font-size:13px;font-weight:650;line-height:1.3;letter-spacing:-.015em;color:var(--ink);overflow-wrap:anywhere;}
+.home-dashboard .home-service-description {margin-top:5px;font-size:11px;font-weight:400;line-height:1.4;color:var(--muted);overflow-wrap:anywhere;}
+.home-dashboard :is(.home-tasks-add,.home-task-featured-icon,.home-task-title,.home-task-check,.home-task-start,.home-tasks-all,.home-services-all,.home-service-reference):focus-visible {outline:2px solid #5b9bea;outline-offset:3px;}
+@media(min-width:640px) {
+  .home-dashboard .home-tasks-reference,.home-dashboard .home-services-reference {padding:22px;}
+  .home-dashboard .home-reference-heading h2 {font-size:22px;}
+  .home-dashboard .home-task-featured {padding:17px 16px;}
+  .home-dashboard .home-task-featured-icon {width:49px;height:49px;}
+  .home-dashboard .home-task-featured .home-task-title {font-size:18px;}
+  .home-dashboard .home-service-reference {min-height:158px;padding:17px;}
+  .home-dashboard .home-service-icon {width:40px;height:40px;}
+  .home-dashboard .home-service-title {font-size:16px;}
+  .home-dashboard .home-service-description {font-size:13px;}
+  .home-dashboard .home-service-chevron {right:15px;top:29px;}
+}
+@media(max-width:359px) {
+  .home-dashboard .home-services-grid-reference {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .home-dashboard .home-task-featured {gap:8px;padding:12px 9px;}
+  .home-dashboard .home-task-featured-icon {width:36px;height:40px;}
+  .home-dashboard .home-task-featured .home-task-title {font-size:14px;}
+  .home-dashboard .home-task-start {padding:0 9px;font-size:12px;}
+  .home-dashboard .home-services-heading-icon {display:none;}
+  .home-dashboard .home-reference-heading h2 {font-size:18px;}
+}
+@media(prefers-reduced-motion:reduce) {.home-dashboard .home-service-reference {transition:none;}.home-dashboard .home-service-reference:hover {transform:none;}}
