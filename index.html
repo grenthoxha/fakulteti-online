@@ -13123,9 +13123,11 @@ function AcademyApp({
   const [pomoLocked, setPomoLocked] = useState(false);
   const [pomoHold, setPomoHold] = useState(false);
   const [androidNativeReady, setAndroidNativeReady] = useState(() => Boolean(window.fakultetiAndroid));
+  const [androidDemoRepeating, setAndroidDemoRepeating] = useState(() => Boolean(window.fakultetiAndroid?.demoRepeating));
   const pomoHoldRef = useRef(null);
   useEffect(() => {
     const ready = () => setAndroidNativeReady(Boolean(window.fakultetiAndroid));
+    const updateDemo = () => setAndroidDemoRepeating(Boolean(window.fakultetiAndroid?.demoRepeating));
     const restoreFocus = () => {
       setPomoOpen(true);
       setPomoSetOpen(false);
@@ -13133,11 +13135,14 @@ function AcademyApp({
       setPomoLocked(true);
     };
     window.addEventListener('fakulteti:android-ready', ready);
+    window.addEventListener('fakulteti:demo-repeat-state', updateDemo);
     window.addEventListener('fakulteti:focus-restore', restoreFocus);
     ready();
+    updateDemo();
     if (window.fakultetiAndroid?.focusLocked) restoreFocus();
     return () => {
       window.removeEventListener('fakulteti:android-ready', ready);
+      window.removeEventListener('fakulteti:demo-repeat-state', updateDemo);
       window.removeEventListener('fakulteti:focus-restore', restoreFocus);
     };
   }, []);
@@ -32520,6 +32525,11 @@ Nënshkrimi: _____________________`;
               className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer',
               onClick: () => window.fakultetiAndroid?.send('demo-notification')
             }, 'Dërgo njoftim provë'),
+            androidNativeReady && window.fakultetiAndroid?.demoRepeatSupported && ce('button', {
+              type: 'button',
+              className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer',
+              onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle')
+            }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min'),
             ce('button', { type: 'button', className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', ce('span', { 'aria-hidden': true, className: 'ml-2' }, '→')))));
     }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
