@@ -299,3 +299,72 @@
 }
 .tiktok-viewer[data-viewer-style="minimal"][data-photo-layout="status"] #course-video-scroll-feed .story-status-read .shorts-action-icon { background:transparent; }
 .tiktok-viewer[data-photo-layout="status"] #course-video-scroll-feed .course-video-caption { display:none; }
+
+/* Keep YouTube's picture clear and group the app's controls below it. */
+#course-video-scroll-feed .story-youtube-stack {
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:min(100%, calc(max(200px, var(--story-stage-height, 100dvh) - 64px) * 1.777778));
+  transform:translate(-50%, -50%);
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-viewer-style="minimal"] #course-video-scroll-feed .story-slide [data-story-player="youtube"] .story-youtube-stack > .story-video-window {
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:auto;
+  min-height:200px;
+  aspect-ratio:16 / 9;
+  transform:none;
+  border-radius:12px;
+}
+#course-video-scroll-feed .story-youtube-stack .story-video-window > iframe { position:absolute; inset:0; }
+#course-video-scroll-feed .story-youtube-toolbar {
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  height:54px;
+  gap:4px;
+  padding:12px 4px 0;
+  transition:opacity .18s ease, visibility .18s ease;
+}
+#course-video-scroll-feed .story-youtube-toolbar .story-player-controls {
+  display:flex;
+  flex:1;
+  min-width:0;
+  align-items:center;
+  gap:5px;
+}
+#course-video-scroll-feed [data-native-ui="true"] .story-youtube-toolbar .story-player-controls { display:none; }
+#course-video-scroll-feed .story-youtube-time {
+  flex:1;
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+  color:#d7e1ef;
+  white-space:nowrap;
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-viewer-style="minimal"] #course-video-scroll-feed .story-youtube-toolbar :is(.story-play-control,.story-mute-control,.story-fullscreen-control,.story-native-toggle) {
+  position:static;
+  width:38px;
+  height:38px;
+  transform:none;
+  border:0;
+  border-radius:50%;
+  background:#141d2b;
+  color:white;
+  opacity:1;
+  pointer-events:auto;
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-viewer-style="minimal"] #course-video-scroll-feed .story-youtube-toolbar input[type="range"] {
+  top:0;
+  bottom:auto;
+  left:9px;
+  width:calc(100% - 18px);
+  height:16px;
+}
+.tiktok-viewer:is([data-holding="true"],[data-controls-visible="false"]) #course-video-scroll-feed .story-youtube-toolbar {
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
