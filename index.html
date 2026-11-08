@@ -47,7 +47,7 @@
     @media(max-width:359px) {.profile-minimal.profile-refined {padding-inline:14px;}.profile-refined .profile-card-preview {width:60px;}.profile-refined .profile-overview-name {font-size:18px;}}
     @media(prefers-reduced-motion:reduce) {.profile-refined :is(.profile-student-card,.profile-quick-link,.profile-overview-edit,.profile-menu-row) {transition:none;}}
   </style>
-  <meta id="unit-system-theme" name="theme-color" content="#ffffff">
+  <meta id="unit-system-theme" name="theme-color" content="#f4f6fb">
   <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -80,15 +80,10 @@
   </script>
 
   <style id="unit-system-bar-style">
-    /* Stable Android gesture-area layer, with a fallback for older browser engines. */
-    html { --unit-safe-bottom-max:env(safe-area-max-inset-bottom,env(safe-area-inset-bottom,0px));background-color:var(--unit-system-bar,#ffffff); }
-    body::after { content:"";position:fixed;inset:auto 0 0;height:var(--unit-safe-bottom-max);bottom:calc(env(safe-area-inset-bottom,0px) - var(--unit-safe-bottom-max));background:var(--unit-system-bar,#ffffff);pointer-events:none;z-index:2147483647; }
+    /* Let the page show through the system gesture area below the navigation. */
     html .app-shell nav.mobile-nav { background:var(--surface) !important; }
-    @media(max-width:767px) { html .app-shell nav.mobile-nav { bottom:env(safe-area-inset-bottom,0px); } }
-    @media(min-width:768px) and (max-width:1023px) { html .app-shell nav.mobile-nav { bottom:calc(.75rem + env(safe-area-inset-bottom,0px)) !important; } }
-    /* Zona nen shiritin Kreu/Orari...: e tejdukshme, pa ngjyre te vecante */
-    html { background-color:transparent !important; }
-    body::after { background:transparent !important; }
+    @media(max-width:639px) { html .app-shell nav.mobile-nav { bottom:env(safe-area-inset-bottom,0px); } }
+    @media(min-width:640px) and (max-width:1023px) { html .app-shell nav.mobile-nav { bottom:calc(.75rem + env(safe-area-inset-bottom,0px)) !important; } }
   </style>
   <style id="services-deadline-home">
     .sv2-wrap { display:flex; flex-direction:column; gap:12px; margin-top:14px; }
@@ -202,9 +197,8 @@
       const sync = () => {
         const dark = root.classList.contains('dark');
         const media = root.classList.contains('unit-media-open');
-        const surface = win.getComputedStyle(root).getPropertyValue('--surface').trim();
-        const color = media ? '#000000' : surface || (dark ? '#111827' : '#ffffff');
-        root.style.setProperty('--unit-system-bar', color);
+        const page = win.getComputedStyle(root).getPropertyValue('--page').trim();
+        const color = media ? '#000000' : page || (dark ? '#0b1020' : '#f4f6fb');
         root.style.colorScheme = dark || media ? 'dark' : 'light';
         meta?.setAttribute('content', color);
       };
