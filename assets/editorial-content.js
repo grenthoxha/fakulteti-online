@@ -14,7 +14,7 @@ window.FAKULTETI_EDITORIAL = {
     title: 'Para se ta dorëzosh punimin: 5 kontrolle të fundit',
     summary: 'Struktura, burimet dhe qartësia: një kontroll i shkurtër para dorëzimit të punimit.',
     image: './assets/article-punimi-preview.svg',
-    portraitImage: './assets/article-punimi-phone.svg?v=20261108',
+    portraitImage: './assets/article-punimi-phone.svg?v=20261108-layout2',
     fullBleedPortrait: true,
     author: 'Fakulteti Online · Artikull shembull',
     date: '2026-11-04',
