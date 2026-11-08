@@ -460,6 +460,10 @@
 
     body:has(.app-shell), div.app-shell { min-height:100dvh; }
     .app-header { flex-shrink:0; }
+    @media (max-width: 420px) {
+      .app-header .app-header-actions--student { gap: 0.25rem; }
+      .app-header-actions--student > button:not(:last-child) { padding-inline: 0.375rem; min-width: 2rem; min-height: 2.25rem; }
+    }
     .mobile-nav-item svg { transition:transform 180ms ease; }
     .mobile-nav-item:active svg { transform:scale(.92); }
     @media (max-width:1023px) { .schedule-min .sch-hero { flex-shrink:0; } }
@@ -914,37 +918,13 @@
       max-width: 100%;
       box-sizing: border-box;
     }
-    .profile-services-card > .profile-services-heading {
-      align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid var(--line);
-      width: 100%;
-      cursor: pointer;
-      text-align: left;
-      user-select: none;
-    }
-    .profile-services-heading > div:first-child { min-width: 0; }
-    .profile-services-heading > span:nth-last-child(2) {
-      margin-left: auto;
+    .profile-services-count {
+      flex-shrink: 0;
       padding: 0.3rem 0.55rem;
       border: 1px solid var(--line);
       border-radius: 999px;
       background: var(--surface-muted);
       white-space: nowrap;
-    }
-    .profile-services-chevron {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 0.75rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(var(--brand-rgb), 0.1);
-      flex: 0 0 auto;
-    }
-    .profile-services-heading:focus-visible {
-      outline: 3px solid rgba(21,87,176,0.3);
-      outline-offset: -3px;
     }
     .profile-services-grid {
       display: grid;
@@ -1021,6 +1001,7 @@
     .profile-services-grid > .profile-service-card + .profile-service-card {
       border-top: 1px solid var(--line) !important;
     }
+    .profile-page--student-services { row-gap: 0; }
     .profile-page--student-services > * {
       display: none !important;
     }
@@ -1036,22 +1017,8 @@
       background: transparent !important;
       box-shadow: none !important;
     }
-    .profile-page--student-services .profile-services-heading {
-      cursor: default;
-      padding: 1rem 0.25rem 1.1rem !important;
-      border-bottom: 1px solid var(--line);
-    }
-    .profile-page--student-services .profile-services-heading h2 {
-      font-size: 1.125rem;
-      line-height: 1.35;
-    }
-    .profile-page--student-services .profile-services-heading p {
-      max-width: 38rem;
-      font-size: 0.75rem;
-      line-height: 1.55;
-    }
     .profile-page--student-services .profile-services-grid {
-      padding: 0.875rem 0 0;
+      padding: 0.625rem 0 0;
       background: transparent;
       overflow: visible;
       align-items: start;
@@ -1099,8 +1066,6 @@
       .profile-service-card > div:first-child > div:last-child > button { flex: 0 0 auto; }
     }
     @media (max-width: 420px) {
-      .profile-services-card > .profile-services-heading { padding: 0.875rem; gap: 0.5rem; }
-      .profile-services-heading > span:nth-last-child(2) { display: none; }
       .profile-services-grid { padding: 0.625rem; gap: 0.5rem; }
       .profile-service-card { padding: 0.75rem !important; }
     }
@@ -13384,6 +13349,12 @@ function AcademyApp({
       return Array.isArray(saved) ? saved.filter(item => !String(item?.id || '').startsWith('ann_room_')) : [];
     } catch { return []; }
   });
+  const [groupMessageReadIds, setGroupMessageReadIds] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('u_group_messages_read_v1') || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch { return []; }
+  });
   const [colloquiumFormOpen, setColloquiumFormOpen] = useState(false);
   const [announcementFormOpen, setAnnouncementFormOpen] = useState(false);
   const [completedHubItemIds, setCompletedHubItemIds] = useState(() => {
@@ -14293,7 +14264,7 @@ function AcademyApp({
     },
       /* Shërbimet studentore: titulli */
       /*#__PURE__*/React.createElement("div", {
-        className: `profile-services-page-header flex items-center justify-between gap-3 pb-3 border-b border-default`
+        className: "profile-services-page-header flex items-center justify-between gap-2 pb-2 border-b border-default"
       },
         /* Left: Back button + Title */
         /*#__PURE__*/React.createElement("div", {
@@ -14315,41 +14286,15 @@ function AcademyApp({
               className: "text-lg sm:text-xl font-bold text-primary tracking-tight leading-none"
             }, "Shërbimet studentore")
           )
-        )
+        ), /*#__PURE__*/React.createElement("span", {
+          className: "profile-services-count text-[10px] font-semibold text-secondary"
+        }, "15 shërbime")
       ),
 
       /* Shërbimet studentore: lista */
       /*#__PURE__*/React.createElement("section", {
         className: "profile-services-card card-surface rounded-2xl border border-default shadow-2xs"
       }, /*#__PURE__*/React.createElement("div", {
-        className: "profile-services-heading flex items-end justify-between gap-3",
-        role: studentServicesPage ? undefined : "button",
-        tabIndex: studentServicesPage ? undefined : 0,
-        "aria-expanded": studentServicesPage ? undefined : false,
-        "aria-label": studentServicesPage ? undefined : "Hap faqen e Shërbimeve studentore",
-        onClick: studentServicesPage ? undefined : () => {
-          setProfileServicesOpen(true);
-          setView('studentservices');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        },
-        onKeyDown: studentServicesPage ? undefined : e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setProfileServicesOpen(true);
-            setView('studentservices');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
-        }
-      }, !studentServicesPage && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
-        className: "text-sm font-bold text-primary"
-      }, "Shërbimet studentore"), /*#__PURE__*/React.createElement("p", {
-        className: "text-[11px] text-secondary mt-0.5"
-      }, "Hapi në një faqe të veçantë për t’i parë të gjitha shërbimet.")), /*#__PURE__*/React.createElement("span", {
-        className: "text-[10px] font-semibold text-tertiary"
-      }, "15 shërbime"), /*#__PURE__*/React.createElement("span", {
-        className: "profile-services-chevron text-lg text-brand-600 dark:text-brand-300",
-        "aria-hidden": "true"
-      }, studentServicesPage ? '' : '→')), studentServicesPage && /*#__PURE__*/React.createElement("div", {
         className: "profile-services-grid"
       },       /* ══════════════════════════════════════════════════════════
          4g-0. SALLAT E LIRA - FAKULTETI FILOZOFIK (PROFILE SECTION)
@@ -24912,16 +24857,31 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     showToast('Skedari iCal (.ics) me alarm 24 orë para u shkarkua!', '📅');
   };
 
+  const groupAnnouncementEntries = groupAnnouncements
+    .filter(item => ['Kolokfium', 'Konsultim', 'Provim', 'Ndryshim Orari'].includes(item?.category))
+    .map(item => ({ kind: 'ann', key: item.createdAt, item,
+      done: Boolean(completedHubItemIds[item.id]) || (!item.pinned && daysUntil(item.createdAt) < -7 && completedHubItemIds[item.id] !== false) }));
+  const unreadGroupMessageIds = new Set(hubNoticesOn || isClassPresident ? groupAnnouncementEntries
+    .filter(({ item, done }) => !done && item.id && !groupMessageReadIds.includes(item.id) &&
+      (!item.scopeId || item.scopeId === `${branchId}_${yearId}`) &&
+      (!item.group || item.group === studentGroupId || item.group === 'Të gjitha grupet') &&
+      item.author !== `${studentName || 'Kryetari i Klasës'} (Kryetar Klase)`)
+    .map(({ item }) => item.id) : []);
+  const groupMessageUnreadCount = unreadGroupMessageIds.size;
+  const markGroupMessageRead = id => {
+    if (!unreadGroupMessageIds.has(id)) return;
+    const next = [id, ...groupMessageReadIds].slice(0, 300);
+    setGroupMessageReadIds(next);
+    try { localStorage.setItem('u_group_messages_read_v1', JSON.stringify(next)); } catch {}
+  };
+
   const renderClassPresidentHub = () => {
     const h = React.createElement;
-    const RELEVANT = ['Kolokfium', 'Konsultim', 'Provim', 'Ndryshim Orari'];
     const isColCompleted = item => Boolean(completedHubItemIds[item.id]) || (daysUntil(item.date) < 0 && completedHubItemIds[item.id] !== false);
-    const isAnnCompleted = item => Boolean(completedHubItemIds[item.id]) || (!item.pinned && daysUntil(item.createdAt) < -7 && completedHubItemIds[item.id] !== false);
     const inGroup = () => true;
     const cols = groupColloquiums.filter(inGroup).map(item => ({ kind: 'col', key: item.date, item, done: isColCompleted(item) }));
-    const anns = groupAnnouncements.filter(inGroup).filter(item => RELEVANT.includes(item.category)).map(item => ({ kind: 'ann', key: item.createdAt, item, done: isAnnCompleted(item) }));
-    const activeEntries = [...cols, ...anns].filter(entry => !entry.done);
-    const doneEntries = [...cols, ...anns].filter(entry => entry.done).sort((x, y) => String(y.key).localeCompare(String(x.key)));
+    const activeEntries = [...cols, ...groupAnnouncementEntries].filter(entry => !entry.done);
+    const doneEntries = [...cols, ...groupAnnouncementEntries].filter(entry => entry.done).sort((x, y) => String(y.key).localeCompare(String(x.key)));
     const upcoming = activeEntries.filter(entry => daysUntil(entry.key) >= 0).sort((x, y) => String(x.key).localeCompare(String(y.key)));
     const past = activeEntries.filter(entry => daysUntil(entry.key) < 0).sort((x, y) => String(y.key).localeCompare(String(x.key)));
     const entries = [...upcoming, ...past];
@@ -24941,7 +24901,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const title = isCol ? item.courseTitle : item.title;
       const sub = isCol ? `${type} · ${item.time || '10:00'} · ${item.room || 'Amfiteatër'}` : type;
       return h('li', { key: item.id, className: `mx-ag-item${muted ? ' is-muted' : ''}` },
-        h('button', { type: 'button', className: 'mx-ag-main', 'aria-expanded': open ? 'true' : 'false', onClick: () => setHubOpenId(open ? null : item.id) },
+        h('button', { type: 'button', className: 'mx-ag-main', 'aria-expanded': open ? 'true' : 'false', onClick: () => { setHubOpenId(open ? null : item.id); if (!open && !isCol) markGroupMessageRead(item.id); } },
           h('span', { className: 'mx-ag-date' }, h('b', null, day), h('i', null, formatDateSq(entry.key, { weekday: 'short' }))),
           h('span', { className: 'mx-ag-bar', style: { background: TYPE_COLOR[type] || '#4f46e5' }, 'aria-hidden': 'true' }),
           h('span', { className: 'mx-ag-text' }, h('span', { className: 'mx-ag-title' }, title), h('span', { className: 'mx-ag-sub' }, sub)),
@@ -34929,7 +34889,7 @@ Nënshkrimi: _____________________`;
     key: "online",
     className: "text-brand-600 dark:text-brand-300"
   }, "Online")])), /*#__PURE__*/React.createElement("div", {
-    className: "app-header-actions flex items-center gap-2"
+    className: `app-header-actions flex items-center gap-2${isInstructorAccount ? '' : ' app-header-actions--student shrink-0'}`
   }, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSearchOpen(true),
     className: "hidden lg:flex w-56 xl:w-64 items-center gap-2.5 px-3 py-2 rounded-xl input-bg border border-default text-secondary hover:border-brand-300 hover:text-primary transition-colors text-left"
@@ -34970,16 +34930,19 @@ Nënshkrimi: _____________________`;
     d: "M10 21h4"
   })), notificationUnreadCount > 0 && /*#__PURE__*/React.createElement("span", {
     className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
-  }, notificationUnreadCount)), !isInstructorAccount && view === 'home' && /*#__PURE__*/React.createElement("button", {
+  }, notificationUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     type: "button",
-    onClick: () => setGroupMessagesOpen(true),
-    "aria-label": "Mesazhet",
+    onClick: () => { setNotificationPreviewOpen(false); setGroupMessagesOpen(true); },
+    "aria-label": groupMessageUnreadCount === 1 ? "Mesazhet, 1 shkrim i palexuar" : groupMessageUnreadCount > 1 ? `Mesazhet, ${groupMessageUnreadCount} shkrime të palexuara` : "Mesazhet",
     "aria-haspopup": "dialog",
     "aria-expanded": groupMessagesOpen,
     "aria-controls": groupMessagesOpen ? "unit-group-messages" : undefined,
     title: "Mesazhet",
-    className: "hidden lg:flex shrink-0 p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+    className: "app-header-messages flex relative items-center justify-center shrink-0 p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle), groupMessageUnreadCount > 0 && /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true",
+    className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
+  }, groupMessageUnreadCount > 99 ? "99+" : groupMessageUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSearchOpen(true),
     "aria-label": "K\xEBrko l\xEBnd\xEB, kapitull ose koncept",
     className: "md:hidden p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors"
