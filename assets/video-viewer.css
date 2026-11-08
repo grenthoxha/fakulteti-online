@@ -112,9 +112,42 @@
 .tiktok-viewer[data-media-layout="phone-fit"] #course-video-scroll-feed .story-fullscreen-control { position:absolute; z-index:8; bottom:40px; right:60px; width:40px; height:40px; background:#0006; }
 .tiktok-viewer[data-media-layout="phone-fit"]:fullscreen .story-shell { width:100%; height:100%; max-height:none; max-width:none; border-radius:0; }
 .tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .story-shell { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; }
-.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture { display:block; width:100%; height:100%; }
-.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture > img { display:block; width:100%; height:100%; object-fit:contain; }
-.tiktok-viewer[data-media-layout="phone-fit"][data-fit="cover"] .story-photo-picture > img { object-fit:cover; }
+.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  padding:48px clamp(14px, 4vw, 24px);
+}
+.tiktok-viewer[data-media-layout="phone-fit"] .story-photo-picture > img {
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:min(100%, 460px);
+  max-height:100%;
+  border-radius:16px;
+  object-fit:contain;
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit="cover"] .story-photo-picture { padding:0; }
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit="cover"] .story-photo-picture > img {
+  width:100%;
+  height:100%;
+  max-width:none;
+  border-radius:0;
+  object-fit:cover;
+}
+.course-video-stories .story-topbar > .story-youtube-source {
+  flex:none;
+  margin:11px 0 0 9px;
+  pointer-events:none;
+}
+/* Keep the source mark outside the embedded player. */
+.course-video-stories[data-fit="cover"] .story-youtube-source { display:none; }
+@media(max-height:440px) {
+  .course-video-stories .story-youtube-source { display:none; }
+  .tiktok-viewer[data-media-layout="phone-fit"][data-fit="contain"] .story-photo-picture { padding-block:20px; }
+}
 .tiktok-viewer[data-media-layout="phone-fit"][data-story-kind="article"] .story-backdrop { opacity:.8; filter:blur(32px) saturate(.7); }
 .tiktok-viewer[data-media-layout="phone-fit"][data-photo-fullscreen="true"] .shorts-desktop-nav { right:16px; }
 @media (max-width:767px), (orientation:landscape) and (max-height:600px) {
