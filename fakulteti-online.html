@@ -1276,7 +1276,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-youtube-toolbar">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-youtube-native">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -9127,15 +9127,6 @@ function bindVideoStoryHold(root, { getPlaying = () => true, onPlayingChange = (
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
   };
 }
-async function toggleVideoStoryFullscreen(root) {
-  try {
-    if (document.fullscreenElement) { await document.exitFullscreen(); return true; }
-    if (root?.requestFullscreen) { await root.requestFullscreen(); return true; }
-    const video = root?.querySelector('video');
-    if (video?.webkitEnterFullscreen) { video.webkitEnterFullscreen(); return true; }
-  } catch { /* Keep the viewport-sized player usable if fullscreen is unavailable. */ }
-  return false;
-}
 function bindVideoStoryChrome(root) {
   let timer = null;
   const clear = () => { clearTimeout(timer); timer = null; };
@@ -9284,24 +9275,20 @@ function getYouTubeAlbanianCaptionTrack(captions) {
   if (!source) return null;
   return { ...source, translationLanguage: { ...albanian } };
 }
-function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
+function UnitYouTubeReelPlayer({ embedSrc, title }) {
   const frameRef = useRef(null);
   const playerRef = useRef(null);
   const holdingRef = useRef(false);
   const captionPreferenceRef = useRef({ requested: false });
-  const [st, setSt] = useState({ t: 0, d: 0, playing: true, muted: false });
-  const [started, setStarted] = useState(false);
-  const [nativeUi, setNativeUi] = useState(false);
+  const [playing, setPlaying] = useState(true);
   const playerUrl = useMemo(() => {
     const url = new URL(embedSrc);
-    url.searchParams.set('controls', nativeUi ? '1' : '0');
+    url.searchParams.set('controls', '1');
     url.searchParams.set('hl', 'en');
     url.searchParams.set('cc_load_policy', '1');
     url.searchParams.set('cc_lang_pref', 'sq');
-    url.searchParams.set('start', String(Math.floor(st.t)));
-    url.searchParams.set('autoplay', st.playing ? '1' : '0');
     return url.href;
-  }, [embedSrc, nativeUi]);
+  }, [embedSrc]);
   const send = (func, args = []) => {
     try { frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*'); } catch {}
   };
@@ -9310,18 +9297,18 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
     if (!player) return;
     const changePlayback = event => {
       holdingRef.current = Boolean(event.detail?.holding);
-      const playing = Boolean(event.detail?.playing);
-      send(playing ? 'playVideo' : 'pauseVideo');
-      setSt(previous => ({ ...previous, playing }));
+      const shouldPlay = Boolean(event.detail?.playing);
+      send(shouldPlay ? 'playVideo' : 'pauseVideo');
+      setPlaying(shouldPlay);
     };
     player.addEventListener('unit-story-playback', changePlayback);
     return () => player.removeEventListener('unit-story-playback', changePlayback);
   }, []);
   useEffect(() => {
-    const onMsg = e => {
-      if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
+    const onMsg = event => {
+      if (!frameRef.current || event.source !== frameRef.current.contentWindow) return;
       let data;
-      try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+      try { data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch { return; }
       if (!data || typeof data !== 'object') return;
       if (data.event === 'initialDelivery') {
         send('addEventListener', ['onApiChange']);
@@ -9335,104 +9322,38 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
           send('setOption', ['captions', 'track', choice]);
         }
       }
-      if (data.event === 'onStateChange' && typeof data.info === 'number') {
-        if (data.info === 1) setStarted(true);
-        setSt(s => ({ ...s, playing: !holdingRef.current && (data.info === 1 || data.info === 3) }));
-        return;
-      }
-      const info = data.info;
-      if (!info || typeof info !== 'object') return;
-      if (info.playerState === 1 || (typeof info.currentTime === 'number' && info.currentTime > 0)) setStarted(true);
-      setSt(s => ({
-        t: typeof info.currentTime === 'number' ? info.currentTime : s.t,
-        d: typeof info.duration === 'number' && info.duration > 0 ? info.duration : s.d,
-        playing: holdingRef.current ? false : typeof info.playerState === 'number' ? (info.playerState === 1 || info.playerState === 3) : s.playing,
-        muted: typeof info.muted === 'boolean' ? info.muted : s.muted
-      }));
+      const state = data.event === 'onStateChange' ? data.info : data.info?.playerState;
+      if (typeof state === 'number') setPlaying(!holdingRef.current && (state === 1 || state === 3));
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }, []);
   const onLoad = () => {
     captionPreferenceRef.current = { requested: false };
-    const w = frameRef.current?.contentWindow;
-    if (!w) return;
-    const ping = () => { try { w.postMessage(JSON.stringify({ event: 'listening', id: 'unit-reel', channel: 'widget' }), '*'); } catch {} };
-    ping(); setTimeout(ping, 400); setTimeout(ping, 1200);
-    setTimeout(() => setStarted(true), 6000);
+    const playerWindow = frameRef.current?.contentWindow;
+    if (!playerWindow) return;
+    const ping = () => { try { playerWindow.postMessage(JSON.stringify({ event: 'listening', id: 'unit-reel', channel: 'widget' }), '*'); } catch {} };
+    ping();
+    setTimeout(ping, 400);
+    setTimeout(ping, 1200);
   };
-  const fmt = sec => {
-    const v = Math.max(0, Math.floor(Number(sec) || 0));
-    return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
-  };
-  const togglePlay = () => { send(st.playing ? 'pauseVideo' : 'playVideo'); setSt(s => ({ ...s, playing: !s.playing })); };
-  const toggleMute = () => { send(st.muted ? 'unMute' : 'mute'); setSt(s => ({ ...s, muted: !s.muted })); };
   const h = React.createElement;
-  const iconBtn = 'w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center shrink-0 cursor-pointer transition-colors';
-  return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), 'data-native-ui': String(nativeUi), className: 'course-video-player flex flex-col gap-3 shrink-0' },
-    h('div', { className: 'story-youtube-stack' },
-      h('div', { className: 'story-video-window course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
-        h('iframe', {
-          ref: frameRef,
-          src: playerUrl,
-          title,
-          onLoad,
-          allowFullScreen: true,
-          scrolling: 'no',
-          allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
-          className: 'w-full h-full border-0 bg-black'
-        }),
-        /* Thumbnail derisa videoja të nisë */
-        poster && h('div', {
-          'aria-hidden': true,
-          className: `absolute inset-0 pointer-events-none transition-opacity duration-500 ${started ? 'opacity-0' : 'opacity-100'}`
-        },
-          h('img', { src: poster, alt: '', className: 'absolute inset-0 w-full h-full object-cover', onError: e => { e.currentTarget.style.display = 'none'; } }),
-          h('span', { className: 'absolute inset-0 bg-black/25' }),
-          h('span', { className: 'absolute inset-0 flex items-center justify-center' },
-            h('span', { className: 'w-11 h-11 rounded-full border-[3px] border-white/30 border-t-white animate-spin' }))),
-        /* Prek videon për t’i shfaqur ose fshehur kontrollet. */
-        h('button', {
-          type: 'button',
-          className: 'story-play-surface absolute inset-0 w-full h-full cursor-pointer bg-transparent',
-          hidden: nativeUi,
-          tabIndex: nativeUi ? -1 : 0,
-          'aria-label': 'Shfaq ose fsheh kontrollet e videos'
-        })),
-      h('div', { className: 'story-youtube-toolbar' },
-        h('div', { className: 'story-player-controls' },
-          h('button', { type: 'button', onClick: togglePlay, className: `${iconBtn} story-play-control`, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
-            st.playing
-              ? h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' }))
-              : h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M8 5v14l11-7z' }))),
-          h('span', { className: 'story-youtube-time' }, `${fmt(st.t)} / ${fmt(st.d)}`),
-          h('input', {
-            type: 'range',
-            min: 0,
-            max: st.d || 0,
-            step: 0.1,
-            value: Math.min(st.t, st.d || 0),
-            onChange: e => { const v = Number(e.target.value) || 0; setSt(s => ({ ...s, t: v })); send('seekTo', [v, true]); },
-            className: 'flex-1 min-w-0 h-1 cursor-pointer',
-            style: { accentColor: '#ffffff', '--story-played': `${st.d ? Math.min(100, st.t / st.d * 100) : 0}%` },
-            'aria-label': 'Koha e videos'
-          }),
-          h('button', { type: 'button', onClick: event => toggleVideoStoryFullscreen(event.currentTarget.closest('.tiktok-viewer')), className: `${iconBtn} story-fullscreen-control`, 'aria-label': 'Hap ose mbyll ekranin e plotë' },
-            h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
-          h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
-            h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
-              h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
-        ), h('button', {
-          type: 'button', className: `${iconBtn} story-native-toggle`, 'aria-pressed': nativeUi,
-          'aria-label': nativeUi ? 'Mbyll cilësimet e YouTube' : 'Titrat dhe cilësimet e YouTube',
-          title: nativeUi ? 'Mbyll cilësimet e YouTube' : 'Titrat dhe cilësimet e YouTube',
-          onClick: () => setNativeUi(value => !value)
-        }, h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
-          nativeUi ? h('path', { d: 'M6 6l12 12M18 6L6 18' }) : h(React.Fragment, null,
-            h('circle', { cx: 12, cy: 12, r: 3 }),
-            h('path', { d: 'M10 3h4l.7 2.4 1.5.9 2.5-.6 2 3.5-1.7 1.9v1.8l1.7 1.9-2 3.5-2.5-.6-1.5.9-.7 2.4h-4l-.7-2.4-1.5-.9-2.5.6-2-3.5L5 12.9v-1.8L3.3 9.2l2-3.5 2.5.6 1.5-.9z' }))))
-    ))
-  );
+  return h('div', {
+    ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(playing),
+    'data-native-ui': 'true', className: 'course-video-player'
+  }, h('div', { className: 'story-video-window course-video-frame' },
+    h('iframe', {
+      ref: frameRef,
+      src: playerUrl,
+      title,
+      onLoad,
+      allowFullScreen: true,
+      scrolling: 'no',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+      className: 'w-full h-full border-0 bg-black'
+    })
+  ));
 }
 
 
@@ -34034,8 +33955,7 @@ Nënshkrimi: _____________________`;
                 ? h(UnitYouTubeReelPlayer, {
                     key: `yt_${video.id || idx}`,
                     title: video.title,
-                    poster: src.thumbnail,
-                    embedSrc: `${src.directEmbedSrc}&autoplay=1&controls=1&iv_load_policy=3&fs=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
+                    embedSrc: `${src.directEmbedSrc}&autoplay=1&iv_load_policy=3&fs=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
                   })
                 : h('div', { 'data-story-player': src?.provider || 'native', 'data-playing': String(videoLivePlaying), className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
                   isActive
