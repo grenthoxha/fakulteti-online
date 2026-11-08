@@ -52,6 +52,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
+    .tiktok-viewer[data-photo-layout="status"] .story-shell::before,
+    .tiktok-viewer[data-photo-layout="status"] .story-slide::after { display:none; }
     @media (display-mode: standalone) {
       .tiktok-viewer.course-video-stories { box-sizing:border-box; padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
       .tiktok-viewer.course-video-stories .story-shell { height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
