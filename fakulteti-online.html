@@ -9261,19 +9261,28 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
 // YouTube exposes these caption options at runtime; only use tracks/languages it reports.
 function getYouTubeAlbanianCaptionTrack(captions) {
   if (!captions || !Array.isArray(captions.options) || !captions.options.includes('track')) return null;
-  const tracks = Array.isArray(captions.tracklist) ? captions.tracklist.filter(track => track && typeof track.languageCode === 'string') : [];
-  const current = captions.track && typeof captions.track.languageCode === 'string' ? captions.track : null;
-  const direct = tracks.find(track => track.languageCode === 'sq') || (current?.languageCode === 'sq' ? current : null);
-  if (direct) { const choice = { ...direct }; delete choice.translationLanguage; return choice; }
+  const isTrack = track => track && typeof track.languageCode === 'string';
+  const tracks = Array.isArray(captions.tracklist) ? captions.tracklist.filter(isTrack) : [];
+  const current = isTrack(captions.track) ? captions.track : null;
   const languages = Array.isArray(captions.translationLanguages) ? captions.translationLanguages : [];
   const albanian = languages.find(language => language?.languageCode === 'sq');
+  const translatable = [...tracks, current].filter(track => track && track.is_translateable !== false);
+  const english = translatable.filter(track => /^en(?:-|$)/i.test(track.languageCode));
+  const englishSource = english.find(track => track.languageCode === 'en' && track.kind !== 'asr')
+    || english.find(track => track.kind !== 'asr') || english[0];
+  if (albanian && englishSource) return { ...englishSource, translationLanguage: { ...albanian } };
+
+  // Some videos offer Albanian directly or have captions only in another language.
+  const direct = tracks.find(track => track.languageCode === 'sq') || (current?.languageCode === 'sq' ? current : null);
+  if (direct) {
+    const choice = { ...direct };
+    delete choice.translationLanguage;
+    return choice;
+  }
   if (!albanian) return null;
-  const translatable = tracks.filter(track => track.is_translateable !== false);
-  const source = translatable.find(track => track.languageCode === current?.languageCode)
-    || translatable.find(track => track.is_default) || translatable[0]
-    || (current && current.is_translateable !== false ? current : null);
-  if (!source) return null;
-  return { ...source, translationLanguage: { ...albanian } };
+  const fallback = translatable.find(track => track.languageCode === current?.languageCode)
+    || translatable.find(track => track.is_default) || translatable[0];
+  return fallback ? { ...fallback, translationLanguage: { ...albanian } } : null;
 }
 function UnitYouTubeReelPlayer({ embedSrc, title }) {
   const frameRef = useRef(null);
@@ -9286,7 +9295,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title }) {
     url.searchParams.set('controls', '1');
     url.searchParams.set('hl', 'en');
     url.searchParams.set('cc_load_policy', '1');
-    url.searchParams.set('cc_lang_pref', 'sq');
+    url.searchParams.set('cc_lang_pref', 'en');
     return url.href;
   }, [embedSrc]);
   const send = (func, args = []) => {
