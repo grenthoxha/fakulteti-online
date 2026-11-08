@@ -33904,11 +33904,11 @@ Nënshkrimi: _____________________`;
     if (!curVideo) return null;
     const total = courseVideoFeed.length;
     const isPhoto = curVideo.kind === 'article';
-    const photoFullscreen = isPhoto && storyFit !== 'contain';
+    const fixedPhotoFit = isPhoto && curVideo.fullBleedPortrait;
+    const photoFullscreen = isPhoto && (fixedPhotoFit || storyFit !== 'contain');
     const fullPicture = isPhoto || storyFit !== 'cover';
     const fitLabel = isPhoto
       ? (storyFit === 'cover' ? appearanceText('Shfaq fotografinë e plotë', 'Show the whole photo')
-        : curVideo.fullBleedPortrait ? appearanceText('Zmadho fotografinë', 'Zoom photo')
         : appearanceText('Mbush ekranin me fotografinë', 'Fill screen with photo'))
       : (!fullPicture ? appearanceText('Shfaq përmbajtjen e plotë', 'Show full content') : appearanceText('Mbush ekranin', 'Fill screen'));
     const h = React.createElement;
@@ -33917,7 +33917,7 @@ Nënshkrimi: _____________________`;
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
-        'data-fit': isPhoto ? (storyFit === 'cover' ? 'cover' : 'contain') : fullPicture ? 'contain' : 'cover',
+        'data-fit': fixedPhotoFit || storyFit === 'cover' ? 'cover' : 'contain',
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
         'data-photo-layout': isPhoto ? 'status' : undefined,
@@ -33963,7 +33963,7 @@ Nënshkrimi: _____________________`;
                 'aria-label': appearanceText('Zgjidh postimin', 'Choose post'),
                 onChange: event => scrollToVideoFeedSlide(Number(event.target.value), 'vertical')
               }, courseVideoFeed.map((video, idx) => h('option', { key: video.id || idx, value: idx }, `${idx + 1} / ${total}`)))),
-            h('button', {
+            !fixedPhotoFit && h('button', {
               type: 'button', onClick: () => setStoryFit(isPhoto ? (storyFit === 'cover' ? 'auto' : 'cover') : (fullPicture ? 'cover' : 'contain')),
               className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': isPhoto ? storyFit === 'cover' : !fullPicture,
               'aria-label': fitLabel,
