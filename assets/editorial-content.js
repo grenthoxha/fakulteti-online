@@ -14,7 +14,8 @@ window.FAKULTETI_EDITORIAL = {
     title: 'Para se ta dorëzosh punimin: 5 kontrolle të fundit',
     summary: 'Struktura, burimet dhe qartësia: një kontroll i shkurtër para dorëzimit të punimit.',
     image: './assets/article-punimi-preview.svg',
-    portraitImage: './assets/article-punimi-phone.svg',
+    portraitImage: './assets/article-punimi-phone.svg?v=20261108',
+    fullBleedPortrait: true,
     author: 'Fakulteti Online · Artikull shembull',
     date: '2026-11-04',
     minutes: 3,
@@ -44,6 +45,7 @@ window.getPublishedEditorialArticles = function (catalog) {
     seen.add(item.id);
     return [{
       id: item.id, title: item.title.trim(), summary: typeof item.summary === 'string' ? item.summary.trim() : '', body, image, portraitImage,
+      fullBleedPortrait: Boolean(portraitImage) && item.fullBleedPortrait === true,
       author: typeof item.author === 'string' ? item.author.trim() : '',
       date: /^\d{4}-\d{2}-\d{2}$/.test(item.date || '') && !Number.isNaN(Date.parse(item.date)) ? item.date : '',
       minutes: Number.isFinite(Number(item.minutes)) && Number(item.minutes) > 0 ? Math.ceil(Number(item.minutes)) : Math.max(1, Math.ceil(body.join(' ').split(/\s+/).length / 200))

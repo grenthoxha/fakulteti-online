@@ -211,3 +211,19 @@
   .tiktok-viewer[data-media-layout="phone-fit"][data-viewer-style="minimal"] #course-video-scroll-feed .course-video-caption {bottom:14px;}
 }
 @media(prefers-reduced-motion:reduce) {.tiktok-viewer[data-media-layout="phone-fit"][data-viewer-style="minimal"] .story-cue-touch {animation:none;}}
+
+/* Editorial artwork paints the full viewport and sizes its content independently. */
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit] .story-photo-picture--editorial {
+  padding:0;
+  background:#0a1930;
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit] .story-photo-picture--editorial > img {
+  width:100%;
+  height:100%;
+  max-width:none;
+  border-radius:0;
+  object-fit:fill;
+}
+.tiktok-viewer[data-media-layout="phone-fit"][data-fit="cover"] .story-photo-picture--editorial > img {
+  transform:scale(1.12);
+}
