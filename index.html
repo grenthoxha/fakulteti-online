@@ -1274,13 +1274,13 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-editorial-story">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-photo-status">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
 
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
-  <script src="./assets/editorial-content.js?v=20261108-story"></script>
+  <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261006-8"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
@@ -9158,7 +9158,7 @@ function bindVideoStoryChrome(root) {
   };
   const focus = event => { if (event.target?.matches?.(':focus-visible') && event.target?.closest?.('.story-play-surface,.story-photo-surface')) { show(true); clear(); } };
   const rotate = () => { show(true); arm(); };
-  show(root.dataset.storyKind !== 'article');
+  show(root.dataset.storyKind !== 'article' || root.dataset.photoLayout === 'status');
   arm();
   root.addEventListener('click', click);
   root.addEventListener('focusin', focus);
@@ -33918,6 +33918,7 @@ Nënshkrimi: _____________________`;
         'data-fit': isPhoto ? (storyFit === 'cover' ? 'cover' : 'contain') : fullPicture ? 'contain' : 'cover',
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
+        'data-photo-layout': isPhoto ? 'status' : undefined,
         'data-media-layout': 'phone-fit',
         'data-viewer-style': 'minimal',
         postKey: curVideo.id || courseVideoFeedIndex,
@@ -33936,12 +33937,18 @@ Nënshkrimi: _____________________`;
         h('div', { className: "story-shell w-full h-full min-h-0 flex flex-col" },
 
           h('div', { className: 'story-topbar' },
+            isPhoto && h('span', { className: 'story-status-progress', 'aria-hidden': true }),
             h('span', { className: 'tiktok-feed-heading' }, appearanceText('Për ty', 'For you')),
             h('button', {
               type: 'button', onClick: () => setCourseVideoFeedOpen(false),
               className: 'shorts-close shorts-icon-button',
               'aria-label': appearanceText('Mbyll postimin', 'Close story')
             }, h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M14 5l-7 7 7 7' }))),
+            isPhoto && h('div', { className: 'story-status-identity' },
+              h('img', { src: './assets/fakulteti-online-logo-dark.png?v=6', alt: '' }),
+              h('div', null,
+                h('strong', null, 'Fakulteti Online'),
+                h('span', null, curVideo.duration || appearanceText('Artikull', 'Article')))),
             !isPhoto && getTopicVideoSource(curVideo.url)?.provider === 'YouTube' && h('svg', {
               className: 'story-youtube-source', width: 24, height: 17, viewBox: '0 0 28 20',
               role: 'img', 'aria-label': 'YouTube'
@@ -34076,9 +34083,9 @@ Nënshkrimi: _____________________`;
                     className: `shorts-action${isSaved ? ' is-saved' : ''}`
                   }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: isSaved ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: 'M6 3h12v18l-6-4-6 4z' }))), h('span', null, isSaved ? appearanceText('U ruajt', 'Saved') : appearanceText('Ruaj', 'Save'))),
                   video.kind === 'article' ? h('button', {
-                    type: 'button', className: 'shorts-action', 'aria-label': appearanceText('Lexo artikullin →', 'Read article →'),
+                    type: 'button', className: 'shorts-action story-status-read', 'aria-label': appearanceText('Lexo artikullin →', 'Read article →'),
                     onClick: () => { setCourseVideoFeedOpen(false); setSelectedArticleId(video.articleId); setView('articles'); window.scrollTo({ top: 0, behavior: 'instant' }); }
-                  }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5' }))), h('span', null, appearanceText('Lexo', 'Read')))
+                  }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5' }))), h('span', null, appearanceText('Lexo artikullin', 'Read article')))
                   : (video.courseId && video.topicId) ? h('button', {
                     type: 'button', className: 'shorts-action', 'aria-label': appearanceText('Hap lëndën', 'Open course'),
                     onClick: () => { setCourseVideoFeedOpen(false); openTopicExplainById(video.courseId, video.topicId, 'video'); }
