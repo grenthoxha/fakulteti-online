@@ -114,12 +114,10 @@
     .sv2-search input { flex:1; min-width:0; height:100%; border:0; outline:0; background:transparent; color:var(--ink); font:inherit; font-size:16px; }
     .sv2-search input::placeholder { color:var(--muted); }
     .sv2-search button { width:32px; height:32px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-size:18px; line-height:1; cursor:pointer; }
-    .sv2-chips { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; }
-    .sv2-chips::-webkit-scrollbar { display:none; }
+    .sv2-chips { display:flex; flex-wrap:wrap; gap:6px; }
     .sv2-chip { flex:0 0 auto; padding:8px 13px; border:1.5px solid var(--line); border-radius:999px; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
     .sv2-chip[aria-pressed="true"] { background:rgba(var(--brand-rgb),.1); border-color:rgba(var(--brand-rgb),.55); color:rgb(var(--brand-rgb)); }
     .sv2-label { margin:6px 2px -2px; font-size:11.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
-    .sv2-hint { margin:0 2px; font-size:12.5px; color:var(--muted); }
     .sv2-empty { padding:22px 8px; text-align:center; font-size:14px; color:var(--muted); }
     .sv2-cell { position:relative; display:flex; }
     .sv2-cell .sv2-tile { width:100%; padding-right:38px; }
@@ -144,13 +142,29 @@
     .sv2-segbtn { flex:1; padding:9px 0; border:0; border-radius:10px; background:transparent; color:var(--muted); font:inherit; font-size:13.5px; font-weight:650; cursor:pointer; }
     .sv2-segbtn.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.12); }
     .sv2-segbtn:focus-visible { outline:2px solid rgba(var(--brand-rgb),.65); outline-offset:2px; }
-    .sv2-hero { display:block; width:100%; text-align:left; padding:16px; border:1px solid rgba(var(--brand-rgb),.5); border-radius:20px; background:rgba(var(--brand-rgb),.06); color:var(--ink); font:inherit; cursor:pointer; }
-    .sv2-hero i { display:grid; place-items:center; width:44px; height:44px; margin-bottom:12px; border-radius:14px; background:var(--surface); color:rgb(var(--brand-rgb)); }
-    .sv2-hero small { display:block; font-size:12px; font-weight:700; color:rgb(var(--brand-rgb)); }
-    .sv2-hero strong { display:block; margin-top:3px; font-size:19px; line-height:1.25; font-weight:750; letter-spacing:-.01em; }
-    .sv2-hero p { margin:6px 0 14px; font-size:13.5px; line-height:1.4; color:var(--muted); }
-    .sv2-hero em { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:12px; background:rgb(var(--brand-rgb)); color:#fff; font-style:normal; font-size:13.5px; font-weight:700; }
-    .sv2-hero:focus-visible { outline:2px solid rgba(var(--brand-rgb),.65); outline-offset:3px; }
+    .sv2-searchbar { display:flex; align-items:center; gap:8px; }
+    .sv2-searchbar .sv2-search { flex:1; min-width:0; }
+    .sv2-search input::-webkit-search-cancel-button { display:none; }
+    .sv2-search-close { min-height:44px; padding:0 4px; border:0; border-radius:8px; background:transparent; color:rgb(var(--brand-rgb)); font:inherit; font-size:13px; font-weight:650; cursor:pointer; }
+    .sv2-quick-rooms { --rooms-accent:#0f766e; display:flex; flex-direction:column; gap:5px; width:100%; text-align:left; padding:16px; border:1px solid rgba(13,148,136,.26); border-radius:18px; background:rgba(13,148,136,.08); color:var(--ink); font:inherit; cursor:pointer; }
+    .sv2-quick-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+    .sv2-quick-icon { display:grid; flex:none; place-items:center; width:34px; height:34px; border-radius:11px; background:rgba(var(--brand-rgb),.1); color:rgb(var(--brand-rgb)); }
+    .sv2-quick-rooms .sv2-quick-icon { width:40px; height:40px; background:rgba(13,148,136,.14); color:var(--rooms-accent); }
+    .sv2-quick-status { padding:4px 9px; border-radius:999px; background:var(--surface); color:var(--rooms-accent); font-size:11.5px; font-weight:650; }
+    .sv2-quick-rooms strong { font-size:23px; line-height:1.15; font-weight:750; letter-spacing:-.02em; }
+    .sv2-quick-rooms small, .sv2-shortcut small { color:var(--muted); font-size:12.5px; line-height:1.35; }
+    .sv2-quick-link { display:flex; align-items:center; gap:7px; margin-top:9px; color:var(--rooms-accent); font-size:13.5px; font-weight:700; }
+    .sv2-shortcuts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .sv2-shortcut { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:11px; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
+    .sv2-shortcut strong { font-size:13.5px; line-height:1.25; font-weight:700; }
+    .sv2-shortcut .sv2-quick-icon { margin-bottom:2px; }
+    .sv2-shortcut--tutoring .sv2-quick-icon { color:#6352aa; background:rgba(99,82,170,.12); }
+    .sv2-other { display:grid; gap:7px; min-width:0; }
+    .sv2-other h2 { margin:2px 0 0; color:var(--ink); font-size:14px; font-weight:700; }
+    .sv2-other .sv2-item { min-height:49px; padding:8px 12px; }
+    .sv2-other .sv2-item .sv2-quick-icon svg { color:inherit; }
+    .sv2-other .sv2-item > svg { color:var(--muted); }
+    .sv2-quick-rooms:focus-visible, .sv2-shortcut:focus-visible, .sv2-search-close:focus-visible { outline:2px solid rgba(var(--brand-rgb),.65); outline-offset:2px; }
     .sv2-item { display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border:0; background:transparent; color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
     .sv2-item + .sv2-item { border-top:1px solid var(--line); }
     .sv2-item svg { flex:none; color:rgb(var(--brand-rgb)); }
@@ -160,9 +174,10 @@
     .sv2-d { flex:none; font-size:12.5px; font-weight:700; color:rgb(var(--brand-rgb)); white-space:nowrap; }
     .sv2-item:focus-visible { outline:2px solid rgba(var(--brand-rgb),.65); outline-offset:-2px; }
     .dark .sv2-seg { background:rgba(109,164,229,.1); }
-    .dark .sv2-hero { background:rgba(109,164,229,.1); border-color:rgba(109,164,229,.55); }
-    .dark .sv2-hero small, .dark .sv2-item svg, .dark .sv2-d, .dark .sv2-hero i { color:#9fc5f2; }
-    .dark .sv2-hero em { background:#6da4e5; color:#0b1220; }
+    .dark .sv2-quick-rooms { --rooms-accent:#77d8cb; background:rgba(13,148,136,.17); }
+    .dark .sv2-quick-icon, .dark .sv2-search-close, .dark .sv2-item svg, .dark .sv2-d { color:#9fc5f2; }
+    .dark .sv2-quick-rooms .sv2-quick-icon { color:var(--rooms-accent); }
+    .dark .sv2-shortcut--tutoring .sv2-quick-icon { color:#cabcf6; background:rgba(139,106,229,.18); }
     .sv2-filters { display:flex; align-items:center; gap:8px; }
     .sv2-filters .sv2-chips { flex:1; min-width:0; }
     .sv2-view { flex:none; width:40px; height:38px; display:grid; place-items:center; border:1.5px solid var(--line); border-radius:12px; background:transparent; color:var(--muted); cursor:pointer; }
@@ -8152,13 +8167,21 @@ const SERVICES_CATS = {
   lostfound:'community', donations:'community', housing:'community', traffic:'community', tips:'community'
 };
 const foldServiceText = value => String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ë/g, 'e').replace(/ç/g, 'c');
-const ServicesHomeGrid = ({ tiles, icons, lang, top, mine }) => {
+const ServicesHomeGrid = ({ tiles, icons, lang, updates, mine }) => {
   const e = React.createElement;
   const en = lang === 'en';
   const t = (sq, enText) => en ? enText : sq;
   const [query, setQuery] = React.useState('');
+  const [searchOpen, setSearchOpen] = React.useState(false);
   const [cat, setCat] = React.useState('all');
   const [tab, setTab] = React.useState('all');
+  const searchRef = React.useRef(null);
+  const closeSearch = () => {
+    searchRef.current?.blur();
+    setQuery('');
+    setCat('all');
+    setSearchOpen(false);
+  };
   const [layout, setLayoutState] = React.useState(() => { try { return localStorage.getItem(SERVICES_LAYOUT_KEY) === 'icons' ? 'icons' : 'tiles'; } catch (error) { return 'tiles'; } });
   const toggleLayout = () => setLayoutState(prev => { const next = prev === 'icons' ? 'tiles' : 'icons'; try { localStorage.setItem(SERVICES_LAYOUT_KEY, next); } catch (error) {} return next; });
   const [favs, setFavs] = React.useState(() => {
@@ -8169,12 +8192,23 @@ const ServicesHomeGrid = ({ tiles, icons, lang, top, mine }) => {
     try { localStorage.setItem(SERVICES_FAV_KEY, JSON.stringify(next)); } catch (error) {}
     return next;
   });
-  const q = foldServiceText(query.trim());
-  const inCat = tile => cat === 'all' || SERVICES_CATS[tile[0]] === cat;
-  const matches = tiles.filter(tile => inCat(tile) && (!q || foldServiceText(tile[1]).includes(q)));
-  const searching = Boolean(q);
-  const favTiles = searching ? [] : matches.filter(tile => favs.includes(tile[0]));
-  const restTiles = searching ? matches : matches.filter(tile => !favs.includes(tile[0]));
+  const rooms = tiles.find(tile => tile[0] === 'freerooms');
+  const shortcuts = tiles.filter(tile => tile[0] === 'applications' || tile[0] === 'tutoring');
+  const otherTiles = tiles.filter(tile => tile !== rooms && !shortcuts.includes(tile));
+  const descriptions = {
+    freerooms: t('Fakulteti Filozofik', 'Faculty of Philosophy'),
+    applications: t('Kushtet dhe afatet', 'Requirements and deadlines'),
+    tutoring: t('Tutoring', 'Tutoring')
+  };
+  const terms = foldServiceText(query).split(/\s+/).filter(Boolean);
+  const matches = tiles.filter(([id, title]) => {
+    if (cat !== 'all' && SERVICES_CATS[id] !== cat) return false;
+    const text = foldServiceText([title, descriptions[id]].filter(Boolean).join(' '));
+    return terms.every(term => text.includes(term));
+  });
+  const svgIcon = (name, size = 19) => e('svg', { viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, dangerouslySetInnerHTML: { __html: icons[name] || '' } });
+  const quickIcon = name => e('span', { className: 'sv2-quick-icon' }, svgIcon(name));
+  const chevron = e('svg', { viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, e('path', { d: 'm9 6 6 6-6 6' }));
   const tileCell = tile => {
     const on = favs.includes(tile[0]);
     return e('div', { key: tile[0], className: 'sv2-cell' + (on ? ' sv2-fav' : '') },
@@ -8198,13 +8232,22 @@ const ServicesHomeGrid = ({ tiles, icons, lang, top, mine }) => {
   const viewBtn = e('button', { type: 'button', className: 'sv2-view', 'aria-pressed': layout === 'icons', 'aria-label': t('Rrjetë ikonash','Icon grid'), title: t('Rrjetë ikonash','Icon grid'), onClick: toggleLayout },
     e('svg', { viewBox: '0 0 24 24', width: 19, height: 19, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
       [[5, 5], [12, 5], [19, 5], [5, 12], [12, 12], [19, 12], [5, 19], [12, 19], [19, 19]].map(p => e('circle', { key: p.join(), cx: p[0], cy: p[1], r: 1.3, fill: 'currentColor' }))));
-  const cats = [['all', t('Të gjitha','All')], ['study', t('Studimi','Study')], ['money', t('Para','Money')], ['community', t('Komuniteti','Community')]];
-  const segBar = e('div', { className: 'sv2-seg', role: 'tablist' }, [['all', t('Shërbimet','Services')], ['mine', t('Të miat','Mine')]].map(x => e('button', { key: x[0], type: 'button', role: 'tab', 'aria-selected': tab === x[0], className: 'sv2-segbtn' + (tab === x[0] ? ' on' : ''), onClick: () => setTab(x[0]) }, x[1])));
+  const cats = [['all', t('Të gjitha','All')], ['study', t('Studimi','Study')], ['money', t('Financa','Finance')], ['community', t('Komuniteti','Community')]];
+  const segBar = e('div', { className: 'sv2-seg', role: 'tablist' }, [['all', t('Shërbimet','Services')], ['mine', t('Të miat','Mine')]].map(([id, label]) => e('button', {
+    key: id,
+    type: 'button',
+    role: 'tab',
+    'aria-selected': tab === id,
+    className: 'sv2-segbtn' + (tab === id ? ' on' : ''),
+    onClick: () => {
+      if (id === 'mine') closeSearch();
+      setTab(id);
+    }
+  }, label)));
   if (tab === 'mine') {
     const mineApps = (mine && mine.applications) || [];
     const mineListings = (mine && mine.listings) || [];
     const myFavs = tiles.filter(tile => favs.includes(tile[0]));
-    const svgIcon = name => e('svg', { viewBox: '0 0 24 24', width: 19, height: 19, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, dangerouslySetInnerHTML: { __html: icons[name] || '' } });
     const item = it => e('button', { key: it.key, type: 'button', className: 'sv2-item', onClick: it.onClick }, svgIcon(it.icon), e('span', { className: 'sv2-itx' }, e('b', null, it.title), e('small', null, it.meta)), it.right && e('span', { className: 'sv2-d' }, it.right));
     const group = (label, items) => items.length > 0 && e('div', { className: 'sv2-newsbox', key: label }, e('div', { className: 'sv2-label' }, label), e('div', { className: 'sv2-news' }, items.map(item)));
     return e(React.Fragment, null,
@@ -8215,20 +8258,70 @@ const ServicesHomeGrid = ({ tiles, icons, lang, top, mine }) => {
       myFavs.length > 0 && e('div', { className: gridClass }, myFavs.map(cell)),
       !mineApps.length && !mineListings.length && !myFavs.length && e('div', { className: 'sv2-empty' }, t('Ende asgjë këtu. Aplikimet, shpalljet dhe të preferuarat e tua do të dalin në këtë faqe.','Nothing here yet. Your applications, listings and favorites will show up on this page.')));
   }
+  const searchBar = e('div', { className: 'sv2-searchbar', role: 'search' },
+    e('div', { className: 'sv2-search' },
+      svgIcon('search', 18),
+      e('input', {
+        type: 'search',
+        ref: searchRef,
+        value: query,
+        onFocus: () => setSearchOpen(true),
+        onChange: ev => setQuery(ev.target.value),
+        onKeyDown: ev => {
+          if (ev.key === 'Escape' && searchOpen) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            closeSearch();
+          }
+        },
+        placeholder: t('Kërko shërbim…','Search services…'),
+        'aria-label': t('Kërko shërbim','Search services'),
+        autoComplete: 'off',
+        enterKeyHint: 'search'
+      }),
+      query && e('button', {
+        type: 'button',
+        onClick: () => {
+          setQuery('');
+          searchRef.current?.focus();
+        },
+        'aria-label': t('Pastro kërkimin','Clear search')
+      }, '×')),
+    searchOpen && e('button', { type: 'button', className: 'sv2-search-close', onClick: closeSearch }, t('Mbyll','Close')));
+  const searchResults = e(React.Fragment, null,
+    e('div', { className: 'sv2-filters' },
+      e('div', { className: 'sv2-chips', role: 'group', 'aria-label': t('Kategoritë','Categories') },
+        cats.map(([id, label]) => e('button', {
+          key: id,
+          type: 'button',
+          className: 'sv2-chip',
+          'aria-pressed': cat === id,
+          onClick: () => setCat(id)
+        }, label))),
+      viewBtn),
+    matches.length
+      ? e('div', { className: gridClass }, matches.map(cell))
+      : e('div', { className: 'sv2-empty', role: 'status' }, t('Nuk u gjet asnjë shërbim.','No services found.')));
   return e(React.Fragment, null,
     segBar,
-    top,
-    e('div', { className: 'sv2-search' },
-      e('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, e('circle', { cx: 11, cy: 11, r: 7 }), e('path', { d: 'M20 20l-3.5-3.5' })),
-      e('input', { type: 'search', value: query, onChange: ev => setQuery(ev.target.value), placeholder: t('Kërko shërbim…','Search services…'), 'aria-label': t('Kërko shërbim','Search services'), autoComplete: 'off', enterKeyHint: 'search' }),
-      query && e('button', { type: 'button', onClick: () => setQuery(''), 'aria-label': t('Pastro kërkimin','Clear search') }, '×')),
-    e('div', { className: 'sv2-filters' }, e('div', { className: 'sv2-chips', role: 'group', 'aria-label': t('Kategoritë','Categories') }, cats.map(c => e('button', { key: c[0], type: 'button', className: 'sv2-chip', 'aria-pressed': cat === c[0], onClick: () => setCat(c[0]) }, c[1]))), viewBtn),
-    !searching && !favs.length && e('p', { className: 'sv2-hint' }, t('Prek yllin te një shërbim për ta ruajtur këtu.','Tap the star on a service to keep it here.')),
-    favTiles.length > 0 && e('div', { className: 'sv2-label' }, t('Të preferuarat','Favorites')),
-    favTiles.length > 0 && e('div', { className: gridClass }, favTiles.map(cell)),
-    restTiles.length > 0 && (favTiles.length > 0 || searching) && e('div', { className: 'sv2-label' }, searching ? t('Rezultatet','Results') : t('Të gjitha','All')),
-    restTiles.length > 0 && e('div', { className: gridClass }, restTiles.map(cell)),
-    !favTiles.length && !restTiles.length && e('div', { className: 'sv2-empty' }, t('Nuk u gjet asnjë shërbim.','No services found.')));
+    searchBar,
+    searchOpen ? searchResults : e(React.Fragment, null,
+      rooms && e('button', { type: 'button', className: 'sv2-quick-rooms', onClick: rooms[3] },
+        e('span', { className: 'sv2-quick-top' }, quickIcon(rooms[2]),
+          e('span', { className: 'sv2-quick-status' }, t('Disponueshmëria','Availability'))),
+        e('strong', null, rooms[1]),
+        e('small', null, descriptions.freerooms),
+        e('span', { className: 'sv2-quick-link' }, t('Shiko sallat','View rooms'),
+          e('span', { 'aria-hidden': true }, '→'))),
+      e('div', { className: 'sv2-shortcuts' }, shortcuts.map(([id, title, icon, open]) =>
+        e('button', { key: id, type: 'button', className: 'sv2-shortcut sv2-shortcut--' + id, onClick: open },
+          quickIcon(icon), e('strong', null, title), e('small', null, descriptions[id])))),
+      e('section', { className: 'sv2-other' },
+        e('h2', null, t('Shërbime të tjera','Other services')),
+        e('div', { className: 'sv2-news' }, otherTiles.map(([id, title, icon, open]) =>
+          e('button', { key: id, type: 'button', className: 'sv2-item', onClick: open },
+            quickIcon(icon), e('span', { className: 'sv2-itx' }, e('b', null, title)), chevron)))),
+      updates));
 };
 const ASK_NAME_LOOKUP_ENDPOINT = 'https://fakulteti-ask-name-check.personalebuds.chatgpt.site/api/ask-name';
 const askGivenNameCache = new Map();
@@ -14382,27 +14475,27 @@ function AcademyApp({
   const servicesHomeTiles = () => {
     const t = (sq, en) => uiLanguage === 'en' ? en : sq;
     return [
-      ['tutoring', t('Mësim shtesë','Extra tutoring'), 'star', () => setView('tutoring')],
+      ['freerooms', t('Sallat e lira','Free rooms'), 'door', () => setView('freerooms')],
       ['applications', t('Aplikime & dokumente','Applications & documents'), 'doc', () => setView('support-applications')],
+      ['tutoring', t('Mësim shtesë','Extra tutoring'), 'star', () => setView('tutoring')],
+      ['books', t('Libra & skripta','Books & notes'), 'book', () => setView('books')],
+      ['traffic', t('Trafiku & autobusët','Traffic & buses'), 'bus', () => setView('urbantraffic')],
       ['feedback', t('Komentet e profesorit','Professor feedback'), 'user', () => setView('support-feedback')],
       ['work', t('Puna & fakulteti','Work & university'), 'clock', () => setView('support-work')],
       ['spaces', t('Hapësira e studimit','Study spaces'), 'pin', () => setView('support-spaces')],
       ['lostfound', t('Humbur / gjetur','Lost / found'), 'search', () => setView('support-lostfound')],
       ['donations', t('Dhuro & shit lirë','Donate & sell affordably'), 'heart', () => setView('support-donations')],
       ['perks', t('Zbritje studentore','Student discounts'), 'euro', () => setView('studentperks')],
-      ['freerooms', t('Sallat e lira','Free rooms'), 'door', () => setView('freerooms')],
       ['housing', t('Banesa & cimerë','Housing & roommates'), 'home', () => { setHousingFilterGender(profileServiceGender); setView('housing'); }],
       ['studygroups', t('Grupe studimi','Study groups'), 'users', () => setView('studygroups')],
       ['pastexams', t('Pyetje nga provimet','Past exam questions'), 'help', () => setView('pastexams')],
       ['campus', t('Harta e kampusit','Campus map'), 'map', () => setView('campusguide')],
-      ['traffic', t('Trafiku & autobusët','Traffic & buses'), 'bus', () => setView('urbantraffic')],
       ['tips', t('Këshilla nga studentët','Tips from students'), 'bulb', () => setView('seniortips')],
       ['simulator', t('Simulatori i bursës','Scholarship simulator'), 'calc', () => setView('scholarshiptarget')],
-      ['books', t('Libra & skripta','Books & notes'), 'book', () => setView('books')],
       ['scholarship', t('Bursa & mesatarja','Scholarship & average'), 'cap', () => setView('scholarship')]
     ];
   };
-  const renderServicesDeadlineHome = () => {
+  const renderStudentServicesHome = tiles => {
     const t = (sq, en) => uiLanguage === 'en' ? en : sq;
     const helpers = window.UnitStudentSupport && window.UnitStudentSupport.helpers;
     const readStore = window.UnitStudentSupport && window.UnitStudentSupport.readStore;
@@ -14433,30 +14526,19 @@ function AcademyApp({
       lostfound: n => t(`${n} aktive`, `${n} active`),
       donations: n => t(`${n} oferta`, `${n} offers`)
     };
-    const homeTiles = servicesHomeTiles();
-    const heroId = ['housing', 'tutoring', 'lostfound', 'donations'].find(id => newsCounts[id] > 0);
-    const heroTile = heroId ? homeTiles.find(tile => tile[0] === heroId) : null;
-    const heroText = { housing: n => t(`${n} shpallje për profilin tënd`, `${n} listings for your profile`), tutoring: n => t(`${n} kërkesa për mësim shtesë`, `${n} extra tutoring requests`), lostfound: n => t(`${n} njoftime aktive`, `${n} active notices`), donations: n => t(`${n} oferta aktive`, `${n} active offers`) };
-    const newsRows = ['housing', 'tutoring', 'lostfound', 'donations'].filter(id => newsCounts[id] > 0 && id !== heroId).map(id => homeTiles.find(tile => tile[0] === id)).filter(Boolean);
+    const newsRows = tiles.filter(([id]) => newsCounts[id] > 0);
     const scope = `${branchId}|${actualRole}|${studentName}`;
     const mineApplications = upcoming.map((item, index) => ({ key: 'app' + index, icon: 'doc', title: item.title, meta: t('Aplikime & dokumente', 'Applications & documents'), right: dayText(item.deadline), onClick: () => setView('support-applications') }));
     const mineListings = [];
     try { housingListings.filter(item => item.authorName === (studentName || 'Student')).forEach(item => mineListings.push({ key: 'h' + item.id, icon: 'home', title: item.title, meta: t('Banesa & cimerë', 'Housing & roommates'), right: t('Aktive', 'Active'), onClick: () => { setHousingFilterGender(profileServiceGender); setView('housing'); } })); } catch (error) {}
     try { if (readStore) readStore('unit_student_exchange_v1:' + supportScope).data.gifts.filter(item => item.owner === scope && !item.claimed).forEach(item => mineListings.push({ key: 'g' + item.id, icon: 'heart', title: item.title, meta: t('Dhuro & shit lirë', 'Donate & sell affordably'), right: t('Aktive', 'Active'), onClick: () => setView('support-donations') })); } catch (error) {}
     try { if (readStore) readStore('unit_student_notices_v1:' + supportScope).data.notices.filter(item => item.owner === scope && !item.resolved).forEach(item => mineListings.push({ key: 'n' + item.id, icon: 'search', title: item.title, meta: t('Humbur / gjetur', 'Lost / found'), right: t('Aktive', 'Active'), onClick: () => setView('support-lostfound') })); } catch (error) {}
-    const heroEl = heroTile && e('button', { type: 'button', className: 'sv2-hero', onClick: heroTile[3] },
-      e('i', { 'aria-hidden': true }, e('svg', { viewBox: '0 0 24 24', width: 22, height: 22, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: SERVICES_HOME_ICONS[heroTile[2]] } })),
-      e('small', null, t('Për ty tani', 'For you now')),
-      e('strong', null, heroTile[1]),
-      e('p', null, heroText[heroId](newsCounts[heroId])),
-      e('em', null, t('Hape shërbimin', 'Open service'), e('svg', { viewBox: '0 0 24 24', width: 15, height: 15, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, e('path', { d: 'm9 6 6 6-6 6' }))));
-    const topEl = e(React.Fragment, null,
+    const updates = e(React.Fragment, null,
       first && e('button', { type: 'button', className: 'sv2-deadline', onClick: () => setView('support-applications'), 'aria-label': `${t('Afati më i afërt','Nearest deadline')}: ${first.title}, ${dayText(first.deadline)}` },
         e('small', null, t('Afati më i afërt','Nearest deadline')),
         e('strong', null, first.title),
         e('span', { className: 'sv2-row' }, e('span', null, t('Aplikime & dokumente','Applications & documents')), e('b', null, dayText(first.deadline))),
         second && e('span', { className: 'sv2-next' }, e('span', null, t('Pastaj: ','Next: ') + second.title), e('span', { style: { flexShrink: 0 } }, dayText(second.deadline)))),
-      heroEl,
       newsRows.length > 0 && e('div', { className: 'sv2-newsbox' },
         e('div', { className: 'sv2-label' }, t('Çfarë ka të re', 'What is new')),
         e('div', { className: 'sv2-news' }, newsRows.map(tile => e('button', { key: tile[0], type: 'button', className: 'sv2-newsrow', onClick: tile[3] },
@@ -14464,10 +14546,11 @@ function AcademyApp({
           e('span', null, tile[1]),
           e('span', { className: 'sv2-pill' }, newsText[tile[0]](newsCounts[tile[0]])))))),
       null);
-    return e('div', { className: 'sv2-wrap' }, e(ServicesHomeGrid, { tiles: homeTiles, icons: SERVICES_HOME_ICONS, lang: uiLanguage, top: topEl, mine: { applications: mineApplications, listings: mineListings } }));
+    return e('div', { className: 'sv2-wrap' }, e(ServicesHomeGrid, { tiles, icons: SERVICES_HOME_ICONS, lang: uiLanguage, updates, mine: { applications: mineApplications, listings: mineListings } }));
   };
   const renderSettingsView = (studentServicesPage = false) => {
     if (!studentServicesPage) return renderMinimalProfile();
+    const serviceTiles = servicesHomeTiles();
     const profileVisibleHousingCount = profileServiceGender ? housingListings.filter(item => item.gender === profileServiceGender).length : 0;
     return /*#__PURE__*/React.createElement("div", {
       className: `profile-page profile-page--student-services w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 anim-fade-up pb-24`
@@ -14498,11 +14581,10 @@ function AcademyApp({
           )
         ), /*#__PURE__*/React.createElement("span", {
           className: "profile-services-count text-[10px] font-semibold text-secondary"
-        }, `${servicesHomeTiles().length} shërbime`)
+        }, `${serviceTiles.length} shërbime`)
       ),
 
-      /* Shërbimet studentore: afatet + pllaka */
-      renderServicesDeadlineHome(),
+      renderStudentServicesHome(serviceTiles),
       /* Lista e vjetër e kartave (e fshehur; kodi mbetet) */
       false && /*#__PURE__*/React.createElement("section", {
         className: "profile-services-card card-surface rounded-2xl border border-default shadow-2xs"
