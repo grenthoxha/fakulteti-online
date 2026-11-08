@@ -8,7 +8,7 @@
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f6fb",
-  "theme_color": "#f4f6fb",
+  "theme_color": "#111827",
   "icons": [
     {
       "src": "./assets/fakulteti-online-logo-192.png",
