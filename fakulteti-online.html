@@ -13122,7 +13122,25 @@ function AcademyApp({
   const [pomoFull, setPomoFull] = useState(false);
   const [pomoLocked, setPomoLocked] = useState(false);
   const [pomoHold, setPomoHold] = useState(false);
+  const [androidNativeReady, setAndroidNativeReady] = useState(() => Boolean(window.fakultetiAndroid));
   const pomoHoldRef = useRef(null);
+  useEffect(() => {
+    const ready = () => setAndroidNativeReady(Boolean(window.fakultetiAndroid));
+    const restoreFocus = () => {
+      setPomoOpen(true);
+      setPomoSetOpen(false);
+      setPomoFull(true);
+      setPomoLocked(true);
+    };
+    window.addEventListener('fakulteti:android-ready', ready);
+    window.addEventListener('fakulteti:focus-restore', restoreFocus);
+    ready();
+    if (window.fakultetiAndroid?.focusLocked) restoreFocus();
+    return () => {
+      window.removeEventListener('fakulteti:android-ready', ready);
+      window.removeEventListener('fakulteti:focus-restore', restoreFocus);
+    };
+  }, []);
   const [pomoVp, setPomoVp] = useState(() => ({ w: window.innerWidth || 390, h: window.innerHeight || 800 }));
   useEffect(() => {
     if (!pomoOpen) return undefined;
@@ -32496,7 +32514,13 @@ Nënshkrimi: _____________________`;
             ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon, 'w-[18px] h-[18px]')),
             ce('span', { className: 'flex-1 min-w-0 text-left' }, ce('span', { className: 'block text-[13px] font-semibold text-primary leading-snug' }, item.title), ce('span', { className: 'block text-xs text-secondary leading-relaxed mt-1 line-clamp-2' }, item.sub), ce('span', { className: 'block text-[11px] text-secondary mt-1.5' }, item.time)),
             ce('span', { className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined, style: { visibility: item.unread ? 'visible' : 'hidden' } }))) : ce('p', { className: 'p-6 text-sm text-secondary text-center' }, 'Nuk ka njoftime për momentin.')),
-          ce('footer', { className: 'notification-preview-footer' }, ce('button', { type: 'button', className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', ce('span', { 'aria-hidden': true, className: 'ml-2' }, '→')))));
+          ce('footer', { className: 'notification-preview-footer' },
+            androidNativeReady && ce('button', {
+              type: 'button',
+              className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer',
+              onClick: () => window.fakultetiAndroid?.send('demo-notification')
+            }, 'Dërgo njoftim provë'),
+            ce('button', { type: 'button', className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', ce('span', { 'aria-hidden': true, className: 'ml-2' }, '→')))));
     }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
@@ -33424,8 +33448,23 @@ Nënshkrimi: _____________________`;
   const pomoExitFs = () => { try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) {} };
   const pomoToggleFull = () => { const next = !pomoFull; setPomoFull(next); if (next) pomoEnterFs(); else pomoExitFs(); };
   const pomoClose = () => { if (pomoLocked) return; setPomoSetOpen(false); setPomoFull(false); pomoExitFs(); setPomoOpen(false); };
-  const pomoLock = () => { if (!pomo.endsAt) pomoStart(); setPomoSetOpen(false); setPomoLocked(true); setPomoFull(true); pomoEnterFs(); };
-  const pomoUnlock = () => { if (pomoHoldRef.current) { clearTimeout(pomoHoldRef.current); pomoHoldRef.current = null; } setPomoHold(false); setPomoLocked(false); };
+  const pomoLock = () => {
+    if (!pomo.endsAt) pomoStart();
+    setPomoSetOpen(false);
+    setPomoLocked(true);
+    setPomoFull(true);
+    if (window.fakultetiAndroid) window.fakultetiAndroid.send('focus-lock');
+    else pomoEnterFs();
+  };
+  const pomoUnlock = () => {
+    if (pomoHoldRef.current) {
+      clearTimeout(pomoHoldRef.current);
+      pomoHoldRef.current = null;
+    }
+    setPomoHold(false);
+    setPomoLocked(false);
+    window.fakultetiAndroid?.send('focus-unlock');
+  };
   const pomoHoldStart = () => { if (pomoHoldRef.current) return; setPomoHold(true); pomoHoldRef.current = setTimeout(() => { pomoHoldRef.current = null; pomoUnlock(); }, 1200); };
   const pomoHoldEnd = () => { if (pomoHoldRef.current) { clearTimeout(pomoHoldRef.current); pomoHoldRef.current = null; } setPomoHold(false); };
   const POMO_STYLES = [
