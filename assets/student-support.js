@@ -578,7 +578,7 @@
       error&&h('p',{className:'student-support-alert',role:'alert'},error==='read'?t('Të dhënat nuk mund të lexoheshin. Kontrollo ruajtjen para se të shtosh shënime.','Stored data could not be read. Check your storage before adding entries.'):t('Ruajtja dështoi; ndryshimi nuk u aplikua. Provo sërish ose liro hapësirë në shfletues.','Save failed; the change was not applied. Retry or free browser storage.')),
       notice&&h('p',{className:'student-support-status',role:'status','aria-live':'polite'},notice),forms(),views[service]());
   }
-  window.UnitStudentSupport = { ServicesCards, SupportPage, DateOnly, serviceDefinitions,
+  window.UnitStudentSupport = { ServicesCards, SupportPage, DateOnly, serviceDefinitions, readStore,
     // Pure helpers exported for focused regression tests, without touching existing app state.
     helpers:{ localDate,validDate,validTime,dateText,safeUrl,contactUrl,normalizeStore,timeRange,conflictsForShift,matchesSpace,giftPrice,matchesGift } };
 })();
