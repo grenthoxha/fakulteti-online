@@ -1276,7 +1276,7 @@
   <link rel="stylesheet" href="./assets/focused-appearance.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-photo-status">
+  <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-youtube-controls">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -9370,64 +9370,67 @@ function UnitYouTubeReelPlayer({ embedSrc, title, poster }) {
   const h = React.createElement;
   const iconBtn = 'w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center shrink-0 cursor-pointer transition-colors';
   return h('div', { ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(st.playing), 'data-native-ui': String(nativeUi), className: 'course-video-player flex flex-col gap-3 shrink-0' },
-    h('div', { className: 'story-video-window course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
-      h('iframe', {
-        ref: frameRef,
-        src: playerUrl,
-        title,
-        onLoad,
-        allowFullScreen: true,
-        scrolling: 'no',
-        allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
-        className: 'w-full h-full border-0 bg-black'
-      }),
-      /* Thumbnail derisa videoja të nisë */
-      poster && h('div', {
-        'aria-hidden': true,
-        className: `absolute inset-0 pointer-events-none transition-opacity duration-500 ${started ? 'opacity-0' : 'opacity-100'}`
-      },
-        h('img', { src: poster, alt: '', className: 'absolute inset-0 w-full h-full object-cover', onError: e => { e.currentTarget.style.display = 'none'; } }),
-        h('span', { className: 'absolute inset-0 bg-black/25' }),
-        h('span', { className: 'absolute inset-0 flex items-center justify-center' },
-          h('span', { className: 'w-11 h-11 rounded-full border-[3px] border-white/30 border-t-white animate-spin' }))),
-      /* Shtresë e padukshme: prek videon për ta ndalur/luajtur (fsheh titullin dhe logon e YouTube kur kalon miu) */
-      h('button', {
-        type: 'button',
-        className: 'story-play-surface absolute inset-0 w-full h-full cursor-pointer bg-transparent',
-        hidden: nativeUi,
-        tabIndex: nativeUi ? -1 : 0,
-        'aria-label': 'Shfaq ose fsheh kontrollet e videos'
-      }),
-    h('button', {
-      type: 'button', className: 'story-native-toggle', 'aria-pressed': nativeUi,
-      'aria-label': nativeUi ? 'Kthehu te kontrolli me prekje' : 'Titrat dhe cilësimet e YouTube',
-      title: nativeUi ? 'Kthehu te kontrolli me prekje' : 'Titrat dhe cilësimet e YouTube',
-      onClick: () => setNativeUi(value => !value)
-    }, nativeUi ? '✓' : 'CC'),
-    /* Kontrollet poshtë videos */
-    h('div', { className: 'story-player-controls flex items-center gap-3 px-1' },
-      h('button', { type: 'button', onClick: togglePlay, className: `${iconBtn} story-play-control`, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
-        st.playing
-          ? h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' }))
-          : h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M8 5v14l11-7z' }))),
-      h('span', { className: 'story-time story-time--current text-xs tabular-nums text-white/75' }, fmt(st.t)),
-      h('input', {
-        type: 'range',
-        min: 0,
-        max: st.d || 0,
-        step: 0.1,
-        value: Math.min(st.t, st.d || 0),
-        onChange: e => { const v = Number(e.target.value) || 0; setSt(s => ({ ...s, t: v })); send('seekTo', [v, true]); },
-        className: 'flex-1 min-w-0 h-1 cursor-pointer',
-        style: { accentColor: '#ffffff', '--story-played': `${st.d ? Math.min(100, st.t / st.d * 100) : 0}%` },
-        'aria-label': 'Koha e videos'
-      }),
-      h('span', { className: 'story-time story-time--total text-xs tabular-nums text-white/75' }, fmt(st.d)),
-      h('button', { type: 'button', onClick: event => toggleVideoStoryFullscreen(event.currentTarget.closest('.tiktok-viewer')), className: `${iconBtn} story-fullscreen-control`, 'aria-label': 'Hap ose mbyll ekranin e plotë' },
-        h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
-      h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
-        h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
-          h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
+    h('div', { className: 'story-youtube-stack' },
+      h('div', { className: 'story-video-window course-video-frame relative w-full aspect-video rounded-2xl bg-black overflow-hidden' },
+        h('iframe', {
+          ref: frameRef,
+          src: playerUrl,
+          title,
+          onLoad,
+          allowFullScreen: true,
+          scrolling: 'no',
+          allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+          className: 'w-full h-full border-0 bg-black'
+        }),
+        /* Thumbnail derisa videoja të nisë */
+        poster && h('div', {
+          'aria-hidden': true,
+          className: `absolute inset-0 pointer-events-none transition-opacity duration-500 ${started ? 'opacity-0' : 'opacity-100'}`
+        },
+          h('img', { src: poster, alt: '', className: 'absolute inset-0 w-full h-full object-cover', onError: e => { e.currentTarget.style.display = 'none'; } }),
+          h('span', { className: 'absolute inset-0 bg-black/25' }),
+          h('span', { className: 'absolute inset-0 flex items-center justify-center' },
+            h('span', { className: 'w-11 h-11 rounded-full border-[3px] border-white/30 border-t-white animate-spin' }))),
+        /* Prek videon për t’i shfaqur ose fshehur kontrollet. */
+        h('button', {
+          type: 'button',
+          className: 'story-play-surface absolute inset-0 w-full h-full cursor-pointer bg-transparent',
+          hidden: nativeUi,
+          tabIndex: nativeUi ? -1 : 0,
+          'aria-label': 'Shfaq ose fsheh kontrollet e videos'
+        })),
+      h('div', { className: 'story-youtube-toolbar' },
+        h('div', { className: 'story-player-controls' },
+          h('button', { type: 'button', onClick: togglePlay, className: `${iconBtn} story-play-control`, 'aria-label': st.playing ? 'Ndal' : 'Luaj' },
+            st.playing
+              ? h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' }))
+              : h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: '#ffffff', 'aria-hidden': true }, h('path', { d: 'M8 5v14l11-7z' }))),
+          h('span', { className: 'story-youtube-time' }, `${fmt(st.t)} / ${fmt(st.d)}`),
+          h('input', {
+            type: 'range',
+            min: 0,
+            max: st.d || 0,
+            step: 0.1,
+            value: Math.min(st.t, st.d || 0),
+            onChange: e => { const v = Number(e.target.value) || 0; setSt(s => ({ ...s, t: v })); send('seekTo', [v, true]); },
+            className: 'flex-1 min-w-0 h-1 cursor-pointer',
+            style: { accentColor: '#ffffff', '--story-played': `${st.d ? Math.min(100, st.t / st.d * 100) : 0}%` },
+            'aria-label': 'Koha e videos'
+          }),
+          h('button', { type: 'button', onClick: event => toggleVideoStoryFullscreen(event.currentTarget.closest('.tiktok-viewer')), className: `${iconBtn} story-fullscreen-control`, 'aria-label': 'Hap ose mbyll ekranin e plotë' },
+            h('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true }, h('path', { d: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5' }))),
+          h('button', { type: 'button', onClick: toggleMute, className: `${iconBtn} story-mute-control`, 'aria-label': st.muted ? 'Ndiz zërin' : 'Fik zërin' },
+            h('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+              h('path', { d: st.muted ? 'M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' })))
+        ), h('button', {
+          type: 'button', className: `${iconBtn} story-native-toggle`, 'aria-pressed': nativeUi,
+          'aria-label': nativeUi ? 'Mbyll cilësimet e YouTube' : 'Titrat dhe cilësimet e YouTube',
+          title: nativeUi ? 'Mbyll cilësimet e YouTube' : 'Titrat dhe cilësimet e YouTube',
+          onClick: () => setNativeUi(value => !value)
+        }, h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+          nativeUi ? h('path', { d: 'M6 6l12 12M18 6L6 18' }) : h(React.Fragment, null,
+            h('circle', { cx: 12, cy: 12, r: 3 }),
+            h('path', { d: 'M10 3h4l.7 2.4 1.5.9 2.5-.6 2 3.5-1.7 1.9v1.8l1.7 1.9-2 3.5-2.5-.6-1.5.9-.7 2.4h-4l-.7-2.4-1.5-.9-2.5.6-2-3.5L5 12.9v-1.8L3.3 9.2l2-3.5 2.5.6 1.5-.9z' }))))
     ))
   );
 }
@@ -33904,6 +33907,7 @@ Nënshkrimi: _____________________`;
     if (!curVideo) return null;
     const total = courseVideoFeed.length;
     const isPhoto = curVideo.kind === 'article';
+    const isYouTube = !isPhoto && getTopicVideoSource(curVideo.url)?.provider === 'YouTube';
     const fixedPhotoFit = isPhoto && curVideo.fullBleedPortrait;
     const photoFullscreen = isPhoto && (fixedPhotoFit || storyFit !== 'contain');
     const fullPicture = isPhoto || storyFit !== 'cover';
@@ -33917,7 +33921,7 @@ Nënshkrimi: _____________________`;
       /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
-        'data-fit': fixedPhotoFit || storyFit === 'cover' ? 'cover' : 'contain',
+        'data-fit': !isYouTube && (fixedPhotoFit || storyFit === 'cover') ? 'cover' : 'contain',
         'data-story-kind': curVideo.kind || 'video',
         'data-photo-fullscreen': String(photoFullscreen),
         'data-photo-layout': isPhoto ? 'status' : undefined,
@@ -33951,7 +33955,7 @@ Nënshkrimi: _____________________`;
               h('div', null,
                 h('strong', null, 'Fakulteti Online'),
                 h('span', null, curVideo.duration || appearanceText('Artikull', 'Article')))),
-            !isPhoto && getTopicVideoSource(curVideo.url)?.provider === 'YouTube' && h('svg', {
+            isYouTube && h('svg', {
               className: 'story-youtube-source', width: 24, height: 17, viewBox: '0 0 28 20',
               role: 'img', 'aria-label': 'YouTube'
             }, h('rect', { width: 28, height: 20, rx: 5, fill: '#ff0033' }),
@@ -33963,7 +33967,7 @@ Nënshkrimi: _____________________`;
                 'aria-label': appearanceText('Zgjidh postimin', 'Choose post'),
                 onChange: event => scrollToVideoFeedSlide(Number(event.target.value), 'vertical')
               }, courseVideoFeed.map((video, idx) => h('option', { key: video.id || idx, value: idx }, `${idx + 1} / ${total}`)))),
-            !fixedPhotoFit && h('button', {
+            !fixedPhotoFit && !isYouTube && h('button', {
               type: 'button', onClick: () => setStoryFit(isPhoto ? (storyFit === 'cover' ? 'auto' : 'cover') : (fullPicture ? 'cover' : 'contain')),
               className: 'story-fit-toggle shorts-icon-button', 'aria-pressed': isPhoto ? storyFit === 'cover' : !fullPicture,
               'aria-label': fitLabel,
