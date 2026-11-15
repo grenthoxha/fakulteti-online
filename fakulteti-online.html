@@ -802,6 +802,62 @@
       .unit-messages-head { padding-top: calc(.9rem + env(safe-area-inset-top,0px)); }
     }
     @media (prefers-reduced-motion: reduce) { .unit-messages-panel { animation: none; } }
+    /* Notices inside messages: the existing agenda and poll actions are preserved. */
+    .unit-messages-panel .mx-hub { --mx-accent: #1557b0; padding: .15rem 0 1rem; }
+    .dark .unit-messages-panel .mx-hub { --mx-accent: #a2c9f2; }
+    .unit-messages-panel .mx-hub .mx-top { margin: .65rem 1rem 0; padding: .75rem .85rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    .unit-messages-panel .mx-hub .mx-top-label { font-size: .8rem; }
+    .unit-messages-panel .mx-hub .mx-president-bar { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .4rem; padding: .65rem 1rem 0; }
+    .unit-messages-panel .mx-hub .mx-president-bar .mx-link { min-height: 2.5rem; padding: .4rem .25rem; border: 1px solid var(--line); border-radius: .75rem; font-size: .72rem; color: var(--mx-accent); background: var(--surface); text-decoration: none; }
+    .unit-messages-panel .mx-hub .mx-agenda { padding: .4rem 1rem 0; }
+    .unit-messages-panel .mx-hub .mx-ag-month { padding: 1rem .2rem .55rem; font-size: .65rem; letter-spacing: .06em; color: var(--muted); }
+    .unit-messages-panel .mx-hub .mx-ag { display: grid; gap: .6rem; }
+    .unit-messages-panel .mx-hub .mx-ag-item { overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    .unit-messages-panel .mx-hub .mx-ag-main { gap: .65rem; padding: .9rem .75rem; align-items: flex-start; transition: background .15s; }
+    .unit-messages-panel .mx-hub .mx-ag-main:hover { background: rgba(var(--brand-rgb),.035); }
+    .unit-messages-panel .mx-hub .mx-ag-date { display: grid; place-items: center; align-content: center; gap: .25rem; width: 2.8rem; min-height: 3.1rem; padding: .35rem .15rem; border-radius: .8rem; border: 1px solid rgba(var(--brand-rgb),.1); color: var(--mx-accent); background: rgba(var(--brand-rgb),.075); }
+    .unit-messages-panel .mx-hub .mx-ag-date b { font-size: 1.2rem; font-weight: 700; }
+    .unit-messages-panel .mx-hub .mx-ag-date i { margin: 0; font-size: .5rem; letter-spacing: 0; color: inherit; }
+    .unit-messages-panel .mx-hub .mx-ag-bar { display: none; }
+    .unit-messages-panel .mx-hub .mx-ag-title { font-size: .85rem; line-height: 1.4; }
+    .unit-messages-panel .mx-hub .mx-ag-sub { margin-top: .3rem; font-size: .73rem; line-height: 1.5; }
+    .unit-messages-panel .mx-hub .mx-ag-cal { color: var(--mx-accent); margin-top: .25rem; }
+    .mx-ag-chevron { display: inline-flex; color: var(--muted); flex-shrink: 0; margin-top: .3rem; transition: transform .18s; }
+    .mx-ag-main[aria-expanded=true] .mx-ag-chevron { transform: rotate(90deg); }
+    .unit-messages-panel .mx-hub .mx-ag-more { margin: 0 .85rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+    .unit-messages-panel .mx-hub .mx-ag-detail { font-size: .8rem; line-height: 1.6; }
+    .unit-messages-panel .mx-hub .mx-ag-actions { gap: .4rem; margin-top: .6rem; }
+    .unit-messages-panel .mx-hub .mx-ag-actions .mx-link { min-height: 2.5rem; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: .7rem; font-size: .72rem; color: var(--mx-accent); text-decoration: none; background: var(--surface); }
+    .unit-messages-panel .mx-hub .mx-ag-actions .mx-link.is-danger { color: var(--muted); }
+    .unit-messages-panel .mx-hub .mx-ag-note { display: none; }
+    .unit-messages-panel .mx-hub .mx-poll { margin: 1rem 1rem .75rem; padding: .9rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    .unit-messages-panel .mx-hub .mx-poll-tag { color: var(--mx-accent); font-size: .62rem; letter-spacing: .05em; }
+    .unit-messages-panel .mx-hub .mx-poll-head .mx-link { min-height: 2rem; font-size: .68rem; }
+    .unit-messages-panel .mx-hub .mx-poll-q { font-size: .85rem; line-height: 1.45; margin: .25rem 0 .75rem; }
+    .unit-messages-panel .mx-hub .mx-poll-opt { margin-top: .45rem; padding: .65rem .7rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--surface); }
+    .unit-messages-panel .mx-hub .mx-poll-row { font-size: .74rem; line-height: 1.45; gap: .5rem; }
+    .unit-messages-panel .mx-hub .mx-poll-text { min-width: 0; overflow-wrap: anywhere; }
+    .unit-messages-panel .mx-hub .mx-poll-pct { flex-shrink: 0; font-size: .65rem; font-weight: 600; }
+    .unit-messages-panel .mx-hub .mx-poll-track { height: 3px; margin-top: .5rem; }
+    .unit-messages-panel .mx-hub .mx-poll-fill { background: rgba(var(--brand-rgb),.3); }
+    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected { border-color: rgba(var(--brand-rgb),.35); background: rgba(var(--brand-rgb),.055); }
+    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected .mx-poll-text { color: var(--mx-accent); }
+    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected .mx-poll-fill { background: var(--mx-accent); }
+    .unit-messages-panel .mx-hub .mx-archive { padding: .3rem 1rem .5rem; }
+    .unit-messages-panel .mx-hub .mx-archive > .mx-link { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 2.5rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface-muted); }
+    .unit-messages-panel .mx-hub .mx-role { padding: .5rem 1rem; text-align: center; }
+    .unit-messages-panel .mx-hub .mx-role .mx-link { font-size: .68rem; min-height: 2.5rem; }
+    .unit-messages-panel .mx-hub .mx-empty { margin: 1rem; padding: 2rem 1rem; text-align: center; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); font-size: .8rem; }
+    .app-apk-option { display: flex; align-items: center; gap: .75rem; padding: .9rem; border: 1px solid rgba(var(--brand-rgb),.2); border-radius: 1rem; background: rgba(var(--brand-rgb),.055); text-decoration: none; color: var(--ink); }
+    .app-apk-option:hover { background: rgba(var(--brand-rgb),.09); }
+    .app-apk-option > svg { flex-shrink: 0; color: #1557b0; }
+    .dark .app-apk-option > svg { color: #a2c9f2; }
+    .app-apk-title { display: block; font-size: .85rem; font-weight: 650; line-height: 1.4; }
+    .app-apk-version { display: block; margin-top: .2rem; font-size: .72rem; color: var(--muted); line-height: 1.4; }
+    .app-apk-hint { margin: .5rem .1rem 1rem; font-size: .7rem; color: var(--muted); line-height: 1.5; }
+    .app-apk-download { text-decoration: none; }
+    .app-apk-download:focus-visible,.app-apk-option:focus-visible { outline: 2px solid #7baee5; outline-offset: 2px; }
+    @media (prefers-reduced-motion:reduce) { .mx-ag-chevron { transition: none; } }
     @media (max-width: 1023px) {
       .home-messages-floating {
         position: fixed;
@@ -10792,6 +10848,7 @@ const getInitialScheduleProgram = fullName => prefersSocialWorkSchedule(fullName
 const getInitialAcademyView = (role, fullName) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.5', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.5-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -10867,7 +10924,7 @@ function UnitInstallButton({ className = '', uiLanguage = 'sq', variant = 'row' 
     catch { setCopyNotice(t('Mbaje shtypur linkun për ta kopjuar.','Press and hold the link to copy it.')); }
   };
   const instructions = getUnitInstallSteps(context,en);
-  const buttonProps = { type:'button', onClick:install, 'data-native-install': String(state.available), 'data-install-worker':state.workerReady?'ready':'pending', 'aria-haspopup':'dialog' };
+  const buttonProps = { type:'button', onClick:context.os === 'android' ? () => setOpen(true) : install, 'data-native-install': String(state.available), 'data-install-worker':state.workerReady?'ready':'pending', 'aria-haspopup':'dialog' };
   const entry = variant === 'banner'
     ? (!state.standalone && !dismissed && h('div',{className:'app-install-banner card-surface border border-default rounded-2xl px-3 py-2 flex items-center gap-3 text-left '+className},
       h('img',{src:'./assets/apple-touch-icon.png',alt:'',className:'w-9 h-9 rounded-xl shrink-0'}),
@@ -10875,10 +10932,13 @@ function UnitInstallButton({ className = '', uiLanguage = 'sq', variant = 'row' 
       h('button',{...buttonProps,className:'min-h-10 px-3 rounded-xl bg-brand-600 text-white text-sm font-semibold shrink-0'},t('Instalo','Install')),
       h('button',{type:'button',onClick:dismiss,'aria-label':t('Mshef sugjerimin e instalimit','Dismiss installation suggestion'),className:'w-7 h-9 text-secondary shrink-0'},'×')))
     : h('button',{...buttonProps,className,disabled:state.standalone},shareIcon,h('span',{className:'flex-1'},state.standalone?t('Aplikacioni është instaluar','App is installed'):t('Instalo aplikacionin','Install app')),!state.standalone&&h('span',{className:'text-xs text-secondary'},context.browser));
-  return h(React.Fragment,null,entry,open&&h(ModalPortal,null,h('div',{
+  return h(React.Fragment,null,entry,variant !== 'banner' && context.os !== 'ios' && h('a',{href:UNIT_ANDROID_APK.url,download:'Fakulteti.apk',className:className+' app-apk-download','aria-label':t('Shkarko Fakulteti për Android (APK)','Download Fakulteti for Android (APK)')},shareIcon,h('span',{className:'flex-1'},t('Shkarko për Android','Download for Android')),h('span',{className:'text-xs text-secondary'},'APK · '+UNIT_ANDROID_APK.version)),open&&h(ModalPortal,null,h('div',{
     role:'dialog','aria-modal':'true','aria-labelledby':'install-app-title',className:'fixed inset-0 z-[110] bg-black/45 backdrop-blur-sm flex items-center justify-center p-4',onClick:()=>setOpen(false)
   },h('section',{className:'modal-bg w-full max-w-sm max-h-[calc(100dvh-32px)] overflow-y-auto rounded-3xl border border-default p-5 shadow-2xl',onClick:event=>event.stopPropagation()},
-    h('div',{className:'flex items-center gap-3 mb-4'},h('img',{src:'./assets/apple-touch-icon.png',alt:'',className:'w-11 h-11 rounded-xl border border-default'}),h('h2',{id:'install-app-title',className:'flex-1 text-lg font-bold text-primary'},t('Instalo Fakulteti Online','Install Fakulteti Online')),h('button',{type:'button',onClick:()=>setOpen(false),'aria-label':t('Mbyll instalimin','Close installation'),className:'w-8 h-8 rounded-full hover-surface text-secondary shrink-0'},'×')),
+    h('div',{className:'flex items-center gap-3 mb-4'},h('img',{src:'./assets/apple-touch-icon.png',alt:'',className:'w-11 h-11 rounded-xl border border-default'}),h('h2',{id:'install-app-title',className:'flex-1 text-lg font-bold text-primary'},t('Instalo Fakulteti','Install Fakulteti')),h('button',{type:'button',onClick:()=>setOpen(false),'aria-label':t('Mbyll instalimin','Close installation'),className:'w-8 h-8 rounded-full hover-surface text-secondary shrink-0'},'×')),
+    context.os !== 'ios' && h(React.Fragment,null,
+      h('a',{href:UNIT_ANDROID_APK.url,download:'Fakulteti.apk',className:'app-apk-option','aria-label':t('Shkarko Fakulteti për Android (APK)','Download Fakulteti for Android (APK)')},shareIcon,h('span',{className:'flex-1 min-w-0'},h('span',{className:'app-apk-title'},t('Shkarko për Android','Download for Android')),h('span',{className:'app-apk-version'},'APK · '+UNIT_ANDROID_APK.version))),
+      h('p',{className:'app-apk-hint'},t('Pas shkarkimit, hape skedarin APK në telefon për ta instaluar.','After downloading, open the APK file on your phone to install it.'))),
     h('div',{className:'grid grid-cols-2 gap-2 mb-4'},
       h('label',{className:'text-xs text-secondary'},t('Pajisja','Device'),h('select',{value:context.os,onChange:event=>{const os=event.target.value;setContext(current=>({...current,os,browser:getUnitInstallBrowsers(os).includes(current.browser)?current.browser:(os==='ios'?'Safari':'Chrome')}));},className:'block w-full mt-1 min-h-10 input-bg border border-default rounded-xl px-2 text-sm text-primary','aria-label':t('Pajisja për instalim','Installation device')},h('option',{value:'android'},'Android'),h('option',{value:'ios'},'iPhone / iPad'),h('option',{value:'desktop'},t('Kompjuter','Desktop')))),
       h('label',{className:'text-xs text-secondary'},'Browser',h('select',{value:context.browser,onChange:event=>setContext(current=>({...current,browser:event.target.value})),className:'block w-full mt-1 min-h-10 input-bg border border-default rounded-xl px-2 text-sm text-primary','aria-label':t('Browser-i për instalim','Installation browser')},getUnitInstallBrowsers(context.os).map(name=>h('option',{key:name,value:name},name))))),
@@ -25284,7 +25344,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           h('span', { className: 'mx-ag-date' }, h('b', null, day), h('i', null, formatDateSq(entry.key, { weekday: 'short' }))),
           h('span', { className: 'mx-ag-bar', style: { background: TYPE_COLOR[type] || '#4f46e5' }, 'aria-hidden': 'true' }),
           h('span', { className: 'mx-ag-text' }, h('span', { className: 'mx-ag-title' }, title), h('span', { className: 'mx-ag-sub' }, sub)),
-          isCol && hubNoticesOn && !muted ? h('span', { className: 'mx-ag-cal', title: 'Shtuar te Provimet', 'aria-label': 'Shtuar te Provimet' }, unitUiIcon('M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1zM4 10h16M9 4v4M15 4v4', 'w-4 h-4')) : null),
+          isCol && hubNoticesOn && !muted ? h('span', { className: 'mx-ag-cal', title: 'Shtuar te Provimet', 'aria-label': 'Shtuar te Provimet' }, unitUiIcon('M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1zM4 10h16M9 4v4M15 4v4', 'w-4 h-4')) : null, h('span', { className: 'mx-ag-chevron', 'aria-hidden': true }, unitUiIcon(UNIT_UI_ICONS.chev, 'w-3.5 h-3.5'))),
         open && h('div', { className: 'mx-ag-more' },
           detail ? h('p', { className: 'mx-ag-detail' }, detail) : null,
           h('div', { className: 'mx-ag-actions' },
