@@ -32631,7 +32631,7 @@ Nënshkrimi: _____________________`;
     try { unitStorage.setItem('u_notifications_read', JSON.stringify(next)); } catch (e) {}
   };
   // Native notifications use the same unread items and destinations as this list.
-  const androidNotificationScope = JSON.stringify([window.FakultetiLocalAccounts.current()?.id || "", studentName, branchId, yearId]);
+  const androidNotificationScope = JSON.stringify([window.FakultetiLocalAccounts.databaseName('notifications'), studentName, branchId, yearId]);
   const androidNotificationSnapshot = JSON.stringify({
     scope: androidNotificationScope,
     expires: new Date(`${today}T23:59:59`).getTime(),
