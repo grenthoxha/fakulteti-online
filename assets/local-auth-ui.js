@@ -17,7 +17,7 @@
   };
   const icon = (path, cls = '') => h('svg', { className: cls, width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: path }));
   root.FakultetiLocalAuthView = function LocalAuthView() {
-    const [mode, setMode] = useState('signin');
+    const [mode, setMode] = useState('signup');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -77,7 +77,7 @@
           h('button', { type: 'button', className: 'local-auth-secondary', onClick: async () => { try { await navigator.clipboard.writeText(created.recoveryCode); setNotice('Kodi u kopjua.'); } catch { setNotice('Mbaje shtypur kodin për ta kopjuar.'); } } }, icon('M9 9h12v12H9zM3 15V3h12'), 'Kopjo kodin'),
           h('p', { className: 'local-auth-help' }, 'Ky kod të lejon të vendosësh fjalëkalim të ri për llogarinë në këtë pajisje.'),
           h('button', { type: 'button', className: 'local-auth-primary', onClick: finish }, 'E ruajta, vazhdo', icon('M5 12h14M13 6l6 6-6 6'))) : h(React.Fragment, null,
-          mode !== 'recover' && h('div', { className: 'local-auth-tabs', role: 'tablist', 'aria-label': 'Hyrja në llogari' }, [['signin', 'Hyr'], ['signup', 'Krijo llogari']].map(([id, text]) => h('button', { key: id, type: 'button', role: 'tab', 'aria-selected': mode === id, disabled: busy, onClick: () => changeMode(id) }, text))),
+          mode !== 'recover' && h('div', { className: 'local-auth-tabs', role: 'tablist', 'aria-label': 'Hyrja në llogari' }, [['signup', 'Krijo llogari'], ['signin', 'Hyr']].map(([id, text]) => h('button', { key: id, type: 'button', role: 'tab', 'aria-selected': mode === id, disabled: busy, onClick: () => changeMode(id) }, text))),
           h('form', { onSubmit: submit, className: 'local-auth-form', 'aria-busy': busy },
             input('Email', { type: 'email', value: email, onChange: e => setEmail(e.target.value), placeholder: 'emri@email.com', autoComplete: 'username', maxLength: 254, autoCapitalize: 'none', spellCheck: false }),
             mode === 'recover' && input('Kodi i rikuperimit', { type: 'text', value: code, onChange: e => setCode(e.target.value), autoComplete: 'off', maxLength: 64, spellCheck: false, autoCapitalize: 'none' }),
