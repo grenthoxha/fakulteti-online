@@ -1,6 +1,7 @@
 /* Additive local student services. Existing schedule/course/progress data is read-only. */
 (function () {
   'use strict';
+  const localStorage = window.FakultetiLocalAccounts?.storage || window.localStorage;
   const h = React.createElement;
   const { useState, useEffect } = React;
   const tr = language => (sq, en) => language === 'en' ? en : sq;
