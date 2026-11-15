@@ -79,11 +79,12 @@
   function startSession(account) {
     write(SESSION, { id: account.id, revision: account.revision });
   }
-  async function register(email, password, importLegacy = false) {
+  async function register(email, password, importLegacy = false, profile = null) {
     email = normalizeEmail(email);
     if (!validEmail(email)) fail('EMAIL_INVALID');
     checkPassword(password);
     if (registry().accounts.some(a => a.email === email)) fail('EMAIL_EXISTS');
+    if (profile && (!['male', 'female'].includes(profile.gender) || !['student', 'instructor', 'admin'].includes(profile.role) || !String(profile.firstName || '').trim() || !String(profile.lastName || '').trim())) fail('PROFILE_INVALID');
     const salt = random(16), recovery = random(24), id = random(16), revision = random(16);
     const [hash, recoveryHash] = await Promise.all([passwordHash(password, salt), digest(recovery)]);
     const account = await lock(() => {
@@ -91,7 +92,23 @@
       if (data.accounts.some(a => a.email === email)) fail('EMAIL_EXISTS');
       if (importLegacy && (!legacyProfile() || data.legacyOwner)) fail('LEGACY_CLAIMED');
       const record = { id, email, salt, hash, iterations: ITERATIONS, recoveryHash, revision, importedLegacy: Boolean(importLegacy), createdAt: new Date().toISOString() };
-      write(USERS, { ...data, accounts: [...data.accounts, record], legacyOwner: importLegacy ? id : data.legacyOwner });
+      const initial = profile ? {
+        u_real_first_name: String(profile.firstName).trim(), u_real_last_name: String(profile.lastName).trim(),
+        u_real_name: `${String(profile.firstName).trim()} ${String(profile.lastName).trim()}`,
+        u_name: `${String(profile.firstName).trim()} ${String(profile.lastName).trim()}`,
+        u_gender: profile.gender, u_role: profile.role
+      } : {};
+      const targetPrefix = importLegacy ? '' : accountPrefix(id);
+      const previous = Object.keys(initial).map(key => [targetPrefix + key, raw.getItem(targetPrefix + key)]);
+      try {
+        for (const [key, value] of Object.entries(initial)) raw.setItem(targetPrefix + key, value);
+        write(USERS, { ...data, accounts: [...data.accounts, record], legacyOwner: importLegacy ? id : data.legacyOwner });
+      } catch (error) {
+        for (const [key, value] of previous) {
+          try { if (value === null) raw.removeItem(key); else raw.setItem(key, value); } catch {}
+        }
+        fail('STORAGE_UNAVAILABLE');
+      }
       return record;
     });
     return {
