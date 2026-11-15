@@ -512,43 +512,74 @@
       .schedule-min .sch-day-lbl { font-size: 9.5px; letter-spacing: 0; }
     }
 
-    .notification-layer { position: fixed; inset: 0; z-index: 90; }
-    .notification-backdrop { position: absolute; inset: 0; background: rgba(5,14,30,.4); animation: notification-fade .22s ease both; }
-    .notification-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--page); color: var(--ink); animation: notification-enter .28s cubic-bezier(.22,.68,0,1) both; }
-    .notification-header { flex: none; padding: max(12px, env(safe-area-inset-top, 0px)) 16px 0; border-bottom: 1px solid var(--line); background: var(--surface); }
-    .notification-tabs { display: flex; gap: 24px; margin: 16px 8px 0; }
-    .notification-tabs button { padding: 0 0 12px; color: var(--muted); border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .notification-tabs button.is-active { color: var(--brand-600, #1557b0); border-color: currentColor; }
-    .dark .notification-tabs button.is-active { color: #8fbeef; }
-    .notification-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 16px; }
-    .notification-list { overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); }
-    .notification-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; padding: 16px; cursor: pointer; }
-    .notification-row + .notification-row { border-top: 1px solid var(--line); }
-    .notification-row.is-unread { background: rgba(76,131,186,.045); }
-    .notification-row:hover { background: rgba(76,131,186,.09); }
-    .notification-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 13px; background: rgba(76,131,186,.11); color: #1557b0; }
-    .dark .notification-icon { color: #a2c9f2; }
-    .notification-unread-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #397dc0; margin-top: 6px; }
-    .notification-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 20px; text-align: center; }
-    .notification-footer { flex: none; padding: 16px 20px max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+    .notification-layer { --notification-accent: #1557b0; position: fixed; inset: 0; z-index: 90; }
+    .dark .notification-layer { --notification-accent: #a2c9f2; }
+    .notification-backdrop { position: absolute; inset: 0; background: rgba(5,14,30,.4); animation: notification-fade .2s ease both; }
+    .notification-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--page); color: var(--ink); animation: notification-enter .24s cubic-bezier(.22,.68,0,1) both; }
+    .notification-header { flex: none; padding: calc(.9rem + env(safe-area-inset-top,0px)) 1rem .8rem; border-bottom: 1px solid var(--line); background: var(--surface); }
+    .notification-heading-row { display: flex; align-items: center; gap: .75rem; }
+    .notification-heading-copy { flex: 1; min-width: 0; }
+    .notification-heading-copy h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.3; }
+    .notification-heading-copy p { margin-top: .2rem; font-size: .75rem; color: var(--muted); line-height: 1.4; }
+    .notification-control { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; flex-shrink: 0; background: var(--surface-muted); color: var(--muted); cursor: pointer; transition: background .16s, color .16s; }
+    .notification-control:hover { color: var(--notification-accent); background: rgba(var(--brand-rgb),.1); }
+    .notification-control:disabled { opacity: .4; cursor: default; }
+    .notification-tabs { display: flex; gap: .25rem; margin-top: 1rem; padding: .25rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--surface-muted); }
+    .notification-tabs button { display: flex; flex: 1; align-items: center; justify-content: center; gap: .4rem; min-height: 2.5rem; padding: .5rem; border-radius: .65rem; color: var(--muted); font-size: .8rem; font-weight: 600; cursor: pointer; transition: color .18s, background .18s; }
+    .notification-tabs button.is-active { color: var(--notification-accent); background: var(--surface); box-shadow: 0 1px 4px rgba(8,15,30,.08); }
+    .notification-tab-count { font-size: .65rem; font-weight: 600; min-width: 1.2rem; padding: .1rem .25rem; border-radius: .4rem; background: rgba(var(--brand-rgb),.08); font-variant-numeric: tabular-nums; }
+    .notification-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom,0px)); }
+    .notification-section + .notification-section { margin-top: 1.25rem; }
+    .notification-section-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .1rem .25rem .65rem; }
+    .notification-section-heading h2 { font-size: .75rem; font-weight: 600; color: var(--muted); }
+    .notification-section-heading span { font-size: .65rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .notification-list { display: grid; gap: .55rem; }
+    .notification-row { display: flex; width: 100%; align-items: flex-start; gap: .75rem; padding: .9rem; text-align: left; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); cursor: pointer; transition: background .16s, border-color .16s; }
+    .notification-row.is-unread { border-color: rgba(var(--brand-rgb),.2); background: linear-gradient(rgba(var(--brand-rgb),.035),rgba(var(--brand-rgb),.035)),var(--surface); }
+    .notification-row:hover { border-color: rgba(var(--brand-rgb),.3); background: var(--surface-muted); }
+    .notification-icon { display: grid; place-items: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: .85rem; background: rgba(var(--brand-rgb),.09); color: var(--notification-accent); }
+    .notification-copy { display: block; flex: 1; min-width: 0; }
+    .notification-item-heading { display: flex; align-items: flex-start; gap: .5rem; }
+    .notification-item-title { flex: 1; min-width: 0; color: var(--ink); font-size: .85rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+    .notification-row.is-unread .notification-item-title { font-weight: 650; }
+    .notification-item-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: .3rem; font-size: .76rem; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+    .notification-item-meta { display: flex; align-items: center; gap: .3rem; margin-top: .55rem; color: var(--muted); font-size: .65rem; line-height: 1.3; }
+    .notification-item-meta .notification-chevron { margin-left: auto; }
+    .notification-unread-dot { width: .4rem; height: .4rem; flex-shrink: 0; border-radius: 50%; background: var(--notification-accent); margin-top: .4rem; }
+    .notification-empty { display: flex; flex-direction: column; align-items: center; gap: .7rem; padding: 3.5rem 1.25rem; text-align: center; }
+    .notification-empty .notification-icon { width: 3.25rem; height: 3.25rem; border-radius: 1.1rem; margin-bottom: .25rem; }
+    .notification-empty h2 { color: var(--ink); font-size: .95rem; font-weight: 600; line-height: 1.4; }
+    .notification-empty p { max-width: 17rem; font-size: .8rem; color: var(--muted); line-height: 1.55; }
+    .notification-footer { flex: none; padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom,0px)); border-top: 1px solid var(--line); background: var(--surface); }
+    .notification-footer button { display: flex; width: 100%; align-items: center; gap: .6rem; min-height: 2.5rem; padding: .4rem .5rem; font-size: .8rem; color: var(--muted); cursor: pointer; border-radius: .75rem; }
+    .notification-footer button:hover { background: var(--surface-muted); }
+    .notification-footer .notification-chevron { margin-left: auto; }
+    .notification-layer :is(button,a):focus-visible { outline: 2px solid var(--notification-accent); outline-offset: 2px; }
+    .notification-preview-layer .notification-backdrop { background: rgba(8,15,30,.16); backdrop-filter: blur(3px); animation: notification-fade .16s ease both; }
+    .notification-preview { position: absolute; display: flex; flex-direction: column; width: min(380px,calc(100vw - 24px)); max-height: min(560px,calc(100dvh - var(--notification-preview-top,64px) - 12px)); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 1.3rem; box-shadow: 0 18px 60px rgba(7,20,42,.18),0 2px 10px rgba(7,20,42,.08); overflow: hidden; animation: notification-preview-enter .2s ease-out both; }
+    .dark .notification-preview { box-shadow: 0 20px 65px rgba(0,0,0,.5); }
+    .notification-preview-heading { display: flex; align-items: center; gap: .65rem; padding: .8rem .85rem .7rem; border-bottom: 1px solid var(--line); flex: none; }
+    .notification-preview-heading > .notification-icon { width: 2.25rem; height: 2.25rem; border-radius: .8rem; }
+    .notification-preview-title { display: flex; flex: 1; min-width: 0; align-items: center; gap: .5rem; }
+    .notification-preview-title h2 { color: var(--ink); font-size: .95rem; font-weight: 700; letter-spacing: -.02em; }
+    .notification-preview-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.3rem; height: 1.3rem; padding: 0 .35rem; border-radius: .45rem; background: rgba(var(--brand-rgb),.09); color: var(--notification-accent); font-size: .65rem; font-weight: 700; }
+    .notification-preview-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: .55rem; display: grid; gap: .45rem; }
+    .notification-preview .notification-row { padding: .8rem .65rem; gap: .65rem; }
+    .notification-preview .notification-icon { width: 2.15rem; height: 2.15rem; border-radius: .75rem; }
+    .notification-preview .notification-item-detail { -webkit-line-clamp: 2; }
+    .notification-preview .notification-empty { padding: 2rem 1rem; }
+    .notification-preview-footer { padding: .55rem .8rem .7rem; border-top: 1px solid var(--line); flex: none; }
+    .notification-view-all { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 2.75rem; width: 100%; border-radius: .85rem; color: var(--notification-accent); background: rgba(var(--brand-rgb),.075); font-size: .8rem; font-weight: 600; cursor: pointer; }
+    .notification-view-all:hover { background: rgba(var(--brand-rgb),.12); }
+    .notification-demo-actions { display: flex; gap: .4rem; margin-bottom: .5rem; }
+    .notification-demo-actions button { flex: 1; min-width: 0; min-height: 2.5rem; padding: .45rem; border: 1px solid var(--line); border-radius: .75rem; color: var(--muted); font-size: .7rem; cursor: pointer; }
+    .notification-demo-actions button:hover { background: var(--surface-muted); }
     .perk-conditions summary::marker { color: var(--muted); font-size: 11px; }
-    @keyframes notification-enter { from { opacity: .6; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes notification-enter { from { opacity: .6; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes notification-fade { from { opacity: 0; } to { opacity: 1; } }
-    @media (min-width: 768px) { .notification-panel { left: auto; width: min(460px, 100vw); box-shadow: -16px 0 60px rgba(0,0,0,.18); } }
-    @media (prefers-reduced-motion: reduce) { .notification-panel, .notification-backdrop { animation: none; } }
-
-    .notification-preview-layer .notification-backdrop { background:transparent; animation:none; }
-    .notification-preview { position:absolute; display:flex; flex-direction:column; width:min(380px,calc(100vw - 24px)); max-height:min(480px,calc(100dvh - var(--notification-preview-top,64px) - 12px)); background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:0 18px 60px rgba(7,20,42,.18),0 2px 10px rgba(7,20,42,.08); overflow:hidden; animation:notification-preview-enter .18s ease-out both; }
-    .dark .notification-preview { box-shadow:0 20px 65px rgba(0,0,0,.5); }
-    .notification-preview-heading { display:flex; align-items:center; gap:8px; padding:12px 14px 12px 16px; border-bottom:1px solid var(--line); flex:none; }
-    .notification-preview-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:20px; background:rgba(76,131,186,.12); color:#1557b0; font-size:11px; font-weight:700; }
-    .dark .notification-preview-count { color:#a2c9f2; }
-    .notification-preview-list { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-    .notification-preview .notification-row { padding:13px 16px; gap:10px; }
-    .notification-preview .notification-icon { width:32px; height:32px; border-radius:11px; }
-    .notification-preview-footer { padding:7px 12px; border-top:1px solid var(--line); flex:none; }
-    @keyframes notification-preview-enter { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-    @media (prefers-reduced-motion:reduce) { .notification-preview { animation:none; } }
+    @keyframes notification-preview-enter { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @media (min-width: 768px) { .notification-panel { left: auto; width: min(460px,100vw); box-shadow: -16px 0 60px rgba(0,0,0,.18); border-left: 1px solid var(--line); } }
+    @media (prefers-reduced-motion: reduce) { .notification-panel,.notification-backdrop,.notification-preview { animation: none; } .notification-layer button { transition: none; } }
 
     /* Article typography only: the app layout, content and controls remain unchanged. */
     .editorial-articles .editorial-article-title,
@@ -32569,6 +32600,23 @@ Nënshkrimi: _____________________`;
   const renderNotificationCenter = () => {
     if (!notificationCenterOpen && !notificationPreviewOpen) return null;
     const ce = React.createElement;
+    const unreadDot = item => ce('span', {
+      className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined,
+      style: { visibility: item.unread ? 'visible' : 'hidden' }
+    });
+    const row = item => ce('button', {
+      key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
+      onClick: () => { setNotificationPreviewOpen(false); markNotificationsRead([item.id]); item.action(); }
+    },
+      ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon)),
+      ce('span', { className: 'notification-copy' },
+        ce('span', { className: 'notification-item-heading' }, ce('span', { className: 'notification-item-title' }, item.title), unreadDot(item)),
+        ce('span', { className: 'notification-item-detail' }, item.sub),
+        ce('span', { className: 'notification-item-meta' }, unitUiIcon(UNIT_UI_ICONS.clock, 'w-3 h-3'), item.time, unitUiIcon(UNIT_UI_ICONS.chev, 'w-3.5 h-3.5 notification-chevron'))));
+    const empty = unreadOnly => ce('div', { className: 'notification-empty' },
+      ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check, 'w-6 h-6')),
+      ce('h2', null, unreadOnly ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'),
+      ce('p', null, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'));
     if (notificationPreviewOpen && !notificationCenterOpen) {
       const recent = notificationFeed.slice(0, 3);
       return ce('div', { className: 'notification-layer notification-preview-layer' },
@@ -32578,27 +32626,15 @@ Nënshkrimi: _____________________`;
           style: { top: notificationPreviewPosition.top, right: notificationPreviewPosition.right, '--notification-preview-top': `${notificationPreviewPosition.top}px` }
         },
           ce('header', { className: 'notification-preview-heading' },
-            ce('div', { className: 'flex items-center gap-2 min-w-0 flex-1' }, ce('h2', { id: 'notification-preview-title', className: 'text-base font-bold text-primary' }, 'Njoftimet'), notificationUnreadCount > 0 && ce('span', { className: 'notification-preview-count', 'aria-label': `${notificationUnreadCount} të palexuara` }, notificationUnreadCount)),
-            ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'w-8 h-8 rounded-full hover-surface flex items-center justify-center text-secondary cursor-pointer shrink-0' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
-          ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(item => ce('button', {
-            key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
-            onClick: () => { setNotificationPreviewOpen(false); markNotificationsRead([item.id]); item.action(); }
-          },
-            ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon, 'w-[18px] h-[18px]')),
-            ce('span', { className: 'flex-1 min-w-0 text-left' }, ce('span', { className: 'block text-[13px] font-semibold text-primary leading-snug' }, item.title), ce('span', { className: 'block text-xs text-secondary leading-relaxed mt-1 line-clamp-2' }, item.sub), ce('span', { className: 'block text-[11px] text-secondary mt-1.5' }, item.time)),
-            ce('span', { className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined, style: { visibility: item.unread ? 'visible' : 'hidden' } }))) : ce('p', { className: 'p-6 text-sm text-secondary text-center' }, 'Nuk ka njoftime për momentin.')),
+            ce('span', { className: 'notification-icon' }, unitUiIcon('M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4')),
+            ce('div', { className: 'notification-preview-title' }, ce('h2', { id: 'notification-preview-title' }, 'Njoftimet'), notificationUnreadCount > 0 && ce('span', { className: 'notification-preview-count', 'aria-label': `${notificationUnreadCount} të palexuara` }, notificationUnreadCount)),
+            ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
+          ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(row) : empty(false)),
           ce('footer', { className: 'notification-preview-footer' },
-            androidNativeReady && ce('button', {
-              type: 'button',
-              className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer',
-              onClick: () => window.fakultetiAndroid?.send('demo-notification')
-            }, 'Dërgo njoftim provë'),
-            androidNativeReady && window.fakultetiAndroid?.demoRepeatSupported && ce('button', {
-              type: 'button',
-              className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer',
-              onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle')
-            }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min'),
-            ce('button', { type: 'button', className: 'w-full min-h-10 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover-surface cursor-pointer', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', ce('span', { 'aria-hidden': true, className: 'ml-2' }, '→')))));
+            androidNativeReady && ce('div', { className: 'notification-demo-actions' },
+              ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
+              window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
+            ce('button', { type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4')))));
     }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
@@ -32606,19 +32642,15 @@ Nënshkrimi: _____________________`;
       ce('div', { className: 'notification-backdrop', onClick: () => setNotificationCenterOpen(false), 'aria-hidden': true }),
       ce('section', { className: 'notification-panel', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-center-title' },
         ce('header', { className: 'notification-header' },
-          ce('div', { className: 'flex items-center gap-3' },
-            ce('button', { type: 'button', onClick: () => setNotificationCenterOpen(false), 'aria-label': 'Mbyll njoftimet', className: 'w-10 h-10 rounded-full hover-surface flex items-center justify-center text-primary cursor-pointer shrink-0' }, unitUiIcon(UNIT_UI_ICONS.back)),
-            ce('div', { className: 'flex-1 min-w-0' }, ce('h1', { id: 'notification-center-title', className: 'text-xl font-bold tracking-tight text-primary' }, 'Njoftimet'), ce('p', { className: 'text-xs text-secondary mt-0.5' }, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
-            ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'w-10 h-10 rounded-full hover-surface flex items-center justify-center text-brand-600 dark:text-brand-300 cursor-pointer disabled:opacity-40 disabled:cursor-default' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
-          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha'], ['unread', 'Të palexuara']].map(([id,label]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label)))),
-        ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'mb-6' },
-          ce('h2', { className: 'text-xs font-semibold text-secondary mb-2 px-1' }, group.label),
-          ce('div', { className: 'notification-list' }, group.items.map(item => ce('button', { key: item.id, type: 'button', onClick: () => { markNotificationsRead([item.id]); item.action(); }, className: `notification-row${item.unread ? ' is-unread' : ''}` },
-            ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon)),
-            ce('span', { className: 'flex-1 min-w-0 text-left' }, ce('span', { className: 'block text-sm font-semibold text-primary leading-snug' }, item.title), ce('span', { className: 'block text-[13px] leading-relaxed text-secondary mt-1' }, item.sub), ce('span', { className: 'block text-xs text-secondary mt-2' }, item.time)),
-            ce('span', { className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined, style: { visibility: item.unread ? 'visible' : 'hidden' } })))))) : ce('div', { className: 'notification-empty' },
-          ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check)), ce('h2', { className: 'text-base font-semibold text-primary' }, notificationTab === 'unread' ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'), ce('p', { className: 'text-sm text-secondary leading-relaxed' }, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'))),
-        ce('footer', { className: 'notification-footer' }, ce('button', { type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); }, className: 'flex items-center gap-2 text-sm text-secondary cursor-pointer' }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve'))));
+          ce('div', { className: 'notification-heading-row' },
+            ce('button', { type: 'button', onClick: () => setNotificationCenterOpen(false), 'aria-label': 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
+            ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, 'Njoftimet'), ce('p', null, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
+            ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
+          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
+        ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
+          ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
+          ce('div', { className: 'notification-list' }, group.items.map(row)))) : empty(notificationTab === 'unread')),
+        ce('footer', { className: 'notification-footer' }, ce('button', { type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
   };
 
   /* ── 12 · KARTELA DIGJITALE ── */
