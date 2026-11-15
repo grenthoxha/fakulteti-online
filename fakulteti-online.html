@@ -12,6 +12,9 @@
   <link rel="manifest" href="./manifest.webmanifest?v=4">
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
+  <script src="./assets/local-accounts.js?v=1"></script>
+  <script>var unitStorage = window.FakultetiLocalAccounts.storage;</script>
+  <link rel="stylesheet" href="./assets/local-auth.css?v=1">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
   <style id="profile-refinement">
@@ -68,9 +71,9 @@
   <script>
     (function() {
       try {
-        document.documentElement.dataset.density = localStorage.getItem('u_display_density') === 'compact' ? 'compact' : 'comfortable';
+        document.documentElement.dataset.density = unitStorage.getItem('u_display_density') === 'compact' ? 'compact' : 'comfortable';
       } catch { document.documentElement.dataset.density = 'comfortable'; }
-      var theme = localStorage.getItem('u_theme');
+      var theme = unitStorage.getItem('u_theme');
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
@@ -1515,7 +1518,8 @@
 
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
-  <script src="./assets/student-support.js?v=20261108-1"></script>
+  <script src="./assets/student-support.js?v=20261115-accounts1"></script>
+  <script src="./assets/local-auth-ui.js?v=1"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -1772,8 +1776,8 @@ const examSourceToText = async source => {
   }
 };
 
-/* PDF blobs live in IndexedDB; localStorage keeps only small metadata. */
-const PDF_DB_NAME = 'unit-academy-documents';
+/* PDF blobs live in IndexedDB; unitStorage keeps only small metadata. */
+const PDF_DB_NAME = window.FakultetiLocalAccounts.databaseName('unit-academy-documents');
 const PDF_DB_STORE = 'pdfs';
 const openPdfDatabase = () => new Promise((resolve, reject) => {
   if (!('indexedDB' in window)) return reject(new Error('Ky shfletues nuk e mbështet ruajtjen e dokumenteve.'));
@@ -1988,7 +1992,7 @@ const getCourseIconSvg = (course, className = "w-4 h-4") => {
   return /*#__PURE__*/React.createElement(TaskIcons.Book, { className });
 };
 /* ──── Lightweight interface localisation (academic content stays independent) ──── */
-let activeUiLanguage = localStorage.getItem('u_language') === 'en' ? 'en' : 'sq';
+let activeUiLanguage = unitStorage.getItem('u_language') === 'en' ? 'en' : 'sq';
 
 const UI_SQ_CORRECTIONS = {
   'Admin': 'Administrator',
@@ -3361,7 +3365,7 @@ const SoundEngine = {
   },
   playTone(freq, type = 'sine', duration = 0.15, vol = 0.08) {
     try {
-      const soundMuted = localStorage.getItem('u_sound_mute') === 'true';
+      const soundMuted = unitStorage.getItem('u_sound_mute') === 'true';
       if (soundMuted) return;
       this.init();
       if (!this.ctx) return;
@@ -3440,7 +3444,7 @@ const SoundEngine = {
 const recordActivity = (type = 'study', minutes = 1) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const log = JSON.parse(localStorage.getItem('u_activity_log') || '{}');
+    const log = JSON.parse(unitStorage.getItem('u_activity_log') || '{}');
     if (!log[today]) log[today] = {
       count: 0,
       minutes: 0,
@@ -3449,7 +3453,7 @@ const recordActivity = (type = 'study', minutes = 1) => {
     log[today].count += 1;
     log[today].minutes += minutes;
     log[today].types[type] = (log[today].types[type] || 0) + 1;
-    localStorage.setItem('u_activity_log', JSON.stringify(log));
+    unitStorage.setItem('u_activity_log', JSON.stringify(log));
   } catch (e) {}
 };
 
@@ -6451,8 +6455,8 @@ const UNIT_READER_ICONS = {
 const unitReaderIcon = (d, cls) => React.createElement('svg', { className: cls || 'w-5 h-5', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, React.createElement('path', { d }));
 const UNIT_HL_KEY = 'u_read_highlights';
 const UNIT_POS_KEY = 'u_read_positions';
-const unitReadJson = key => { try { const value = JSON.parse(localStorage.getItem(key) || '{}'); return value && typeof value === 'object' ? value : {}; } catch { return {}; } };
-const unitReadSave = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ruajtja është opsionale */ } };
+const unitReadJson = key => { try { const value = JSON.parse(unitStorage.getItem(key) || '{}'); return value && typeof value === 'object' ? value : {}; } catch { return {}; } };
+const unitReadSave = (key, value) => { try { unitStorage.setItem(key, JSON.stringify(value)); } catch { /* ruajtja është opsionale */ } };
 const UNIT_MARK_STYLE = 'background:#fde68a;color:#1f2937;border-radius:3px;padding:0 2px;cursor:pointer';
 const unitWrapHighlight = (root, text) => {
   if (!root || !text) return false;
@@ -6848,9 +6852,9 @@ const UnitBookReader = ({ courseId, title, meta, onClose, onMode, onAction, onNo
   const [stage, setStage] = useState({ w: 0, h: 0 });
   const [controls, setControls] = useState(true);
   const [layout, setLayout] = useState(() => {
-    try { const value = localStorage.getItem('u_book_layout'); return ['auto','page','spread','scroll'].includes(value) ? value : 'auto'; } catch { return 'auto'; }
+    try { const value = unitStorage.getItem('u_book_layout'); return ['auto','page','spread','scroll'].includes(value) ? value : 'auto'; } catch { return 'auto'; }
   });
-  const changeLayout = value => { setLayout(value); setSel(null); try { localStorage.setItem('u_book_layout', value); } catch {} };
+  const changeLayout = value => { setLayout(value); setSel(null); try { unitStorage.setItem('u_book_layout', value); } catch {} };
   const continuous = layout === 'scroll';
   const [panel, setPanel] = useState(null);
   const [sel, setSel] = useState(null);
@@ -8300,14 +8304,14 @@ const ServicesHomeGrid = ({ tiles, icons, lang, updates, mine }) => {
     setCat('all');
     setSearchOpen(false);
   };
-  const [layout, setLayoutState] = React.useState(() => { try { return localStorage.getItem(SERVICES_LAYOUT_KEY) === 'icons' ? 'icons' : 'tiles'; } catch (error) { return 'tiles'; } });
-  const toggleLayout = () => setLayoutState(prev => { const next = prev === 'icons' ? 'tiles' : 'icons'; try { localStorage.setItem(SERVICES_LAYOUT_KEY, next); } catch (error) {} return next; });
+  const [layout, setLayoutState] = React.useState(() => { try { return unitStorage.getItem(SERVICES_LAYOUT_KEY) === 'icons' ? 'icons' : 'tiles'; } catch (error) { return 'tiles'; } });
+  const toggleLayout = () => setLayoutState(prev => { const next = prev === 'icons' ? 'tiles' : 'icons'; try { unitStorage.setItem(SERVICES_LAYOUT_KEY, next); } catch (error) {} return next; });
   const [favs, setFavs] = React.useState(() => {
-    try { const raw = JSON.parse(localStorage.getItem(SERVICES_FAV_KEY) || '[]'); return Array.isArray(raw) ? raw.filter(x => typeof x === 'string') : []; } catch (error) { return []; }
+    try { const raw = JSON.parse(unitStorage.getItem(SERVICES_FAV_KEY) || '[]'); return Array.isArray(raw) ? raw.filter(x => typeof x === 'string') : []; } catch (error) { return []; }
   });
   const toggleFav = id => setFavs(prev => {
     const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-    try { localStorage.setItem(SERVICES_FAV_KEY, JSON.stringify(next)); } catch (error) {}
+    try { unitStorage.setItem(SERVICES_FAV_KEY, JSON.stringify(next)); } catch (error) {}
     return next;
   });
   const rooms = tiles.find(tile => tile[0] === 'freerooms');
@@ -8480,8 +8484,8 @@ const validateAskStudentIdentity = async (firstName, lastName) => {
 const getStoredStudentIdentity = value => {
   const fullName = normalizeStudentName(value);
   try {
-    const firstName = localStorage.getItem('u_real_first_name') || '';
-    const lastName = localStorage.getItem('u_real_last_name') || '';
+    const firstName = unitStorage.getItem('u_real_first_name') || '';
+    const lastName = unitStorage.getItem('u_real_last_name') || '';
     if (firstName && lastName && normalizeStudentName(`${firstName} ${lastName}`) === fullName) return { firstName, lastName };
   } catch {}
   const parts = fullName.split(' ');
@@ -8500,7 +8504,7 @@ function Onboarding({
   const [nameCheckError, setNameCheckError] = useState('');
   const nameRequestRef = useRef(0);
   const [role, setRole] = useState('student');
-  const [gender, setGender] = useState(() => localStorage.getItem('u_gender') || '');
+  const [gender, setGender] = useState(() => unitStorage.getItem('u_gender') || '');
   const [branchId, setBranchId] = useState(null);
   const [selectedYearId, setSelectedYearId] = useState(null);
   const [taughtCourses, setTaughtCourses] = useState([]);
@@ -8977,7 +8981,7 @@ const normalizeCourseLearningExamples = value => {
 };
 const readCourseLearningExampleStore = () => {
   let value;
-  try { value = JSON.parse(localStorage.getItem(COURSE_LEARNING_EXAMPLE_KEY) || 'null'); } catch { return { version: 1, courses: {} }; }
+  try { value = JSON.parse(unitStorage.getItem(COURSE_LEARNING_EXAMPLE_KEY) || 'null'); } catch { return { version: 1, courses: {} }; }
   if (!value || value.version !== 1 || !value.courses || typeof value.courses !== 'object' || Array.isArray(value.courses)) return { version: 1, courses: {} };
   return { version: 1, courses: Object.fromEntries(Object.entries(value.courses).filter(([id]) => id.length <= 200 && !['__proto__', 'prototype', 'constructor'].includes(id)).map(([id, example]) => [id, normalizeCourseLearningExamples(example)])) };
 };
@@ -9008,7 +9012,7 @@ function CourseLearningExamples({ courseId, section, language }) {
     focusAfterRender.current = focus;
     try {
       const store = readCourseLearningExampleStore();
-      localStorage.setItem(COURSE_LEARNING_EXAMPLE_KEY, JSON.stringify({ version: 1, courses: { ...store.courses, [courseId]: next } }));
+      unitStorage.setItem(COURSE_LEARNING_EXAMPLE_KEY, JSON.stringify({ version: 1, courses: { ...store.courses, [courseId]: next } }));
       setSaveError(false);
       return true;
     } catch { setSaveError(true); return false; }
@@ -9905,7 +9909,7 @@ const FilozofikuDailyStore = (() => {
     } catch { return null; }
   };
   try {
-    const saved = readSnapshot(localStorage.getItem(FILOZOFIKU_DAILY_SYNC_KEY)) || readSnapshot(localStorage.getItem('u_filozofiku_daily_time_sync_v3'));
+    const saved = readSnapshot(unitStorage.getItem(FILOZOFIKU_DAILY_SYNC_KEY)) || readSnapshot(unitStorage.getItem('u_filozofiku_daily_time_sync_v3'));
     if (saved) { currentData = saved.data; lastSuccessAt = saved.lastSuccessAt; sourceUrl = saved.sourceUrl; }
   } catch {}
   const isDue = () => !lastSuccessAt || Date.now() < lastSuccessAt || Date.now() - lastSuccessAt >= FILOZOFIKU_REFRESH_MS;
@@ -9937,7 +9941,7 @@ const FilozofikuDailyStore = (() => {
         }
         if (!parsed) throw new Error('Burimi zyrtar nuk u rifreskua. Po shfaqen të dhënat e fundit të ruajtura.');
         currentData = parsed; lastSuccessAt = Date.now(); sourceUrl = usedUrl;
-        try { localStorage.setItem(FILOZOFIKU_DAILY_SYNC_KEY, JSON.stringify({ data: currentData, lastSuccessAt, sourceUrl })); } catch {}
+        try { unitStorage.setItem(FILOZOFIKU_DAILY_SYNC_KEY, JSON.stringify({ data: currentData, lastSuccessAt, sourceUrl })); } catch {}
         const bookingResult = bookings ? await bookings.refreshAll({ force }) : { ok: true };
         notifyData();
         if (!bookingResult.ok) throw new Error('Rezervimet zyrtare nuk u rifreskuan.');
@@ -10830,15 +10834,15 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
 // Retire only the removed room-change feature; keep the regular schedule and other notices.
 const removeLegacyRoomChanges = () => {
   try {
-    const raw = localStorage.getItem('u_group_announcements_v1');
+    const raw = unitStorage.getItem('u_group_announcements_v1');
     const notices = raw ? JSON.parse(raw) : [];
     if (Array.isArray(notices)) {
       const kept = notices.filter(item => !String(item?.id || '').startsWith('ann_room_'));
-      if (kept.length !== notices.length) localStorage.setItem('u_group_announcements_v1', JSON.stringify(kept));
+      if (kept.length !== notices.length) unitStorage.setItem('u_group_announcements_v1', JSON.stringify(kept));
     }
   } catch {}
-  try { localStorage.removeItem('u_weekly_room_overrides_v1'); } catch {}
-  try { localStorage.removeItem('u_seeded_room_override_v1'); } catch {}
+  try { unitStorage.removeItem('u_weekly_room_overrides_v1'); } catch {}
+  try { unitStorage.removeItem('u_seeded_room_override_v1'); } catch {}
 };
 
 // A personal landing preference, based on the real name rather than a nickname.
@@ -10974,18 +10978,18 @@ function AcademyApp({
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
     let preferences;
-    try { preferences = normalizeHomePreferences(JSON.parse(localStorage.getItem('u_home_preferences'))); }
+    try { preferences = normalizeHomePreferences(JSON.parse(unitStorage.getItem('u_home_preferences'))); }
     catch { preferences = normalizeHomePreferences(null); }
     // Një herë: videot vendosen para Orarit (renditja e ruajtur më herët i kishte në fund).
     try {
-      if (!localStorage.getItem('u_home_videos_before_schedule_v1')) {
+      if (!unitStorage.getItem('u_home_videos_before_schedule_v1')) {
         const videoIndex = preferences.findIndex(item => item.id === 'videos');
         if (videoIndex >= 0) {
           const [videos] = preferences.splice(videoIndex, 1);
           const scheduleIndex = preferences.findIndex(item => item.id === 'schedule');
           preferences.splice(scheduleIndex >= 0 ? scheduleIndex : Math.min(1, preferences.length), 0, { ...videos, visible: true });
         }
-        localStorage.setItem('u_home_videos_before_schedule_v1', '1');
+        unitStorage.setItem('u_home_videos_before_schedule_v1', '1');
       }
     } catch (e) {}
     return preferences;
@@ -10998,7 +11002,7 @@ function AcademyApp({
     return () => { document.body.style.overflow = previousOverflow; };
   }, [homeEditorOpen]);
   const [displayDensity, setDisplayDensity] = useState(() => {
-    try { return localStorage.getItem('u_display_density') === 'compact' ? 'compact' : 'comfortable'; }
+    try { return unitStorage.getItem('u_display_density') === 'compact' ? 'compact' : 'comfortable'; }
     catch { return 'comfortable'; }
   });
   const [appearanceSaveError, setAppearanceSaveError] = useState(false);
@@ -11006,8 +11010,8 @@ function AcademyApp({
   useEffect(() => {
     document.documentElement.dataset.density = displayDensity;
     try {
-      localStorage.setItem('u_home_preferences', JSON.stringify(homePreferences));
-      localStorage.setItem('u_display_density', displayDensity);
+      unitStorage.setItem('u_home_preferences', JSON.stringify(homePreferences));
+      unitStorage.setItem('u_display_density', displayDensity);
       setAppearanceSaveError(false);
     } catch { setAppearanceSaveError(true); }
   }, [homePreferences, displayDensity]);
@@ -11059,12 +11063,12 @@ function AcademyApp({
   const [profileDraft, setProfileDraft] = useState({
     firstName: profileRealIdentity.firstName,
     lastName: profileRealIdentity.lastName,
-    nickname: profileNeedsRealName ? '' : localStorage.getItem('u_nickname') || ''
+    nickname: profileNeedsRealName ? '' : unitStorage.getItem('u_nickname') || ''
   });
   const [isEditingName, setIsEditingName] = useState(false);
   const [profileNameChecking, setProfileNameChecking] = useState(false);
   const profileNameRequestRef = useRef(0);
-  const [profilePhoto, setProfilePhoto] = useState(() => localStorage.getItem('u_profile_photo') || '');
+  const [profilePhoto, setProfilePhoto] = useState(() => unitStorage.getItem('u_profile_photo') || '');
   const profilePhotoInputRef = useRef(null);
 
   // Student-friendly power states
@@ -11217,7 +11221,7 @@ function AcademyApp({
     return () => { document.body.style.overflow = previous; };
   }, [notificationCenterOpen, notificationPreviewOpen]);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
-    try { const stored = JSON.parse(localStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
+    try { const stored = JSON.parse(unitStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
   const [studentCardOpen, setStudentCardOpen] = useState(false);
   const [archiveSearch, setArchiveSearch] = useState('');
@@ -11235,7 +11239,7 @@ function AcademyApp({
   const [selectedArticleId, setSelectedArticleId] = useState(null);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [premiumFeature, setPremiumFeature] = useState('Mjetet e avancuara të studimit');
-  const [isPremiumUser, setIsPremiumUser] = useState(() => localStorage.getItem('u_is_premium') === 'true');
+  const [isPremiumUser, setIsPremiumUser] = useState(() => unitStorage.getItem('u_is_premium') === 'true');
 
   const PREMIUM_FEATURES = {
     membership: {
@@ -11282,13 +11286,13 @@ function AcademyApp({
   };
   const activatePremiumDemo = () => {
     setIsPremiumUser(true);
-    localStorage.setItem('u_is_premium', 'true');
+    unitStorage.setItem('u_is_premium', 'true');
     setPremiumModalOpen(false);
       showToast('Plani Fakulteti Pro u aktivizua.', '✓');
   };
   const deactivatePremiumDemo = () => {
     setIsPremiumUser(false);
-    localStorage.setItem('u_is_premium', 'false');
+    unitStorage.setItem('u_is_premium', 'false');
     setPremiumModalOpen(false);
     showToast('U riktheve në planin Falas për krahasim.', '✓');
   };
@@ -11305,8 +11309,8 @@ function AcademyApp({
 
   const streakDays = useMemo(() => {
     try {
-      const lastVisit = localStorage.getItem('u_last_visit_date');
-      const currentStreak = Number(localStorage.getItem('u_streak_count') || '1');
+      const lastVisit = unitStorage.getItem('u_last_visit_date');
+      const currentStreak = Number(unitStorage.getItem('u_streak_count') || '1');
       const todayStr = new Date().toISOString().slice(0, 10);
       if (lastVisit === todayStr) return currentStreak;
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
@@ -11316,8 +11320,8 @@ function AcademyApp({
       } else if (lastVisit) {
         nextStreak = 1;
       }
-      localStorage.setItem('u_last_visit_date', todayStr);
-      localStorage.setItem('u_streak_count', String(nextStreak));
+      unitStorage.setItem('u_last_visit_date', todayStr);
+      unitStorage.setItem('u_streak_count', String(nextStreak));
       return nextStreak;
     } catch {
       return 1;
@@ -11325,7 +11329,7 @@ function AcademyApp({
   }, []);
   const [readChapters, setReadChapters] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_read_chapters') || '{}');
+      return JSON.parse(unitStorage.getItem('u_read_chapters') || '{}');
     } catch {
       return {};
     }
@@ -11364,7 +11368,7 @@ function AcademyApp({
       [key]: next
     };
     setReadChapters(updated);
-    localStorage.setItem('u_read_chapters', JSON.stringify(updated));
+    unitStorage.setItem('u_read_chapters', JSON.stringify(updated));
     if (next) {
       SoundEngine.playChime(true);
       showToast('Kapitulli u shënua i përfunduar.', '✓');
@@ -11380,10 +11384,10 @@ function AcademyApp({
     setCourseQuizAnswers({});
     setQAns(null);
   };
-  const [readingFontSize, setReadingFontSize] = useState(() => localStorage.getItem('u_read_font_size') || 'md');
+  const [readingFontSize, setReadingFontSize] = useState(() => unitStorage.getItem('u_read_font_size') || 'md');
   const changeFontSize = size => {
     setReadingFontSize(size);
-    localStorage.setItem('u_read_font_size', size);
+    unitStorage.setItem('u_read_font_size', size);
   };
   const copyToClipboard = (text, label = 'Shënimi') => {
     navigator.clipboard.writeText(text).then(() => {
@@ -11396,7 +11400,7 @@ function AcademyApp({
   const [toasts, setToasts] = useState([]);
   const [cardMastery, setCardMastery] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_card_mastery') || '{}');
+      return JSON.parse(unitStorage.getItem('u_card_mastery') || '{}');
     } catch {
       return {};
     }
@@ -11429,11 +11433,11 @@ function AcademyApp({
     if (requestId !== profileNameRequestRef.current) return false;
     setProfileNameChecking(false);
     if (!lookup.ok) { showToast(lookup.error, 'ℹ️'); return false; }
-    localStorage.setItem('u_real_name', fullName);
-    localStorage.setItem('u_real_first_name', firstName);
-    localStorage.setItem('u_real_last_name', lastName);
-    localStorage.setItem('u_nickname', nickname);
-    localStorage.setItem('u_name', nickname || fullName);
+    unitStorage.setItem('u_real_name', fullName);
+    unitStorage.setItem('u_real_first_name', firstName);
+    unitStorage.setItem('u_real_last_name', lastName);
+    unitStorage.setItem('u_nickname', nickname);
+    unitStorage.setItem('u_name', nickname || fullName);
     onProfileUpdate(nickname || fullName, fullName);
     showToast('Profili u përditësua.', '✓');
     return true;
@@ -11458,7 +11462,7 @@ function AcademyApp({
         context.drawImage(image, cropX, cropY, cropSize, cropSize, 0, 0, size, size);
         const photo = canvas.toDataURL('image/jpeg', 0.84);
         try {
-          localStorage.setItem('u_profile_photo', photo);
+          unitStorage.setItem('u_profile_photo', photo);
           setProfilePhoto(photo);
           showToast('Fotografia u vendos.', '✓');
         } catch {
@@ -11471,13 +11475,13 @@ function AcademyApp({
     reader.readAsDataURL(file);
   };
   const removeProfilePhoto = () => {
-    localStorage.removeItem('u_profile_photo');
+    unitStorage.removeItem('u_profile_photo');
     setProfilePhoto('');
     showToast('Fotografia u largua.', '✓');
   };
   const openProfileEditor = () => {
     const identity = getStoredStudentIdentity(studentFullName || studentName);
-    setProfileDraft({ ...identity, nickname: profileNeedsRealName ? '' : localStorage.getItem('u_nickname') || '' });
+    setProfileDraft({ ...identity, nickname: profileNeedsRealName ? '' : unitStorage.getItem('u_nickname') || '' });
     setIsEditingName(true);
   };
   useEffect(() => {
@@ -11520,9 +11524,9 @@ function AcademyApp({
   const exportBackup = () => {
     try {
       const data = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && isAllowedBackupKey(k)) data[k] = stripBinaryBackupData(localStorage.getItem(k));
+      for (let i = 0; i < unitStorage.length; i++) {
+        const k = unitStorage.key(i);
+        if (k && isAllowedBackupKey(k)) data[k] = stripBinaryBackupData(unitStorage.getItem(k));
       }
       const payload = {
         app: BACKUP_APP_ID,
@@ -11569,7 +11573,7 @@ function AcademyApp({
           throw new Error('Backup-i përmban të dhëna të palejuara.');
         }
         if (!window.confirm(`Do të rikthehen ${entries.length} grupe të dhënash dhe gjendja aktuale do të mbishkruhet. Vazhdo?`)) return;
-        entries.forEach(([key, value]) => localStorage.setItem(key, value));
+        entries.forEach(([key, value]) => unitStorage.setItem(key, value));
         showToast('Të dhënat u rikthyen! Po rifreskohet...', '✅');
         SoundEngine.playChime(true);
         setTimeout(() => window.location.reload(), 1200);
@@ -11582,7 +11586,7 @@ function AcademyApp({
   const [branchId, setBranchId] = useState(initialBranch);
   const [yearId, setYearId] = useState(initialYear);
   const [semesterId, setSemesterId] = useState(() => {
-    const s = localStorage.getItem('u_semester');
+    const s = unitStorage.getItem('u_semester');
     return s ? Number(s) : null;
   });
   const [course, setCourse] = useState(null);
@@ -11663,7 +11667,7 @@ function AcademyApp({
   const [courseSheet, setCourseSheet] = useState(null);
   const [courseBooks, setCourseBooks] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('u_course_books') || '{}');
+      const stored = JSON.parse(unitStorage.getItem('u_course_books') || '{}');
       return stored && typeof stored === 'object' ? stored : {};
     } catch {
       return {};
@@ -11673,7 +11677,7 @@ function AcademyApp({
   const bookInputRef = useRef(null);
   const [customCards, setCustomCards] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('u_custom_cards') || '{}');
+      const stored = JSON.parse(unitStorage.getItem('u_custom_cards') || '{}');
       return stored && typeof stored === 'object' ? stored : {};
     } catch {
       return {};
@@ -11681,14 +11685,14 @@ function AcademyApp({
   });
   const [courseNotes, setCourseNotes] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_course_personal_notes') || '{}');
+      return JSON.parse(unitStorage.getItem('u_course_personal_notes') || '{}');
     } catch {
       return {};
     }
   });
   const [done, setDone] = useState(() => {
     try {
-      const d = JSON.parse(localStorage.getItem('u_done') || '[]');
+      const d = JSON.parse(unitStorage.getItem('u_done') || '[]');
       return Array.isArray(d) ? d : [];
     } catch {
       return [];
@@ -11696,7 +11700,7 @@ function AcademyApp({
   });
   const [taughtCourses, setTaughtCourses] = useState(() => {
     try {
-      const t = JSON.parse(localStorage.getItem('u_taught_courses') || '[]');
+      const t = JSON.parse(unitStorage.getItem('u_taught_courses') || '[]');
       return Array.isArray(t) ? t : [];
     } catch {
       return [];
@@ -11704,14 +11708,14 @@ function AcademyApp({
   });
   const [myNotes, setMyNotes] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_notes') || '{}');
+      return JSON.parse(unitStorage.getItem('u_notes') || '{}');
     } catch {
       return {};
     }
   });
   const [unlocked, setUnlocked] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_unlocked') || '[1]');
+      return JSON.parse(unitStorage.getItem('u_unlocked') || '[1]');
     } catch {
       return [1];
     }
@@ -11722,7 +11726,7 @@ function AcademyApp({
   const [inClassDismissedId, setInClassDismissedId] = useState(null);
   const [inClassScratchText, setInClassScratchText] = useState('');
   const [inClassSavedIndicator, setInClassSavedIndicator] = useState(false);
-  const [coursesLayout, setCoursesLayout] = useState(() => localStorage.getItem('u_courses_layout') || 'grid');
+  const [coursesLayout, setCoursesLayout] = useState(() => unitStorage.getItem('u_courses_layout') || 'grid');
   const [coursesPastMenuOpen, setCoursesPastMenuOpen] = useState(false);
   const [coursesSemesterId, setCoursesSemesterId] = useState(null);
   const [coursesSearch, setCoursesSearch] = useState('');
@@ -11731,7 +11735,7 @@ function AcademyApp({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('all');
   const [recentSearches, setRecentSearches] = useState(() => {
-    try { const stored = JSON.parse(localStorage.getItem('u_recent_searches') || '[]'); return Array.isArray(stored) ? stored.filter(item => typeof item === 'string').slice(0, 6) : []; } catch { return []; }
+    try { const stored = JSON.parse(unitStorage.getItem('u_recent_searches') || '[]'); return Array.isArray(stored) ? stored.filter(item => typeof item === 'string').slice(0, 6) : []; } catch { return []; }
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const headerHomeLabel = freeRoomsHomeUser ? 'Shko te Sallat e Lira' : 'Shko te Kreu';
@@ -11774,14 +11778,14 @@ function AcademyApp({
     };
   }, [sidebarOpen]);
   const [isDark, setIsDark] = useState(() => {
-    const s = localStorage.getItem('u_theme');
+    const s = unitStorage.getItem('u_theme');
     return s === 'dark';
   });
   const [fcIdx, setFcIdx] = useState(0);
   const [fcFlip, setFcFlip] = useState(false);
   const [fcRecallDraft, setFcRecallDraft] = useState('');
   const [fcReviews, setFcReviews] = useState(() => {
-    try { return normalizeFlashcardReviews(JSON.parse(localStorage.getItem(FC_REVIEW_STORAGE_KEY) || 'null')); }
+    try { return normalizeFlashcardReviews(JSON.parse(unitStorage.getItem(FC_REVIEW_STORAGE_KEY) || 'null')); }
     catch { return { version: 1, courses: {} }; }
   });
   const [fcReviewMode, setFcReviewMode] = useState('all');
@@ -11818,15 +11822,15 @@ function AcademyApp({
   
   
   
-  const reminderSoundEnabled = localStorage.getItem('u_focus_sound') !== 'off';
+  const reminderSoundEnabled = unitStorage.getItem('u_focus_sound') !== 'off';
   
   
   
   // Instructor State
-  const [role, setRole] = useState(() => localStorage.getItem('u_simulated_role') || actualRole);
+  const [role, setRole] = useState(() => unitStorage.getItem('u_simulated_role') || actualRole);
   const [customData, setCustomData] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_custom_data') || '{"editedCourses":{},"newCourses":{},"cases":{},"professorEdits":{}}');
+      return JSON.parse(unitStorage.getItem('u_custom_data') || '{"editedCourses":{},"newCourses":{},"cases":{},"professorEdits":{}}');
     } catch {
       return {
         editedCourses: {},
@@ -11839,7 +11843,7 @@ function AcademyApp({
   useEffect(() => {
     let cancelled = false;
     const migrateLegacyPdfs = async () => {
-      if (localStorage.getItem('u_pdf_indexeddb_migrated') === '1') return;
+      if (unitStorage.getItem('u_pdf_indexeddb_migrated') === '1') return;
       const nextData = JSON.parse(JSON.stringify(customData));
       let changed = false;
       let failed = false;
@@ -11876,7 +11880,7 @@ function AcademyApp({
       }
       if (cancelled) return;
       if (changed) setCustomData(nextData);
-      if (!failed) localStorage.setItem('u_pdf_indexeddb_migrated', '1');
+      if (!failed) unitStorage.setItem('u_pdf_indexeddb_migrated', '1');
     };
     migrateLegacyPdfs();
     return () => {
@@ -11885,7 +11889,7 @@ function AcademyApp({
   }, []);
   const [arenaScore, setArenaScore] = useState(() => {
     try {
-      return Number(localStorage.getItem('u_arena_score') || '0');
+      return Number(unitStorage.getItem('u_arena_score') || '0');
     } catch {
       return 0;
     }
@@ -11923,7 +11927,7 @@ function AcademyApp({
   const [caseSolved, setCaseSolved] = useState(false);
   const [completedCases, setCompletedCases] = useState(() => {
     try {
-      const c = JSON.parse(localStorage.getItem('u_completed_cases') || '[]');
+      const c = JSON.parse(unitStorage.getItem('u_completed_cases') || '[]');
       return Array.isArray(c) ? c : [];
     } catch {
       return [];
@@ -11943,7 +11947,7 @@ function AcademyApp({
   });
   const [studyPlan, setStudyPlan] = useState(() => {
     try {
-      const p = JSON.parse(localStorage.getItem('u_study_plan') || '[]');
+      const p = JSON.parse(unitStorage.getItem('u_study_plan') || '[]');
       return Array.isArray(p) ? p : [];
     } catch {
       return [];
@@ -11951,7 +11955,7 @@ function AcademyApp({
   });
   const [deadlines, setDeadlines] = useState(() => {
     try {
-      const d = JSON.parse(localStorage.getItem('u_deadlines') || '[]');
+      const d = JSON.parse(unitStorage.getItem('u_deadlines') || '[]');
       return Array.isArray(d) ? d : [];
     } catch {
       return [];
@@ -12071,7 +12075,7 @@ function AcademyApp({
   const [planExamFilter, setPlanExamFilter] = useState('');
   const [studentXp, setStudentXp] = useState(() => {
     try {
-      return Number(localStorage.getItem('u_student_xp')) || 180;
+      return Number(unitStorage.getItem('u_student_xp')) || 180;
     } catch {
       return 180;
     }
@@ -12079,15 +12083,15 @@ function AcademyApp({
   const [housingFilterType, setHousingFilterType] = useState('all');
   const [housingFilterZone, setHousingFilterZone] = useState('all');
   const [housingFilterGender, setHousingFilterGender] = useState(() => {
-    const saved = localStorage.getItem('u_gender');
+    const saved = unitStorage.getItem('u_gender');
     return ['male', 'female'].includes(saved) ? saved : '';
   });
   const [profileServicesOpen, setProfileServicesOpen] = useState(() => {
-    const saved = localStorage.getItem('u_gender');
+    const saved = unitStorage.getItem('u_gender');
     return !['male', 'female'].includes(saved);
   });
   const [profileServiceGender, setProfileServiceGender] = useState(() => {
-    const saved = localStorage.getItem('u_gender');
+    const saved = unitStorage.getItem('u_gender');
     return ['male', 'female'].includes(saved) ? saved : '';
   });
   const [housingSearchQuery, setHousingSearchQuery] = useState('');
@@ -12103,7 +12107,7 @@ function AcademyApp({
     photoData: '',
     zone: 'Bregu i Diellit',
     price: '',
-    gender: ['male', 'female'].includes(localStorage.getItem('u_gender')) ? localStorage.getItem('u_gender') : '',
+    gender: ['male', 'female'].includes(unitStorage.getItem('u_gender')) ? unitStorage.getItem('u_gender') : '',
     roomCount: 2,
     availableSpots: 1,
     distanceMinutes: '',
@@ -12117,9 +12121,9 @@ function AcademyApp({
   });
   const [housingListings, setHousingListings] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_student_housing_listings') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_student_housing_listings') || '[]');
       if (Array.isArray(saved) && saved.length > 0) {
-        const savedGender = localStorage.getItem('u_gender');
+        const savedGender = unitStorage.getItem('u_gender');
         return saved.map(item => ({
           ...item,
           gender: ['male', 'female'].includes(item?.gender) ? item.gender : (['male', 'female'].includes(savedGender) ? savedGender : ''),
@@ -12254,7 +12258,7 @@ function AcademyApp({
 
   const [booksListings, setBooksListings] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_student_books');
+      const saved = unitStorage.getItem('u_student_books');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -12339,7 +12343,7 @@ function AcademyApp({
   /* ── 4g. KALKULATORI & SIMULATORI I BURSËS UNIVERSITARE ── */
   const [studentGrades, setStudentGrades] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_student_grades');
+      const saved = unitStorage.getItem('u_student_grades');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return {};
@@ -12347,7 +12351,7 @@ function AcademyApp({
 
   const [simulatedGrades, setSimulatedGrades] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_simulated_grades');
+      const saved = unitStorage.getItem('u_simulated_grades');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return {};
@@ -12362,7 +12366,7 @@ function AcademyApp({
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [joinedGroups, setJoinedGroups] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_my_joined_study_groups');
+      const saved = unitStorage.getItem('u_my_joined_study_groups');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['group-1'];
@@ -12382,7 +12386,7 @@ function AcademyApp({
 
   const [studyGroups, setStudyGroups] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_study_groups');
+      const saved = unitStorage.getItem('u_study_groups');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -12465,7 +12469,7 @@ function AcademyApp({
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
   const [upvotedQuestions, setUpvotedQuestions] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_upvoted_exam_questions');
+      const saved = unitStorage.getItem('u_upvoted_exam_questions');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['exam-q1'];
@@ -12483,7 +12487,7 @@ function AcademyApp({
 
   const [pastExamQuestions, setPastExamQuestions] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_past_exam_questions');
+      const saved = unitStorage.getItem('u_past_exam_questions');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -12553,7 +12557,7 @@ function AcademyApp({
   const [isAddSpotModalOpen, setIsAddSpotModalOpen] = useState(false);
   const [savedSpots, setSavedSpots] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_saved_campus_spots');
+      const saved = unitStorage.getItem('u_saved_campus_spots');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['spot-1', 'spot-2'];
@@ -12572,7 +12576,7 @@ function AcademyApp({
 
   const [campusSpots, setCampusSpots] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_campus_guide_spots');
+      const saved = unitStorage.getItem('u_campus_guide_spots');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -12675,7 +12679,7 @@ function AcademyApp({
   const [isAddClashExamModalOpen, setIsAddClashExamModalOpen] = useState(false);
   const [selectedClashExamIds, setSelectedClashExamIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_selected_clash_exams');
+      const saved = unitStorage.getItem('u_selected_clash_exams');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['clash-1', 'clash-2', 'clash-3'];
@@ -12693,7 +12697,7 @@ function AcademyApp({
 
   const [examClashList, setExamClashList] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_exam_clash_list');
+      const saved = unitStorage.getItem('u_exam_clash_list');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -12761,7 +12765,7 @@ function AcademyApp({
   const [selectedFacultyFinder, setSelectedFacultyFinder] = useState('fiek');
   const [savedBusLines, setSavedBusLines] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_saved_bus_lines');
+      const saved = unitStorage.getItem('u_saved_bus_lines');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['bus-4', 'bus-3'];
@@ -12824,7 +12828,7 @@ function AcademyApp({
   const [isAddPerkModalOpen, setIsAddPerkModalOpen] = useState(false);
   const [savedPerkIds, setSavedPerkIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_saved_student_perks');
+      const saved = unitStorage.getItem('u_saved_student_perks');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['perk-1', 'perk-2'];
@@ -12909,7 +12913,7 @@ function AcademyApp({
       }
 ];
     try {
-      const cached = JSON.parse(localStorage.getItem('u_student_perks_list') || '[]');
+      const cached = JSON.parse(unitStorage.getItem('u_student_perks_list') || '[]');
       const suggestions = Array.isArray(cached) ? cached.filter(item => item && /^perk-\d{10,}$/.test(item.id)).map(item => ({ ...item, verifiedOn: null, sourceUrl: null })) : [];
       return [...official, ...suggestions];
     } catch { return official; }
@@ -12921,14 +12925,14 @@ function AcademyApp({
   const [isAddTipModalOpen, setIsAddTipModalOpen] = useState(false);
   const [upvotedTipIds, setUpvotedTipIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_upvoted_senior_tips');
+      const saved = unitStorage.getItem('u_upvoted_senior_tips');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['tip-1', 'tip-3'];
   });
   const [savedTipIds, setSavedTipIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_saved_senior_tips');
+      const saved = unitStorage.getItem('u_saved_senior_tips');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return ['tip-1'];
@@ -12946,7 +12950,7 @@ function AcademyApp({
 
   const [seniorTipsList, setSeniorTipsList] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_senior_tips_list');
+      const saved = unitStorage.getItem('u_senior_tips_list');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -13004,7 +13008,7 @@ function AcademyApp({
   /* ── 4q. SCHOLARSHIP TARGET & GPA SIMULATOR STATES ── */
   const [targetGpa, setTargetGpa] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_target_gpa');
+      const saved = unitStorage.getItem('u_target_gpa');
       return saved ? parseFloat(saved) : 9.00;
     } catch(e) {
       return 9.00;
@@ -13013,7 +13017,7 @@ function AcademyApp({
 
   const [targetScholarshipType, setTargetScholarshipType] = useState(() => {
     try {
-      return localStorage.getItem('u_target_scholarship_type') || 'up';
+      return unitStorage.getItem('u_target_scholarship_type') || 'up';
     } catch(e) {
       return 'up';
     }
@@ -13021,7 +13025,7 @@ function AcademyApp({
 
   const [scholarshipSimCourses, setScholarshipSimCourses] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_scholarship_sim_courses');
+      const saved = unitStorage.getItem('u_scholarship_sim_courses');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
@@ -13056,14 +13060,14 @@ function AcademyApp({
 
   const [topicProgress, setTopicProgress] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_topic_progress') || '{}');
+      return JSON.parse(unitStorage.getItem('u_topic_progress') || '{}');
     } catch {
       return {};
     }
   });
   const [reviewMistakes, setReviewMistakes] = useState(() => {
     try {
-      const m = JSON.parse(localStorage.getItem('u_review_mistakes') || '[]');
+      const m = JSON.parse(unitStorage.getItem('u_review_mistakes') || '[]');
       return Array.isArray(m) ? m : [];
     } catch {
       return [];
@@ -13072,7 +13076,7 @@ function AcademyApp({
   // Academic week and session state (device-local prototype)
   const [academicSchedule, setAcademicSchedule] = useState(() => {
     try {
-      const s = JSON.parse(localStorage.getItem('u_academic_schedule') || '[]');
+      const s = JSON.parse(unitStorage.getItem('u_academic_schedule') || '[]');
       if (!Array.isArray(s)) return [];
       const seen = new Set();
       return s.filter(item => {
@@ -13089,7 +13093,7 @@ function AcademyApp({
   });
   const [sessionNotes, setSessionNotes] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_session_notes') || '{}');
+      return JSON.parse(unitStorage.getItem('u_session_notes') || '{}');
     } catch {
       return {};
     }
@@ -13112,15 +13116,15 @@ function AcademyApp({
   const [scheduleSelectedDayKey, setScheduleSelectedDayKey] = useState(null);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [testerMode, setTesterMode] = useState(() => localStorage.getItem('u_tester_mode') === 'on');
-  const [scheduleTesterView, setScheduleTesterView] = useState(() => localStorage.getItem('u_schedule_tester_view') === 'after' ? 'after' : 'before');
+  const [testerMode, setTesterMode] = useState(() => unitStorage.getItem('u_tester_mode') === 'on');
+  const [scheduleTesterView, setScheduleTesterView] = useState(() => unitStorage.getItem('u_schedule_tester_view') === 'after' ? 'after' : 'before');
   const [appDesignVersion, setAppDesignVersion] = useState(() => {
-    const saved = localStorage.getItem('u_app_design_version') || localStorage.getItem('u_schedule_design_version');
+    const saved = unitStorage.getItem('u_app_design_version') || unitStorage.getItem('u_schedule_design_version');
     return saved === 'classic' ? 'classic' : 'premium';
   });
   const [scheduleAttendance, setScheduleAttendance] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_schedule_attendance') || '{}');
+      const saved = JSON.parse(unitStorage.getItem('u_schedule_attendance') || '{}');
       return saved && typeof saved === 'object' ? saved : {};
     } catch {
       return {};
@@ -13130,16 +13134,16 @@ function AcademyApp({
   const [scheduleInsightsPeriod, setScheduleInsightsPeriod] = useState('week');
   const [semesterCalendars, setSemesterCalendars] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_semester_calendars') || '{}');
+      const saved = JSON.parse(unitStorage.getItem('u_semester_calendars') || '{}');
       return saved && typeof saved === 'object' ? saved : {};
     } catch {
       return {};
     }
   });
-  const [scheduleNotifications, setScheduleNotifications] = useState(() => localStorage.getItem('u_schedule_notifications') === 'on');
+  const [scheduleNotifications, setScheduleNotifications] = useState(() => unitStorage.getItem('u_schedule_notifications') === 'on');
   const [sentScheduleReminders, setSentScheduleReminders] = useState(() => {
     try {
-      const s = JSON.parse(localStorage.getItem('u_schedule_notified') || '[]');
+      const s = JSON.parse(unitStorage.getItem('u_schedule_notified') || '[]');
       return Array.isArray(s) ? s : [];
     } catch {
       return [];
@@ -13147,7 +13151,7 @@ function AcademyApp({
   });
   const [scheduleSeededScopes, setScheduleSeededScopes] = useState(() => {
     try {
-      const s = JSON.parse(localStorage.getItem('u_schedule_seeded_scopes') || '[]');
+      const s = JSON.parse(unitStorage.getItem('u_schedule_seeded_scopes') || '[]');
       return Array.isArray(s) ? s : [];
     } catch {
       return [];
@@ -13171,7 +13175,7 @@ function AcademyApp({
   const [officialScheduleGroup, setOfficialScheduleGroup] = useState(1);
   const [dailyRoutines, setDailyRoutines] = useState(() => {
     try {
-      const storedDailyRoutines = localStorage.getItem('u_daily_routines');
+      const storedDailyRoutines = unitStorage.getItem('u_daily_routines');
       if (storedDailyRoutines !== null) {
         const items = JSON.parse(storedDailyRoutines);
         if (Array.isArray(items)) return items.map(item => ({
@@ -13195,7 +13199,7 @@ function AcademyApp({
   });
   const [dailyRoutineDone, setDailyRoutineDone] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_daily_routine_done') || '{}');
+      return JSON.parse(unitStorage.getItem('u_daily_routine_done') || '{}');
     } catch {
       return {};
     }
@@ -13228,13 +13232,13 @@ function AcademyApp({
   const POMO_DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, goal: 4, autoBreak: true, autoFocus: true, sound: true, vibrate: true, notify: false, awake: true, style: 'eklipsi' };
   const [pomoSettings, setPomoSettings] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_pomo_settings') || '{}');
+      const saved = JSON.parse(unitStorage.getItem('u_pomo_settings') || '{}');
       return { ...POMO_DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
     } catch (e) { return { ...POMO_DEFAULTS }; }
   });
   const [pomo, setPomo] = useState(() => {
     try {
-      const p = JSON.parse(localStorage.getItem('u_pomo_state') || 'null');
+      const p = JSON.parse(unitStorage.getItem('u_pomo_state') || 'null');
       if (p && ['focus', 'short', 'long'].includes(p.phase) && Number(p.total) > 0) {
         const total = Number(p.total);
         return { phase: p.phase, total, left: Math.min(total, Math.max(1, Number(p.left) || total)), endsAt: p.endsAt ? Number(p.endsAt) : null, cycle: Math.max(0, Number(p.cycle) || 0), taskId: p.taskId || '', done: !!p.done };
@@ -13243,7 +13247,7 @@ function AcademyApp({
     return { phase: 'focus', total: pomoSettings.focus * 60, left: pomoSettings.focus * 60, endsAt: null, cycle: 0, taskId: '' };
   });
   const [pomoHistory, setPomoHistory] = useState(() => {
-    try { const h = JSON.parse(localStorage.getItem('u_pomo_history') || '[]'); return Array.isArray(h) ? h : []; } catch (e) { return []; }
+    try { const h = JSON.parse(unitStorage.getItem('u_pomo_history') || '[]'); return Array.isArray(h) ? h : []; } catch (e) { return []; }
   });
   const [pomoOpen, setPomoOpen] = useState(false);
   const [pomoSetOpen, setPomoSetOpen] = useState(false);
@@ -13291,9 +13295,9 @@ function AcademyApp({
   }, [pomoOpen, pomoLocked]);
   const [pomoNow, setPomoNow] = useState(() => Date.now());
   const pomoDoneRef = useRef(0);
-  useEffect(() => { try { localStorage.setItem('u_pomo_settings', JSON.stringify(pomoSettings)); } catch (e) {} }, [pomoSettings]);
-  useEffect(() => { try { localStorage.setItem('u_pomo_history', JSON.stringify(pomoHistory)); } catch (e) {} }, [pomoHistory]);
-  useEffect(() => { try { localStorage.setItem('u_pomo_state', JSON.stringify(pomo)); } catch (e) {} }, [pomo]);
+  useEffect(() => { try { unitStorage.setItem('u_pomo_settings', JSON.stringify(pomoSettings)); } catch (e) {} }, [pomoSettings]);
+  useEffect(() => { try { unitStorage.setItem('u_pomo_history', JSON.stringify(pomoHistory)); } catch (e) {} }, [pomoHistory]);
+  useEffect(() => { try { unitStorage.setItem('u_pomo_state', JSON.stringify(pomo)); } catch (e) {} }, [pomo]);
   useEffect(() => {
     if (!pomo.endsAt) return undefined;
     setPomoNow(Date.now());
@@ -13331,7 +13335,7 @@ function AcademyApp({
   }, []);
   const [dailyRoutineArchive, setDailyRoutineArchive] = useState(() => {
     try {
-      const saved = localStorage.getItem('u_daily_routine_archive');
+      const saved = unitStorage.getItem('u_daily_routine_archive');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -13346,12 +13350,12 @@ function AcademyApp({
   const [activeScenarioId, setActiveScenarioId] = useState('scen-1');
   const [scenarioAnswers, setScenarioAnswers] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_curriculum_answers') || '{}');
+      const saved = JSON.parse(unitStorage.getItem('u_curriculum_answers') || '{}');
       return typeof saved === 'object' && saved !== null ? saved : {};
     } catch { return {}; }
   });
   useEffect(() => {
-    try { localStorage.setItem('u_curriculum_answers', JSON.stringify(scenarioAnswers)); }
+    try { unitStorage.setItem('u_curriculum_answers', JSON.stringify(scenarioAnswers)); }
     catch {}
   }, [scenarioAnswers]);
 
@@ -13368,7 +13372,7 @@ function AcademyApp({
 
   const [savedComplaints, setSavedComplaints] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_saved_student_complaints') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_saved_student_complaints') || '[]');
       if (Array.isArray(saved) && saved.length > 0) return saved;
     } catch {}
     return [
@@ -13389,7 +13393,7 @@ function AcademyApp({
   });
 
   useEffect(() => {
-    try { localStorage.setItem('u_saved_student_complaints', JSON.stringify(savedComplaints)); }
+    try { unitStorage.setItem('u_saved_student_complaints', JSON.stringify(savedComplaints)); }
     catch {}
   }, [savedComplaints]);
 
@@ -13412,18 +13416,18 @@ function AcademyApp({
   const [careerFilterSector, setCareerFilterSector] = useState('all'); // 'all' | 'tech' | 'finance' | 'health' | 'consulting'
   const [appliedInternshipIds, setAppliedInternshipIds] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_applied_internships') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_applied_internships') || '[]');
       return Array.isArray(saved) ? saved : [];
     } catch { return []; }
   });
   useEffect(() => {
-    try { localStorage.setItem('u_applied_internships', JSON.stringify(appliedInternshipIds)); }
+    try { unitStorage.setItem('u_applied_internships', JSON.stringify(appliedInternshipIds)); }
     catch {}
   }, [appliedInternshipIds]);
 
   const [careerPortfolioProjects, setCareerPortfolioProjects] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_portfolio_projects') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_portfolio_projects') || '[]');
       if (Array.isArray(saved) && saved.length > 0) return saved;
     } catch {}
     return [
@@ -13469,7 +13473,7 @@ function AcademyApp({
     ];
   });
   useEffect(() => {
-    try { localStorage.setItem('u_portfolio_projects', JSON.stringify(careerPortfolioProjects)); }
+    try { unitStorage.setItem('u_portfolio_projects', JSON.stringify(careerPortfolioProjects)); }
     catch {}
   }, [careerPortfolioProjects]);
 
@@ -13551,7 +13555,7 @@ function AcademyApp({
 
   const [customProjects, setCustomProjects] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_custom_projects') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_custom_projects') || '[]');
       if (Array.isArray(saved) && saved.length > 0) return saved;
     } catch {}
     return [
@@ -13587,7 +13591,7 @@ function AcademyApp({
   });
   const [enrolledCoursesByScope, setEnrolledCoursesByScope] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_enrolled_courses') || '{}');
+      const saved = JSON.parse(unitStorage.getItem('u_enrolled_courses') || '{}');
       return saved && typeof saved === 'object' ? saved : {};
     } catch {
       return {};
@@ -13598,7 +13602,7 @@ function AcademyApp({
   // Syllabus state: reviewed topics are kept separate from full lesson content
   const [syllabi, setSyllabi] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_syllabi') || '{}');
+      return JSON.parse(unitStorage.getItem('u_syllabi') || '{}');
     } catch {
       return {};
     }
@@ -13607,7 +13611,7 @@ function AcademyApp({
   const [syllabusUploadBusy, setSyllabusUploadBusy] = useState(false);
   const [sessionStudyArtifacts, setSessionStudyArtifacts] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_session_study_artifacts') || '{}');
+      return JSON.parse(unitStorage.getItem('u_session_study_artifacts') || '{}');
     } catch {
       return {};
     }
@@ -13617,7 +13621,7 @@ function AcademyApp({
   const [sessionReviewReveal, setSessionReviewReveal] = useState(false);
   const [sessionMaterials, setSessionMaterials] = useState(() => {
     try {
-      const m = JSON.parse(localStorage.getItem('u_session_materials') || '[]');
+      const m = JSON.parse(unitStorage.getItem('u_session_materials') || '[]');
       return Array.isArray(m) ? m : [];
     } catch {
       return [];
@@ -13628,7 +13632,7 @@ function AcademyApp({
   const [mockRecallReveal, setMockRecallReveal] = useState(false);
   const [mockExamHistory, setMockExamHistory] = useState(() => {
     try {
-      const h = JSON.parse(localStorage.getItem('u_mock_exam_history') || '[]');
+      const h = JSON.parse(unitStorage.getItem('u_mock_exam_history') || '[]');
       return Array.isArray(h) ? h : [];
     } catch {
       return [];
@@ -13640,14 +13644,14 @@ function AcademyApp({
   const [topicExplainTab, setTopicExplainTab] = useState('simple');
   const [topicExplainResources, setTopicExplainResources] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_topic_explain_resources') || '{}');
+      return JSON.parse(unitStorage.getItem('u_topic_explain_resources') || '{}');
     } catch {
       return {};
     }
   });
   const [topicExplainNotes, setTopicExplainNotes] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_topic_explain_notes') || '{}');
+      return JSON.parse(unitStorage.getItem('u_topic_explain_notes') || '{}');
     } catch {
       return {};
     }
@@ -13663,7 +13667,7 @@ function AcademyApp({
   React.useLayoutEffect(() => { if (courseVideoFeedOpen) setStoryFit('auto'); }, [courseVideoFeedOpen, courseVideoFeedIndex]);
   const [viewedStoryIds, setViewedStoryIds] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('u_viewed_story_ids_v1') || '[]');
+      const stored = JSON.parse(unitStorage.getItem('u_viewed_story_ids_v1') || '[]');
       return Array.isArray(stored) ? stored.filter(id => typeof id === 'string') : [];
     } catch { return []; }
   });
@@ -13671,7 +13675,7 @@ function AcademyApp({
   const courseVideoFeedAnimationRef = useRef(null);
   const [likedVideoIds, setLikedVideoIds] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('u_liked_videos') || '[]');
+      return JSON.parse(unitStorage.getItem('u_liked_videos') || '[]');
     } catch {
       return [];
     }
@@ -13679,7 +13683,7 @@ function AcademyApp({
   const toggleLikeVideo = videoId => {
     setLikedVideoIds(prev => {
       const next = prev.includes(videoId) ? prev.filter(id => id !== videoId) : [...prev, videoId];
-      try { localStorage.setItem('u_liked_videos', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_liked_videos', JSON.stringify(next)); } catch {}
       return next;
     });
   };
@@ -13694,34 +13698,34 @@ function AcademyApp({
 
   /* ── CLASS PRESIDENT (KRYETARI I KLASËS / GRUPIT) STATE ── */
   const [studentGroupId, setStudentGroupId] = useState(() => {
-    try { return localStorage.getItem('u_student_group_id') || 'Grupi 1'; } catch { return 'Grupi 1'; }
+    try { return unitStorage.getItem('u_student_group_id') || 'Grupi 1'; } catch { return 'Grupi 1'; }
   });
   const [isClassPresident, setIsClassPresident] = useState(() => {
-    try { return localStorage.getItem('u_is_class_president') !== 'false'; } catch { return true; }
+    try { return unitStorage.getItem('u_is_class_president') !== 'false'; } catch { return true; }
   });
   const [groupColloquiums, setGroupColloquiums] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_group_colloquiums_v1') || '[]'); } catch { return []; }
+    try { return JSON.parse(unitStorage.getItem('u_group_colloquiums_v1') || '[]'); } catch { return []; }
   });
   const [groupAnnouncements, setGroupAnnouncements] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_group_announcements_v1') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_group_announcements_v1') || '[]');
       return Array.isArray(saved) ? saved.filter(item => !String(item?.id || '').startsWith('ann_room_')) : [];
     } catch { return []; }
   });
   const [groupMessageReadIds, setGroupMessageReadIds] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('u_group_messages_read_v1') || '[]');
+      const saved = JSON.parse(unitStorage.getItem('u_group_messages_read_v1') || '[]');
       return Array.isArray(saved) ? saved : [];
     } catch { return []; }
   });
   const [colloquiumFormOpen, setColloquiumFormOpen] = useState(false);
   const [announcementFormOpen, setAnnouncementFormOpen] = useState(false);
   const [completedHubItemIds, setCompletedHubItemIds] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_group_completed_items_v1') || '{}'); } catch { return {}; }
+    try { return JSON.parse(unitStorage.getItem('u_group_completed_items_v1') || '{}'); } catch { return {}; }
   });
   const [completedColloquiumsOpen, setCompletedColloquiumsOpen] = useState(false);
   const [hubNoticesOn, setHubNoticesOn] = useState(() => {
-    try { return localStorage.getItem('u_msg_notices_on') !== 'false'; } catch { return true; }
+    try { return unitStorage.getItem('u_msg_notices_on') !== 'false'; } catch { return true; }
   });
   const [hubOpenId, setHubOpenId] = useState(null);
   const [pollOpts, setPollOpts] = useState([{ k: 't', v: '' }, { k: 't', v: '' }]);
@@ -13731,14 +13735,14 @@ function AcademyApp({
   const [composeCal, setComposeCal] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const handleToggleHubNotices = () => {
     const next = !hubNoticesOn;
-    try { localStorage.setItem('u_msg_notices_on', String(next)); } catch {}
+    try { unitStorage.setItem('u_msg_notices_on', String(next)); } catch {}
     setHubNoticesOn(next);
     showToast(next ? 'Kolokfiumet dhe provimet nga kryetari shfaqen te Provimet.' : 'Kolokfiumet nga kryetari u hoqën nga Provimet.', next ? '📅' : '✓');
   };
   /* Colloquiums/exams published by the class president go to Provimet only while the student allows president notices. */
   useEffect(() => {
     let dismissed = [];
-    try { dismissed = JSON.parse(localStorage.getItem('u_kryetar_exam_dismissed') || '[]'); } catch {}
+    try { dismissed = JSON.parse(unitStorage.getItem('u_kryetar_exam_dismissed') || '[]'); } catch {}
     const desired = hubNoticesOn
       ? groupColloquiums
         .filter(item => item && item.date)
@@ -13769,7 +13773,7 @@ function AcademyApp({
     setCompletedHubItemIds(prev => {
       const isCompleted = !prev[itemId];
       const next = { ...prev, [itemId]: isCompleted };
-      try { localStorage.setItem('u_group_completed_items_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_group_completed_items_v1', JSON.stringify(next)); } catch {}
       showToast(isCompleted ? 'U zhvendos te të përfunduarat.' : 'U rikthye tek oraret/njoftimet aktuale.', '✓');
       return next;
     });
@@ -13793,7 +13797,7 @@ function AcademyApp({
 
   /* ── FEATURE 1: GROUP POLLS BY CLASS PRESIDENT (VOTIM NË GRUP NGA KRYETARI) ── */
   const [groupPolls, setGroupPolls] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_group_polls_v1') || '[]'); } catch { return []; }
+    try { return JSON.parse(unitStorage.getItem('u_group_polls_v1') || '[]'); } catch { return []; }
   });
   const [pollFormOpen, setPollFormOpen] = useState(false);
   const [pollDraft, setPollDraft] = useState({
@@ -13820,7 +13824,7 @@ function AcademyApp({
 
   /* ── EXTRA TUTORING (MËSIM SHTESË · MAX 7 PERSONA · PAGESË NGAPAK & REVIEWS) STATE ── */
   const [tutoringSessions, setTutoringSessions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_tutoring_sessions_v1') || '[]'); } catch { return []; }
+    try { return JSON.parse(unitStorage.getItem('u_tutoring_sessions_v1') || '[]'); } catch { return []; }
   });
   const [isOfferTutoringModalOpen, setIsOfferTutoringModalOpen] = useState(false);
   const [tutoringFilterCourse, setTutoringFilterCourse] = useState('all');
@@ -13844,24 +13848,24 @@ function AcademyApp({
   /* ── #114: TOMORROW'S BAG & PREP CARD (PAMJA "ÇFARË KAM NESËR NË FAKULTET?" PAS ORËS 18:00) ── */
   const [homeScheduleCardMode, setHomeScheduleCardMode] = useState('auto'); // 'auto' | 'today' | 'tomorrow'
   const [tomorrowPrepChecklist, setTomorrowPrepChecklist] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_tomorrow_prep_checklist_v1') || '{}'); } catch { return {}; }
+    try { return JSON.parse(unitStorage.getItem('u_tomorrow_prep_checklist_v1') || '{}'); } catch { return {}; }
   });
 
   /* ── #115: SEMESTER TRANSITION ARCHIVE (ARKIVIMI & BARTJA E SHËNIMEVE MES SEMESTRAVE) ── */
   const [semesterArchives, setSemesterArchives] = useState(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem('u_semester_archives_v1') || '[]');
+      const raw = JSON.parse(unitStorage.getItem('u_semester_archives_v1') || '[]');
       return raw.filter(item => !String(item.id || '').startsWith('arch_seed_'));
     } catch { return []; }
   });
   const [completedAcademicYears, setCompletedAcademicYears] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_completed_academic_years_v1') || '[]'); } catch { return []; }
+    try { return JSON.parse(unitStorage.getItem('u_completed_academic_years_v1') || '[]'); } catch { return []; }
   });
   const toggleCompleteYear = (yId) => {
     const num = Number(yId);
     setCompletedAcademicYears(prev => {
       const next = prev.includes(num) ? prev.filter(x => x !== num) : [...prev, num];
-      try { localStorage.setItem('u_completed_academic_years_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_completed_academic_years_v1', JSON.stringify(next)); } catch {}
       if (next.includes(num)) {
         showToast('Viti u shënua si i përfunduar! Semestrat kaluan në Arkivë dhe u krijua provimi 1-orësh.', '🎓');
       } else {
@@ -13873,7 +13877,7 @@ function AcademyApp({
 
   /* ── #161: REQUEST A TUTOR POOL (BUTONI "KËRKO MËSIM SHTESË PËR KËTË LËNDË") ── */
   const [tutoringRequests, setTutoringRequests] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('u_tutoring_requests_v1') || '[]'); } catch { return []; }
+    try { return JSON.parse(unitStorage.getItem('u_tutoring_requests_v1') || '[]'); } catch { return []; }
   });
   const [isRequestTutorModalOpen, setIsRequestTutorModalOpen] = useState(false);
   const [requestPoolPledgeInputs, setRequestPoolPledgeInputs] = useState({});
@@ -13995,7 +13999,7 @@ function AcademyApp({
           body: allText
         });
       } else {
-        // Scanned PDF -> keep the Blob in IndexedDB, not in localStorage.
+        // Scanned PDF -> keep the Blob in IndexedDB, not in unitStorage.
         const title = file.name.replace(/\.[^/.]+$/, "") || 'Dokument PDF';
         const pdfId = 'pdf_' + Date.now();
         await UnitPdfStore.savePdf(pdfId, file, {
@@ -14107,20 +14111,20 @@ function AcademyApp({
     }
   };
   useEffect(() => {
-    localStorage.setItem('u_done', JSON.stringify(done));
+    unitStorage.setItem('u_done', JSON.stringify(done));
   }, [done]);
   useEffect(() => {
-    localStorage.setItem('u_notes', JSON.stringify(myNotes));
+    unitStorage.setItem('u_notes', JSON.stringify(myNotes));
   }, [myNotes]);
   useEffect(() => {
-    localStorage.setItem('u_unlocked', JSON.stringify(unlocked));
+    unitStorage.setItem('u_unlocked', JSON.stringify(unlocked));
   }, [unlocked]);
   useEffect(() => {
-    localStorage.setItem('u_simulated_role', role);
+    unitStorage.setItem('u_simulated_role', role);
   }, [role]);
   useEffect(() => {
     try {
-      localStorage.setItem('u_custom_data', JSON.stringify(customData));
+      unitStorage.setItem('u_custom_data', JSON.stringify(customData));
     } catch (e) {
       console.error("Storage full:", e);
       if (e.name === 'QuotaExceededError') {
@@ -14129,54 +14133,54 @@ function AcademyApp({
     }
   }, [customData]);
   useEffect(() => {
-    localStorage.setItem('u_arena_score', arenaScore.toString());
+    unitStorage.setItem('u_arena_score', arenaScore.toString());
   }, [arenaScore]);
   useEffect(() => {
-    localStorage.setItem('u_completed_cases', JSON.stringify(completedCases));
+    unitStorage.setItem('u_completed_cases', JSON.stringify(completedCases));
   }, [completedCases]);
   useEffect(() => {
-    localStorage.setItem('u_study_plan', JSON.stringify(studyPlan));
+    unitStorage.setItem('u_study_plan', JSON.stringify(studyPlan));
   }, [studyPlan]);
   useEffect(() => {
-    localStorage.setItem('u_deadlines', JSON.stringify(deadlines));
+    unitStorage.setItem('u_deadlines', JSON.stringify(deadlines));
   }, [deadlines]);
   useEffect(() => {
-    localStorage.setItem('u_topic_progress', JSON.stringify(topicProgress));
+    unitStorage.setItem('u_topic_progress', JSON.stringify(topicProgress));
   }, [topicProgress]);
   useEffect(() => {
-    localStorage.setItem('u_review_mistakes', JSON.stringify(reviewMistakes));
+    unitStorage.setItem('u_review_mistakes', JSON.stringify(reviewMistakes));
   }, [reviewMistakes]);
   
   
   
   
   useEffect(() => {
-    localStorage.setItem('u_academic_schedule', JSON.stringify(academicSchedule));
+    unitStorage.setItem('u_academic_schedule', JSON.stringify(academicSchedule));
   }, [academicSchedule]);
   useEffect(() => {
-    localStorage.setItem('u_schedule_attendance', JSON.stringify(scheduleAttendance));
+    unitStorage.setItem('u_schedule_attendance', JSON.stringify(scheduleAttendance));
   }, [scheduleAttendance]);
   useEffect(() => {
-    localStorage.setItem('u_semester_calendars', JSON.stringify(semesterCalendars));
+    unitStorage.setItem('u_semester_calendars', JSON.stringify(semesterCalendars));
   }, [semesterCalendars]);
   useEffect(() => {
-    localStorage.setItem('u_tester_mode', testerMode ? 'on' : 'off');
+    unitStorage.setItem('u_tester_mode', testerMode ? 'on' : 'off');
   }, [testerMode]);
   useEffect(() => {
-    localStorage.setItem('u_schedule_tester_view', scheduleTesterView);
+    unitStorage.setItem('u_schedule_tester_view', scheduleTesterView);
   }, [scheduleTesterView]);
   useEffect(() => {
-    localStorage.setItem('u_app_design_version', appDesignVersion);
+    unitStorage.setItem('u_app_design_version', appDesignVersion);
   }, [appDesignVersion]);
   useEffect(() => {
-    localStorage.setItem('u_daily_routines', JSON.stringify(dailyRoutines));
+    unitStorage.setItem('u_daily_routines', JSON.stringify(dailyRoutines));
   }, [dailyRoutines]);
 
   /* Automatic Daily Archival of Past Days */
   useEffect(() => {
     try {
       const todayISO = dateKey();
-      const lastArchiveDate = localStorage.getItem('u_last_archive_date');
+      const lastArchiveDate = unitStorage.getItem('u_last_archive_date');
       
       if (lastArchiveDate && lastArchiveDate < todayISO) {
         const pastRoutines = dailyRoutines.filter(r => {
@@ -14191,7 +14195,7 @@ function AcademyApp({
         if (pastRoutines.length > 0) {
           let archive = [];
           try {
-            archive = JSON.parse(localStorage.getItem('u_daily_routine_archive') || '[]');
+            archive = JSON.parse(unitStorage.getItem('u_daily_routine_archive') || '[]');
           } catch(e) { archive = []; }
 
           const grouped = {};
@@ -14217,7 +14221,7 @@ function AcademyApp({
             }
           });
 
-          localStorage.setItem('u_daily_routine_archive', JSON.stringify(archive.slice(0, 90)));
+          unitStorage.setItem('u_daily_routine_archive', JSON.stringify(archive.slice(0, 90)));
           setDailyRoutineArchive(archive.slice(0, 90));
 
           setDailyRoutines(prev => prev.filter(r => {
@@ -14230,13 +14234,13 @@ function AcademyApp({
           }));
         }
       }
-      localStorage.setItem('u_last_archive_date', todayISO);
+      unitStorage.setItem('u_last_archive_date', todayISO);
     } catch(e) {
       console.warn('Archiving daily routines failed:', e);
     }
   }, []);
   useEffect(() => {
-    localStorage.setItem('u_daily_routine_done', JSON.stringify(dailyRoutineDone));
+    unitStorage.setItem('u_daily_routine_done', JSON.stringify(dailyRoutineDone));
   }, [dailyRoutineDone]);
   useEffect(() => {
     const handleDailyRoutineShortcut = event => {
@@ -14292,41 +14296,41 @@ function AcademyApp({
     return () => window.removeEventListener('keydown', handleVideoFeedKeys);
   }, [courseVideoFeedOpen, courseVideoFeedIndex]);
   useEffect(() => {
-    localStorage.setItem('u_enrolled_courses', JSON.stringify(enrolledCoursesByScope));
+    unitStorage.setItem('u_enrolled_courses', JSON.stringify(enrolledCoursesByScope));
   }, [enrolledCoursesByScope]);
   useEffect(() => {
-    localStorage.setItem('u_session_notes', JSON.stringify(sessionNotes));
+    unitStorage.setItem('u_session_notes', JSON.stringify(sessionNotes));
   }, [sessionNotes]);
   useEffect(() => {
-    localStorage.setItem('u_schedule_notifications', scheduleNotifications ? 'on' : 'off');
+    unitStorage.setItem('u_schedule_notifications', scheduleNotifications ? 'on' : 'off');
   }, [scheduleNotifications]);
   useEffect(() => {
-    localStorage.setItem('u_schedule_notified', JSON.stringify(sentScheduleReminders.slice(-100)));
+    unitStorage.setItem('u_schedule_notified', JSON.stringify(sentScheduleReminders.slice(-100)));
   }, [sentScheduleReminders]);
   useEffect(() => {
-    localStorage.setItem('u_schedule_seeded_scopes', JSON.stringify(scheduleSeededScopes));
+    unitStorage.setItem('u_schedule_seeded_scopes', JSON.stringify(scheduleSeededScopes));
   }, [scheduleSeededScopes]);
   useEffect(() => {
-    localStorage.setItem('u_syllabi', JSON.stringify(syllabi));
+    unitStorage.setItem('u_syllabi', JSON.stringify(syllabi));
   }, [syllabi]);
   useEffect(() => {
-    localStorage.setItem('u_session_study_artifacts', JSON.stringify(sessionStudyArtifacts));
+    unitStorage.setItem('u_session_study_artifacts', JSON.stringify(sessionStudyArtifacts));
   }, [sessionStudyArtifacts]);
   useEffect(() => {
-    localStorage.setItem('u_session_materials', JSON.stringify(sessionMaterials));
+    unitStorage.setItem('u_session_materials', JSON.stringify(sessionMaterials));
   }, [sessionMaterials]);
   useEffect(() => {
-    localStorage.setItem('u_mock_exam_history', JSON.stringify(mockExamHistory.slice(0, 50)));
+    unitStorage.setItem('u_mock_exam_history', JSON.stringify(mockExamHistory.slice(0, 50)));
   }, [mockExamHistory]);
   useEffect(() => {
-    localStorage.setItem('u_topic_explain_resources', JSON.stringify(topicExplainResources));
+    unitStorage.setItem('u_topic_explain_resources', JSON.stringify(topicExplainResources));
   }, [topicExplainResources]);
   useEffect(() => {
-    localStorage.setItem('u_topic_explain_notes', JSON.stringify(topicExplainNotes));
+    unitStorage.setItem('u_topic_explain_notes', JSON.stringify(topicExplainNotes));
   }, [topicExplainNotes]);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
-    localStorage.setItem('u_theme', isDark ? 'dark' : 'light');
+    unitStorage.setItem('u_theme', isDark ? 'dark' : 'light');
   }, [isDark]);
   useEffect(() => {
     if (course) setNoteText(myNotes[course.id] || '');
@@ -14811,13 +14815,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         className: "text-[11px] font-semibold text-secondary"
       }, "Banesat sipas gjinisë"), /*#__PURE__*/React.createElement("div", {
         className: "profile-services-filter-options"
-      }, [localStorage.getItem('u_gender')].filter(gender => ['male', 'female'].includes(gender)).map(gender => /*#__PURE__*/React.createElement("button", {
+      }, [unitStorage.getItem('u_gender')].filter(gender => ['male', 'female'].includes(gender)).map(gender => /*#__PURE__*/React.createElement("button", {
         key: gender,
         type: "button",
         onClick: () => {
           setProfileServiceGender(gender);
-          localStorage.setItem('u_profile_service_gender', gender);
-          localStorage.setItem('u_gender', gender);
+          unitStorage.setItem('u_profile_service_gender', gender);
+          unitStorage.setItem('u_gender', gender);
           setHousingFilterGender(gender);
         },
         className: `profile-services-filter-option ${profileServiceGender === gender ? 'is-active' : ''}`
@@ -15472,7 +15476,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         const existingIds = new Set(prev.map(i => i.id));
         const newUnique = archivedItems.filter(i => !existingIds.has(i.id));
         const merged = [...newUnique, ...prev];
-        try { localStorage.setItem('u_semester_archives_v1', JSON.stringify(merged)); } catch {}
+        try { unitStorage.setItem('u_semester_archives_v1', JSON.stringify(merged)); } catch {}
         return merged;
       });
     }
@@ -15841,7 +15845,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setViewedStoryIds(previous => {
       if (previous.includes(id)) return previous;
       const next = [...previous, id];
-      try { localStorage.setItem('u_viewed_story_ids_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_viewed_story_ids_v1', JSON.stringify(next)); } catch {}
       return next;
     });
   }, [activeViewedStoryId]);
@@ -15882,7 +15886,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (!isInstructorAccount || taughtCourses.length <= 1) return;
     const singleCourse = taughtCourses.slice(0, 1);
     setTaughtCourses(singleCourse);
-    localStorage.setItem('u_taught_courses', JSON.stringify(singleCourse));
+    unitStorage.setItem('u_taught_courses', JSON.stringify(singleCourse));
   }, [isInstructorAccount, taughtCourses.join('|')]);
   useEffect(() => {
     if (!isInstructorAccount) return;
@@ -16405,7 +16409,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const updated = [...customProjects, newProj];
     setCustomProjects(updated);
-    try { localStorage.setItem('u_custom_projects', JSON.stringify(updated)); } catch (_) {}
+    try { unitStorage.setItem('u_custom_projects', JSON.stringify(updated)); } catch (_) {}
     setDailyRoutineDraft(p => ({ ...p, projectId: newProj.id, courseId: '' }));
     setNewProjectTitle('');
     setNewProjectModalOpen(false);
@@ -16751,7 +16755,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setStudentXp(prev => {
       const next = Math.max(0, (Number(prev) || 0) + amount);
       try {
-        localStorage.setItem('u_student_xp', String(next));
+        unitStorage.setItem('u_student_xp', String(next));
       } catch {}
       return next;
     });
@@ -16765,7 +16769,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     // 1. Seed sample scheduled exams if none exist for this scope
     const hasScopedExams = deadlines.some(item => item.type === 'exam' && (!item.branchId || item.branchId === branchId) && (!item.yearId || item.yearId === yearId));
-    if (!hasScopedExams && !localStorage.getItem(`u_seeded_exams_${scopeId}`)) {
+    if (!hasScopedExams && !unitStorage.getItem(`u_seeded_exams_${scopeId}`)) {
       const d1 = new Date(`${today}T12:00:00`);
       d1.setDate(d1.getDate() + 12);
       const d2 = new Date(`${today}T12:00:00`);
@@ -16791,11 +16795,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }] : [])
       ];
       setDeadlines(prev => [...prev, ...sampleExams]);
-      try { localStorage.setItem(`u_seeded_exams_${scopeId}`, '1'); } catch {}
+      try { unitStorage.setItem(`u_seeded_exams_${scopeId}`, '1'); } catch {}
     }
 
     // 4. Seed psychology videos for enrolled courses
-    if (!localStorage.getItem(`u_seeded_psych_videos_v2_${scopeId}`)) {
+    if (!unitStorage.getItem(`u_seeded_psych_videos_v2_${scopeId}`)) {
       const t1 = getCourseSyllabus(c1).topics[0]?.id || 'w1';
       const t2 = getCourseSyllabus(c2).topics[0]?.id || 'w1';
       const t3 = getCourseSyllabus(c3).topics[1]?.id || getCourseSyllabus(c3).topics[0]?.id || 'w1';
@@ -16840,11 +16844,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }
       ];
       setTopicExplainResources(nextVideos);
-      try { localStorage.setItem(`u_seeded_psych_videos_v2_${scopeId}`, '1'); } catch {}
+      try { unitStorage.setItem(`u_seeded_psych_videos_v2_${scopeId}`, '1'); } catch {}
     }
 
     // 4b. Seed Class President Group Colloquiums & Announcements
-    if ((groupColloquiums.length === 0 || !groupColloquiums.some(c => c.id === 'col_seed_past')) && !localStorage.getItem('u_seeded_group_pres_v2')) {
+    if ((groupColloquiums.length === 0 || !groupColloquiums.some(c => c.id === 'col_seed_past')) && !unitStorage.getItem('u_seeded_group_pres_v2')) {
       const dc1 = new Date(`${today}T12:00:00`);
       dc1.setDate(dc1.getDate() + 6);
       const dc2 = new Date(`${today}T12:00:00`);
@@ -16893,7 +16897,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }
       ];
       setGroupColloquiums(seededCols);
-      try { localStorage.setItem('u_group_colloquiums_v1', JSON.stringify(seededCols)); } catch {}
+      try { unitStorage.setItem('u_group_colloquiums_v1', JSON.stringify(seededCols)); } catch {}
 
       const daPast = new Date(`${today}T12:00:00`);
       daPast.setDate(daPast.getDate() - 10);
@@ -16934,11 +16938,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       ];
       setGroupAnnouncements(seededAnns);
       try {
-        localStorage.setItem('u_group_announcements_v1', JSON.stringify(seededAnns));
-        localStorage.setItem('u_seeded_group_pres_v2', '1');
+        unitStorage.setItem('u_group_announcements_v1', JSON.stringify(seededAnns));
+        unitStorage.setItem('u_seeded_group_pres_v2', '1');
       } catch {}
 
-      if (groupPolls.length === 0 && !localStorage.getItem('u_seeded_group_polls_v1')) {
+      if (groupPolls.length === 0 && !unitStorage.getItem('u_seeded_group_polls_v1')) {
         const seededPolls = [
           {
             id: 'poll_seed_1',
@@ -16957,14 +16961,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         ];
         setGroupPolls(seededPolls);
         try {
-          localStorage.setItem('u_group_polls_v1', JSON.stringify(seededPolls));
-          localStorage.setItem('u_seeded_group_polls_v1', '1');
+          unitStorage.setItem('u_group_polls_v1', JSON.stringify(seededPolls));
+          unitStorage.setItem('u_seeded_group_polls_v1', '1');
         } catch {}
       }
     }
 
     // 4c. Seed Extra Tutoring Sessions (Mësim Shtesë max 7 persona)
-    if (tutoringSessions.length === 0 && !localStorage.getItem('u_seeded_tutoring_v1')) {
+    if (tutoringSessions.length === 0 && !unitStorage.getItem('u_seeded_tutoring_v1')) {
       const dt1 = new Date(`${today}T12:00:00`);
       dt1.setDate(dt1.getDate() + 3);
       const dt2 = new Date(`${today}T12:00:00`);
@@ -17028,8 +17032,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       ];
       setTutoringSessions(seededTutoring);
       try {
-        localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(seededTutoring));
-        localStorage.setItem('u_seeded_tutoring_v1', '1');
+        unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(seededTutoring));
+        unitStorage.setItem('u_seeded_tutoring_v1', '1');
       } catch {}
     }
 
@@ -17037,16 +17041,16 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     // 4e. Clean up any artificial seed archives from legacy version
     try {
-      const existingArch = JSON.parse(localStorage.getItem('u_semester_archives_v1') || '[]');
+      const existingArch = JSON.parse(unitStorage.getItem('u_semester_archives_v1') || '[]');
       const cleanedArch = existingArch.filter(item => !String(item.id || '').startsWith('arch_seed_'));
       if (cleanedArch.length !== existingArch.length) {
-        localStorage.setItem('u_semester_archives_v1', JSON.stringify(cleanedArch));
+        unitStorage.setItem('u_semester_archives_v1', JSON.stringify(cleanedArch));
         setSemesterArchives(cleanedArch);
       }
     } catch {}
 
     // 4f. Seed #161 Student Tutoring Requests ("Kërko Mësim Shtesë për këtë Lëndë" Pool)
-    if (tutoringRequests.length === 0 && !localStorage.getItem('u_seeded_tutoring_requests_v1')) {
+    if (tutoringRequests.length === 0 && !unitStorage.getItem('u_seeded_tutoring_requests_v1')) {
       const statCourse = allCourses.find(c => /statistik/i.test(c.title)) || c1;
       const seededRequests = [
         {
@@ -17100,14 +17104,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       ];
       setTutoringRequests(seededRequests);
       try {
-        localStorage.setItem('u_tutoring_requests_v1', JSON.stringify(seededRequests));
-        localStorage.setItem('u_seeded_tutoring_requests_v1', '1');
+        unitStorage.setItem('u_tutoring_requests_v1', JSON.stringify(seededRequests));
+        unitStorage.setItem('u_seeded_tutoring_requests_v1', '1');
       } catch {}
     }
 
     // 5. Seed sample professor session materials if none exist for enrolled courses
     const hasCourseMaterials = sessionMaterials.some(m => enrolledCourses.some(c => c.id === m.courseId));
-    if (!hasCourseMaterials && !localStorage.getItem(`u_seeded_materials_${scopeId}`)) {
+    if (!hasCourseMaterials && !unitStorage.getItem(`u_seeded_materials_${scopeId}`)) {
       const t1 = getCourseSyllabus(c1).topics[0];
       const t2 = getCourseSyllabus(c2).topics[0];
       const sampleMaterials = [
@@ -17137,7 +17141,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }] : [])
       ];
       setSessionMaterials(prev => [...prev, ...sampleMaterials]);
-      try { localStorage.setItem(`u_seeded_materials_${scopeId}`, '1'); } catch {}
+      try { unitStorage.setItem(`u_seeded_materials_${scopeId}`, '1'); } catch {}
     }
   }, [branchId, yearId, enrolledCourseIds.join('|')]);
   const handleHousingPhotoUpload = event => {
@@ -17218,7 +17222,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextHousingListings = [newListing, ...housingListings];
     try {
-      localStorage.setItem('u_student_housing_listings', JSON.stringify(nextHousingListings));
+      unitStorage.setItem('u_student_housing_listings', JSON.stringify(nextHousingListings));
     } catch {
       showToast('Fotografia është shumë e madhe për ruajtje. Provo një fotografi tjetër.', '⚠️');
       return;
@@ -17234,7 +17238,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       photoData: '',
       zone: 'Bregu i Diellit',
       price: '',
-      gender: ['male', 'female'].includes(localStorage.getItem('u_gender')) ? localStorage.getItem('u_gender') : '',
+      gender: ['male', 'female'].includes(unitStorage.getItem('u_gender')) ? unitStorage.getItem('u_gender') : '',
       roomCount: 2,
       availableSpots: 1,
       distanceMinutes: '',
@@ -17255,7 +17259,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setHousingListings(prev => {
       const next = prev.filter(item => item.id !== listingId);
       try {
-        localStorage.setItem('u_student_housing_listings', JSON.stringify(next));
+        unitStorage.setItem('u_student_housing_listings', JSON.stringify(next));
       } catch {}
       return next;
     });
@@ -17296,7 +17300,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const updated = [newBook, ...booksListings];
     setBooksListings(updated);
     try {
-      localStorage.setItem('u_student_books', JSON.stringify(updated));
+      unitStorage.setItem('u_student_books', JSON.stringify(updated));
     } catch(e) {}
     setIsBookModalOpen(false);
     setNewBookForm({
@@ -17318,7 +17322,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const updated = booksListings.filter(item => item.id !== id);
     setBooksListings(updated);
     try {
-      localStorage.setItem('u_student_books', JSON.stringify(updated));
+      unitStorage.setItem('u_student_books', JSON.stringify(updated));
     } catch(e) {}
     showToast('Shpallja u fshi nga tregu.', '\uD83D\uDDD1\uFE0F');
   };
@@ -17329,12 +17333,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const next = { ...studentGrades, [courseId]: numericGrade };
     setStudentGrades(next);
     try {
-      localStorage.setItem('u_student_grades', JSON.stringify(next));
+      unitStorage.setItem('u_student_grades', JSON.stringify(next));
     } catch(e) {}
     if (numericGrade >= 6 && !done.includes(courseId)) {
       setDone(prev => [...prev, courseId]);
       try {
-        localStorage.setItem('u_done', JSON.stringify([...done, courseId]));
+        unitStorage.setItem('u_done', JSON.stringify([...done, courseId]));
       } catch(e) {}
     }
   };
@@ -17344,14 +17348,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const next = { ...simulatedGrades, [courseId]: numericGrade };
     setSimulatedGrades(next);
     try {
-      localStorage.setItem('u_simulated_grades', JSON.stringify(next));
+      unitStorage.setItem('u_simulated_grades', JSON.stringify(next));
     } catch(e) {}
   };
 
   const handleResetSimulation = () => {
     setSimulatedGrades({});
     try {
-      localStorage.removeItem('u_simulated_grades');
+      unitStorage.removeItem('u_simulated_grades');
     } catch(e) {}
     showToast('Simulimi u rivendos.', '\u21BA');
   };
@@ -17366,7 +17370,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     });
     setSimulatedGrades(next);
     try {
-      localStorage.setItem('u_simulated_grades', JSON.stringify(next));
+      unitStorage.setItem('u_simulated_grades', JSON.stringify(next));
     } catch(e) {}
     showToast(`T\u00EB gjitha l\u00EBnd\u00EBt e mbetura u vendos\u00EBn n\u00EB not\u00EBn ${gradeValue}!`, '\uD83C\uDF93');
   };
@@ -17380,7 +17384,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isJoined) {
       const nextJoined = joinedGroups.filter(id => id !== groupId);
       setJoinedGroups(nextJoined);
-      try { localStorage.setItem('u_my_joined_study_groups', JSON.stringify(nextJoined)); } catch(e) {}
+      try { unitStorage.setItem('u_my_joined_study_groups', JSON.stringify(nextJoined)); } catch(e) {}
       setStudyGroups(prev => prev.map(g => g.id === groupId ? { ...g, currentMembers: Math.max(1, g.currentMembers - 1) } : g));
       showToast('U larguat nga grupi i studimit.', '\u2139\uFE0F');
     } else {
@@ -17391,7 +17395,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }
       const nextJoined = [...joinedGroups, groupId];
       setJoinedGroups(nextJoined);
-      try { localStorage.setItem('u_my_joined_study_groups', JSON.stringify(nextJoined)); } catch(e) {}
+      try { unitStorage.setItem('u_my_joined_study_groups', JSON.stringify(nextJoined)); } catch(e) {}
       setStudyGroups(prev => prev.map(g => g.id === groupId ? { ...g, currentMembers: g.currentMembers + 1 } : g));
       addStudentXp(15);
       showToast('U bashkuat n\u00EB grupin e studimit! (+15 XP)', '\uD83D\uDC65');
@@ -17428,9 +17432,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextGroups = [newGroup, ...studyGroups];
     setStudyGroups(nextGroups);
-    try { localStorage.setItem('u_study_groups', JSON.stringify(nextGroups)); } catch(e) {}
+    try { unitStorage.setItem('u_study_groups', JSON.stringify(nextGroups)); } catch(e) {}
     setJoinedGroups(prev => [...prev, newGroup.id]);
-    try { localStorage.setItem('u_my_joined_study_groups', JSON.stringify([...joinedGroups, newGroup.id])); } catch(e) {}
+    try { unitStorage.setItem('u_my_joined_study_groups', JSON.stringify([...joinedGroups, newGroup.id])); } catch(e) {}
 
     setIsCreateGroupModalOpen(false);
     setNewGroupForm({
@@ -17451,7 +17455,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const handleDeleteStudyGroup = (groupId) => {
     const nextGroups = studyGroups.filter(g => g.id !== groupId);
     setStudyGroups(nextGroups);
-    try { localStorage.setItem('u_study_groups', JSON.stringify(nextGroups)); } catch(e) {}
+    try { unitStorage.setItem('u_study_groups', JSON.stringify(nextGroups)); } catch(e) {}
     setJoinedGroups(prev => prev.filter(id => id !== groupId));
     showToast('Grupi i studimit u fshi.', '\uD83D\uDDD1\uFE0F');
   };
@@ -17463,12 +17467,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isUpvoted) {
       const next = upvotedQuestions.filter(id => id !== qId);
       setUpvotedQuestions(next);
-      try { localStorage.setItem('u_upvoted_exam_questions', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_upvoted_exam_questions', JSON.stringify(next)); } catch(e) {}
       setPastExamQuestions(prev => prev.map(q => q.id === qId ? { ...q, upvotes: Math.max(0, q.upvotes - 1) } : q));
     } else {
       const next = [...upvotedQuestions, qId];
       setUpvotedQuestions(next);
-      try { localStorage.setItem('u_upvoted_exam_questions', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_upvoted_exam_questions', JSON.stringify(next)); } catch(e) {}
       setPastExamQuestions(prev => prev.map(q => q.id === qId ? { ...q, upvotes: q.upvotes + 1 } : q));
       addStudentXp(5);
       showToast('Zgjidhja u vler\u00EBsua si e dobishme!', '\uD83D\uDC4D');
@@ -17509,7 +17513,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextList = [newQ, ...pastExamQuestions];
     setPastExamQuestions(nextList);
-    try { localStorage.setItem('u_past_exam_questions', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_past_exam_questions', JSON.stringify(nextList)); } catch(e) {}
 
     setIsAddQuestionModalOpen(false);
     setNewQuestionForm({
@@ -17528,7 +17532,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const handleDeleteExamQuestion = (qId) => {
     const nextList = pastExamQuestions.filter(q => q.id !== qId);
     setPastExamQuestions(nextList);
-    try { localStorage.setItem('u_past_exam_questions', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_past_exam_questions', JSON.stringify(nextList)); } catch(e) {}
     showToast('Pyetja u hoq nga arkiva.', '\uD83D\uDDD1\uFE0F');
   };
 
@@ -17539,12 +17543,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isSaved) {
       const next = savedSpots.filter(id => id !== spotId);
       setSavedSpots(next);
-      try { localStorage.setItem('u_saved_campus_spots', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_campus_spots', JSON.stringify(next)); } catch(e) {}
       showToast('Vendi u hoq nga t\u00EB preferuarat.', '\uD83D\uDCCC');
     } else {
       const next = [...savedSpots, spotId];
       setSavedSpots(next);
-      try { localStorage.setItem('u_saved_campus_spots', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_campus_spots', JSON.stringify(next)); } catch(e) {}
       addStudentXp(5);
       showToast('Vendi u ruajt n\u00EB guid\u00EBn t\u00EBnde! (+5 XP)', '\u2B50');
     }
@@ -17594,7 +17598,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextList = [newSpot, ...campusSpots];
     setCampusSpots(nextList);
-    try { localStorage.setItem('u_campus_guide_spots', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_campus_guide_spots', JSON.stringify(nextList)); } catch(e) {}
 
     setIsAddSpotModalOpen(false);
     setNewSpotForm({
@@ -17625,13 +17629,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       showToast('Provimi u shtua n\u00EB planin e afatit! (+5 XP)', '\u2705');
     }
     setSelectedClashExamIds(next);
-    try { localStorage.setItem('u_selected_clash_exams', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_selected_clash_exams', JSON.stringify(next)); } catch(e) {}
   };
 
   const handleUpdateExamClashStatus = (id, newStatus) => {
     const nextList = examClashList.map(e => e.id === id ? { ...e, status: newStatus } : e);
     setExamClashList(nextList);
-    try { localStorage.setItem('u_exam_clash_list', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_exam_clash_list', JSON.stringify(nextList)); } catch(e) {}
     if (newStatus === 'ready') {
       addStudentXp(15);
       showToast('Bravo! Provimi u sh\u00EBnjua si i p\u00EBrgatitur! (+15 XP)', '\uD83C\uDF89');
@@ -17669,8 +17673,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setSelectedClashExamIds(nextSelected);
 
     try {
-      localStorage.setItem('u_exam_clash_list', JSON.stringify(nextList));
-      localStorage.setItem('u_selected_clash_exams', JSON.stringify(nextSelected));
+      unitStorage.setItem('u_exam_clash_list', JSON.stringify(nextList));
+      unitStorage.setItem('u_selected_clash_exams', JSON.stringify(nextSelected));
     } catch(e) {}
 
     setIsAddClashExamModalOpen(false);
@@ -17694,8 +17698,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setExamClashList(nextList);
     setSelectedClashExamIds(nextSelected);
     try {
-      localStorage.setItem('u_exam_clash_list', JSON.stringify(nextList));
-      localStorage.setItem('u_selected_clash_exams', JSON.stringify(nextSelected));
+      unitStorage.setItem('u_exam_clash_list', JSON.stringify(nextList));
+      unitStorage.setItem('u_selected_clash_exams', JSON.stringify(nextSelected));
     } catch(e) {}
     showToast('Provimi u fshi nga lista.', '\uD83D\uDDD1\uFE0F');
   };
@@ -17707,12 +17711,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isSaved) {
       const next = savedBusLines.filter(id => id !== lineId);
       setSavedBusLines(next);
-      try { localStorage.setItem('u_saved_bus_lines', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_bus_lines', JSON.stringify(next)); } catch(e) {}
       showToast('Linja u hoq nga t\u00EB preferuarat.', '\uD83D\uDE8C');
     } else {
       const next = [...savedBusLines, lineId];
       setSavedBusLines(next);
-      try { localStorage.setItem('u_saved_bus_lines', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_bus_lines', JSON.stringify(next)); } catch(e) {}
       addStudentXp(5);
       showToast('Linja u ruajt si linj\u00EB e preferuar! (+5 XP)', '\u2B50');
     }
@@ -17725,12 +17729,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isSaved) {
       const next = savedPerkIds.filter(id => id !== perkId);
       setSavedPerkIds(next);
-      try { localStorage.setItem('u_saved_student_perks', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_student_perks', JSON.stringify(next)); } catch(e) {}
       showToast('Oferta u hoq nga t\u00EB ruajturat.', '\uD83C\uDFF7\uFE0F');
     } else {
       const next = [...savedPerkIds, perkId];
       setSavedPerkIds(next);
-      try { localStorage.setItem('u_saved_student_perks', JSON.stringify(next)); } catch(e) {}
+      try { unitStorage.setItem('u_saved_student_perks', JSON.stringify(next)); } catch(e) {}
       addStudentXp(5);
       showToast('Zbritja u ruajt me sukses! (+5 XP)', '\u2B50');
     }
@@ -17783,7 +17787,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextList = [newPerk, ...studentPerksList];
     setStudentPerksList(nextList);
-    try { localStorage.setItem('u_student_perks_list', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_student_perks_list', JSON.stringify(nextList)); } catch(e) {}
 
     setIsAddPerkModalOpen(false);
     setNewPerkForm({
@@ -17817,8 +17821,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }
     setUpvotedTipIds(next);
     try {
-      localStorage.setItem('u_upvoted_senior_tips', JSON.stringify(next));
-      localStorage.setItem('u_senior_tips_list', JSON.stringify(seniorTipsList));
+      unitStorage.setItem('u_upvoted_senior_tips', JSON.stringify(next));
+      unitStorage.setItem('u_senior_tips_list', JSON.stringify(seniorTipsList));
     } catch(e) {}
   };
 
@@ -17833,7 +17837,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       showToast('K\u00EBshilla u ruajt p\u00EBr rishikim!', '\u2B50');
     }
     setSavedTipIds(next);
-    try { localStorage.setItem('u_saved_senior_tips', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_saved_senior_tips', JSON.stringify(next)); } catch(e) {}
   };
 
   const handleCreateSeniorTip = () => {
@@ -17865,7 +17869,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const nextList = [newTip, ...seniorTipsList];
     setSeniorTipsList(nextList);
-    try { localStorage.setItem('u_senior_tips_list', JSON.stringify(nextList)); } catch(e) {}
+    try { unitStorage.setItem('u_senior_tips_list', JSON.stringify(nextList)); } catch(e) {}
 
     setIsAddTipModalOpen(false);
     setNewTipForm({
@@ -17892,8 +17896,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     else if (presetType === 'excellence') newTarget = 9.50;
     setTargetGpa(newTarget);
     try {
-      localStorage.setItem('u_target_scholarship_type', presetType);
-      localStorage.setItem('u_target_gpa', newTarget.toString());
+      unitStorage.setItem('u_target_scholarship_type', presetType);
+      unitStorage.setItem('u_target_gpa', newTarget.toString());
     } catch(e) {}
     showToast(`Synimi u p\u00EBrzgjodh: ${newTarget.toFixed(2)}`, '\uD83C\uDFAF');
   };
@@ -17904,8 +17908,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setTargetGpa(val);
     setTargetScholarshipType('custom');
     try {
-      localStorage.setItem('u_target_gpa', val.toString());
-      localStorage.setItem('u_target_scholarship_type', 'custom');
+      unitStorage.setItem('u_target_gpa', val.toString());
+      unitStorage.setItem('u_target_scholarship_type', 'custom');
     } catch(e) {}
   };
 
@@ -17914,19 +17918,19 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isNaN(grade) || grade < 6 || grade > 10) return;
     const next = scholarshipSimCourses.map(c => c.id === courseId ? { ...c, grade: grade } : c);
     setScholarshipSimCourses(next);
-    try { localStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
   };
 
   const handleToggleSimCourseStatus = (courseId) => {
     const next = scholarshipSimCourses.map(c => c.id === courseId ? { ...c, isCompleted: !c.isCompleted } : c);
     setScholarshipSimCourses(next);
-    try { localStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
   };
 
   const handleDeleteSimCourse = (courseId) => {
     const next = scholarshipSimCourses.filter(c => c.id !== courseId);
     setScholarshipSimCourses(next);
-    try { localStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
     showToast('L\u00EBnda u hoq nga simulimi.', '\uD83D\uDDD1\uFE0F');
   };
 
@@ -17948,7 +17952,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     const next = [...scholarshipSimCourses, newCourse];
     setScholarshipSimCourses(next);
-    try { localStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
 
     setIsAddSimCourseModalOpen(false);
     setNewSimCourseForm({ name: '', ects: 6, grade: 9, isCompleted: false });
@@ -18008,7 +18012,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     });
 
     setScholarshipSimCourses(next);
-    try { localStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
+    try { unitStorage.setItem('u_scholarship_sim_courses', JSON.stringify(next)); } catch(e) {}
     addStudentXp(10);
     showToast(`Kombinimi minimal u llogarit me sukses! Mesatarja e arritur: ${(currentSum / totalEcts).toFixed(2)} (+10 XP)`, '\uD83C\uDF89');
   };
@@ -18082,8 +18086,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const target = prev.find(item => item.id === id);
       if (target && target.source === 'kryetar') {
         try {
-          const list = JSON.parse(localStorage.getItem('u_kryetar_exam_dismissed') || '[]');
-          localStorage.setItem('u_kryetar_exam_dismissed', JSON.stringify([...new Set([...list, id])]));
+          const list = JSON.parse(unitStorage.getItem('u_kryetar_exam_dismissed') || '[]');
+          unitStorage.setItem('u_kryetar_exam_dismissed', JSON.stringify([...new Set([...list, id])]));
         } catch {}
       }
       return prev.filter(item => item.id !== id);
@@ -18854,7 +18858,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const changeSemester = (newSemId) => {
     if (isInstructorAccount) return;
     setSemesterId(newSemId);
-    localStorage.setItem('u_semester', newSemId);
+    unitStorage.setItem('u_semester', newSemId);
     setCourse(null);
     const info = getOfficialSemesterInfo(newSemId);
     showToast(`U zgjodh ${info.label} (${info.typeLabel})`, '📅');
@@ -18863,12 +18867,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (isInstructorAccount) return;
     if (actualRole !== 'admin' && !unlocked.includes(newId)) return;
     setYearId(newId);
-    localStorage.setItem('u_year', newId);
+    unitStorage.setItem('u_year', newId);
     const targetYr = branchYears.find(y => y.id === newId);
     if (targetYr && targetYr.semesters && targetYr.semesters.length > 0) {
       const firstSemId = targetYr.semesters[0].id;
       setSemesterId(firstSemId);
-      localStorage.setItem('u_semester', firstSemId);
+      unitStorage.setItem('u_semester', firstSemId);
     }
     setCourse(null);
     setView('home');
@@ -18888,14 +18892,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }
     resetCourseQuiz();
     if (c?.id) {
-      localStorage.setItem('u_last_course', c.id);
+      unitStorage.setItem('u_last_course', c.id);
     }
     if (!c) return;
 
     // 1. Switch to the course's active semester
     const targetSem = c.semesterId || activeSemesterId || 1;
     setSemesterId(targetSem);
-    localStorage.setItem('u_semester', targetSem);
+    unitStorage.setItem('u_semester', targetSem);
     setCoursesSemesterId(`${yearId}:${targetSem}`);
 
     setCourse(c);
@@ -18906,9 +18910,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     // 2. Smart Resume: Pick up exactly where the student left off
     if (resume && c?.id) {
-      const savedTab = localStorage.getItem(`u_course_tab_${c.id}`);
-      const savedFc = Number(localStorage.getItem(`u_course_fc_${c.id}`)) || 0;
-      const savedChapter = Number(localStorage.getItem(`u_course_chapter_${c.id}`)) || 0;
+      const savedTab = unitStorage.getItem(`u_course_tab_${c.id}`);
+      const savedFc = Number(unitStorage.getItem(`u_course_fc_${c.id}`)) || 0;
+      const savedChapter = Number(unitStorage.getItem(`u_course_chapter_${c.id}`)) || 0;
       const chapterCount = (c.chapters || []).length;
       const cardCount = (c.cards || []).length;
       const safeChapter = chapterCount > 0 ? Math.min(Math.max(0, savedChapter), chapterCount - 1) : 0;
@@ -18920,7 +18924,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       setFcIdx(safeCard);
       setActiveCourseChapterIdx(safeChapter);
       try {
-        const savedLessonStep = JSON.parse(localStorage.getItem(`u_course_step_${c.id}`) || 'null');
+        const savedLessonStep = JSON.parse(unitStorage.getItem(`u_course_step_${c.id}`) || 'null');
         setCourseLessonStep(savedLessonStep && savedLessonStep.chapter === safeChapter ? Math.max(0, Number(savedLessonStep.step) || 0) : 0);
       } catch {
         setCourseLessonStep(0);
@@ -18929,7 +18933,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       setCourseLessonAnswer(null);
       setCourseLessonStartedAt(Date.now());
       try {
-        setCourseQuizState(JSON.parse(localStorage.getItem(`u_course_quiz_${c.id}`) || '{}'));
+        setCourseQuizState(JSON.parse(unitStorage.getItem(`u_course_quiz_${c.id}`) || '{}'));
       } catch {
         setCourseQuizState({});
       }
@@ -18959,7 +18963,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (!selectedCourse?.id) return;
     openCourse(selectedCourse, true);
     setTab(nextTab);
-    localStorage.setItem(`u_course_tab_${selectedCourse.id}`, nextTab);
+    unitStorage.setItem(`u_course_tab_${selectedCourse.id}`, nextTab);
   };
   const buildMockExamQuestions = (selectedCourse, limit = 10, difficulty = 'mixed') => {
     if (!selectedCourse) return [];
@@ -20229,7 +20233,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const currentTab = (tab === 'overview' || tab === 'path') ? 'path' : tab;
     const openCourseTab = nextTab => {
       setTab(nextTab);
-      localStorage.setItem(`u_course_tab_${course.id}`, nextTab);
+      unitStorage.setItem(`u_course_tab_${course.id}`, nextTab);
     };
 
     // Speech synthesis helper
@@ -20317,11 +20321,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     );
     const goToChapter = idx => {
       setActiveCourseChapterIdx(idx);
-      localStorage.setItem(`u_course_chapter_${course.id}`, idx);
+      unitStorage.setItem(`u_course_chapter_${course.id}`, idx);
       setCourseLessonStep(0);
       setCourseLessonDone(null);
       setCourseLessonStartedAt(Date.now());
-      try { localStorage.setItem(`u_course_step_${course.id}`, JSON.stringify({ chapter: idx, step: 0 })); } catch (e) {}
+      try { unitStorage.setItem(`u_course_step_${course.id}`, JSON.stringify({ chapter: idx, step: 0 })); } catch (e) {}
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const markActiveRead = () => {
@@ -20329,7 +20333,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const key = `${course.id}_${activeChapter.id || activeCourseChapterIdx}`;
       const updated = { ...readChapters, [key]: true };
       setReadChapters(updated);
-      localStorage.setItem('u_read_chapters', JSON.stringify(updated));
+      unitStorage.setItem('u_read_chapters', JSON.stringify(updated));
     };
     const isLastChapter = activeCourseChapterIdx >= chapters.length - 1;
 
@@ -20345,10 +20349,10 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const lessonAnswer = courseLessonAnswer && courseLessonAnswer.key === lessonKey ? courseLessonAnswer : null;
     const lessonDone = courseLessonDone && courseLessonDone.key === lessonKey ? courseLessonDone : null;
     const saveLessonStep = (chapterIdx, step) => {
-      try { localStorage.setItem(`u_course_step_${course.id}`, JSON.stringify({ chapter: chapterIdx, step })); } catch (e) {}
+      try { unitStorage.setItem(`u_course_step_${course.id}`, JSON.stringify({ chapter: chapterIdx, step })); } catch (e) {}
     };
     const studyDayKey = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
-    const readStudyLog = () => { try { const log = JSON.parse(localStorage.getItem('u_study_log') || '{}'); return log && typeof log === 'object' ? log : {}; } catch (e) { return {}; } };
+    const readStudyLog = () => { try { const log = JSON.parse(unitStorage.getItem('u_study_log') || '{}'); return log && typeof log === 'object' ? log : {}; } catch (e) { return {}; } };
     const studyLog = readStudyLog();
     const todayStudyMinutes = Math.floor(Number((studyLog.days || {})[studyDayKey]) || 0);
     const courseLastStudied = Number((studyLog.courses || {})[course.id]) || 0;
@@ -20364,7 +20368,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         log.courses = log.courses || {};
         log.days[studyDayKey] = Math.round(((Number(log.days[studyDayKey]) || 0) + minutes) * 10) / 10;
         log.courses[course.id] = now;
-        localStorage.setItem('u_study_log', JSON.stringify(log));
+        unitStorage.setItem('u_study_log', JSON.stringify(log));
       } catch (e) {}
     };
     const quizPctNow = quizzes.length && Object.keys(courseQuizState || {}).length ? Math.round(quizzes.reduce((sum, item, qIdx) => sum + (courseQuizState[qIdx] === (typeof item.ans === 'number' ? item.ans : typeof item.a === 'number' ? item.a : 0) ? 1 : 0), 0) / quizzes.length * 100) : 0;
@@ -20385,7 +20389,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const resume = !fromStart && idx === activeCourseChapterIdx;
       const nextStep = typeof atStep === 'number' ? atStep : resume ? courseLessonStep : 0;
       setActiveCourseChapterIdx(idx);
-      localStorage.setItem(`u_course_chapter_${course.id}`, idx);
+      unitStorage.setItem(`u_course_chapter_${course.id}`, idx);
       setCourseLessonStep(nextStep);
       saveLessonStep(idx, nextStep);
       setCourseLessonDone(null);
@@ -20561,7 +20565,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const courseBook = courseBooks[course.id] || null;
     const persistBooks = next => {
       setCourseBooks(next);
-      try { localStorage.setItem('u_course_books', JSON.stringify(next)); } catch (e) { showToast('Nuk ka vend të mjaftueshëm për të ruajtur të dhënat e librit.', '⚠️'); }
+      try { unitStorage.setItem('u_course_books', JSON.stringify(next)); } catch (e) { showToast('Nuk ka vend të mjaftueshëm për të ruajtur të dhënat e librit.', '⚠️'); }
     };
     const clearBookData = () => {
       [UNIT_BOOK_POS, UNIT_BOOK_HL, UNIT_BOOK_BM].forEach(key => { const all = unitReadJson(key); delete all[course.id]; unitReadSave(key, all); });
@@ -20783,7 +20787,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           const current = String(courseNotes[course.id] || '').trimEnd();
           const updated = { ...courseNotes, [course.id]: `${current ? current + '\n\n' : ''}«${quote(text)}»\n— ${courseBook.name}, f. ${pageNum}` };
           setCourseNotes(updated);
-          try { localStorage.setItem('u_course_personal_notes', JSON.stringify(updated)); } catch (e) {}
+          try { unitStorage.setItem('u_course_personal_notes', JSON.stringify(updated)); } catch (e) {}
           showToast('U shtua te shënimet e lëndës.', '📝');
         } else if (type === 'explain') {
           openCourseTab('tutor');
@@ -20794,7 +20798,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           const lead = text.split(' ').slice(0, 7).join(' ');
           const updated = { ...customCards, [course.id]: existing.concat({ front: `${courseBook.name}, f. ${pageNum}: ${lead}…`, back: text, chapterId: `book_${pageNum}` }) };
           setCustomCards(updated);
-          try { localStorage.setItem('u_custom_cards', JSON.stringify(updated)); } catch (e) {}
+          try { unitStorage.setItem('u_custom_cards', JSON.stringify(updated)); } catch (e) {}
           showToast('U shtua një kartelë e re.', '🗂️');
         }
       };
@@ -20819,7 +20823,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           const current = String(courseNotes[course.id] || '').trimEnd();
           const updated = { ...courseNotes, [course.id]: `${current ? current + '\n\n' : ''}«${quote(text)}»\n— ${chName}` };
           setCourseNotes(updated);
-          try { localStorage.setItem('u_course_personal_notes', JSON.stringify(updated)); } catch (e) {}
+          try { unitStorage.setItem('u_course_personal_notes', JSON.stringify(updated)); } catch (e) {}
           showToast('U shtua te shënimet e lëndës.', '📝');
         } else if (type === 'explain') {
           openCourseTab('tutor');
@@ -20830,7 +20834,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           const lead = text.split(' ').slice(0, 7).join(' ');
           const updated = { ...customCards, [course.id]: existing.concat({ front: `${chName}: ${lead}…`, back: text, chapterId: readerKey }) };
           setCustomCards(updated);
-          try { localStorage.setItem('u_custom_cards', JSON.stringify(updated)); } catch (e) {}
+          try { unitStorage.setItem('u_custom_cards', JSON.stringify(updated)); } catch (e) {}
           showToast('U shtua një kartelë e re.', '🗂️');
         }
       };
@@ -21124,12 +21128,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             let nextData;
             let scheduled;
             try {
-              const stored = localStorage.getItem(FC_REVIEW_STORAGE_KEY);
+              const stored = unitStorage.getItem(FC_REVIEW_STORAGE_KEY);
               const base = stored ? normalizeFlashcardReviews(JSON.parse(stored)) : fcReviews;
               const latestCourseReviews = base.courses[course.id] || {};
               scheduled = scheduleFlashcardReview(latestCourseReviews[selectedEntry.id], rating, now);
               nextData = { version: 1, courses: { ...base.courses, [course.id]: { ...latestCourseReviews, [selectedEntry.id]: scheduled } } };
-              localStorage.setItem(FC_REVIEW_STORAGE_KEY, JSON.stringify(nextData));
+              unitStorage.setItem(FC_REVIEW_STORAGE_KEY, JSON.stringify(nextData));
             } catch {
               const message = appearanceText('Vlerësimi nuk u ruajt. Kontrollo hapësirën ose lejen e ruajtjes dhe provo përsëri.', 'Rating was not saved. Check storage space or permission and try again.');
               setFcReviewMessage(message);
@@ -21143,7 +21147,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             const nextEntry = fcReviewMode === 'due' ? remaining[Math.min(queueIndex, remaining.length - 1)] : queue[Math.min(queueIndex + 1, queue.length - 1)];
             if (nextEntry) {
               setFcIdx(nextEntry.originalIndex);
-              try { localStorage.setItem(`u_course_fc_${course.id}`, nextEntry.originalIndex); } catch { /* Review itself is already safely saved. */ }
+              try { unitStorage.setItem(`u_course_fc_${course.id}`, nextEntry.originalIndex); } catch { /* Review itself is already safely saved. */ }
             }
             setFcFlip(false);
             setFcRecallDraft('');
@@ -21250,7 +21254,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
                   setFcIdx(next);
                   setFcFlip(false);
                   setFcRecallDraft('');
-                  localStorage.setItem(`u_course_fc_${course.id}`, next);
+                  unitStorage.setItem(`u_course_fc_${course.id}`, next);
                 },
                 className: "flex-1 py-2.5 px-3 rounded-xl input-bg border border-default text-xs font-bold text-secondary hover:text-primary disabled:opacity-30 cursor-pointer shadow-2xs"
               }, "← E mëparshmja"),
@@ -21271,7 +21275,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
                   setFcIdx(next);
                   setFcFlip(false);
                   setFcRecallDraft('');
-                  localStorage.setItem(`u_course_fc_${course.id}`, next);
+                  unitStorage.setItem(`u_course_fc_${course.id}`, next);
                 },
                 className: "flex-1 py-2.5 px-3 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-xs hover:bg-brand-500 disabled:opacity-30 cursor-pointer"
               }, "Tjetra →")
@@ -21322,7 +21326,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
                   type: "button",
                   onClick: () => {
                     setCourseQuizState({});
-                    localStorage.removeItem(`u_course_quiz_${course.id}`);
+                    unitStorage.removeItem(`u_course_quiz_${course.id}`);
                     showToast('Kuizi u pastrua. Mund ta provosh sërish!', '↺');
                   },
                   className: "text-xs text-secondary hover:text-primary underline cursor-pointer"
@@ -21371,7 +21375,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
                       onClick: () => {
                         setCourseQuizState(prev => {
                           const next = { ...prev, [qIdx]: oIdx };
-                          localStorage.setItem(`u_course_quiz_${course.id}`, JSON.stringify(next));
+                          unitStorage.setItem(`u_course_quiz_${course.id}`, JSON.stringify(next));
                           return next;
                         });
                       },
@@ -21523,7 +21527,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             const val = e.target.value;
             const updated = { ...courseNotes, [course.id]: val };
             setCourseNotes(updated);
-            localStorage.setItem('u_course_personal_notes', JSON.stringify(updated));
+            unitStorage.setItem('u_course_personal_notes', JSON.stringify(updated));
           },
           placeholder: `Shkruaj shënimet, idetë kryesore dhe pyetjet për ${course.title}...`,
           className: "w-full min-h-[360px] p-4 rounded-2xl input-bg border border-default text-sm text-primary leading-relaxed resize-y shadow-inner focus:border-brand-500 focus:outline-none"
@@ -22448,7 +22452,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         onClick: () => {
           setHousingFilterType('all');
           setHousingFilterZone('all');
-          setHousingFilterGender(['male', 'female'].includes(localStorage.getItem('u_gender')) ? localStorage.getItem('u_gender') : '');
+          setHousingFilterGender(['male', 'female'].includes(unitStorage.getItem('u_gender')) ? unitStorage.getItem('u_gender') : '');
           setHousingSearchQuery('');
         },
         className: "px-3.5 py-1.5 rounded-xl input-bg border border-default text-xs font-bold text-secondary hover:text-primary transition-colors cursor-pointer"
@@ -22652,7 +22656,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, /*#__PURE__*/React.createElement("option", { value: "", disabled: true }, "Zgjidh gjininë"), [
         { value: 'female', label: 'Vetëm Vajza' },
         { value: 'male', label: 'Vetëm Djem' }
-      ].filter(option => option.value === localStorage.getItem('u_gender')).map(option => /*#__PURE__*/React.createElement("option", {
+      ].filter(option => option.value === unitStorage.getItem('u_gender')).map(option => /*#__PURE__*/React.createElement("option", {
         key: option.value,
         value: option.value
       }, option.label)))), /*#__PURE__*/React.createElement("div", {
@@ -25106,12 +25110,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     /* ── 4p-1. RENDER CLASS PRESIDENT & GROUP HUB (KRYETARI I KLASËS) ── */
   const handleSelectStudentGroup = grp => {
     setStudentGroupId(grp);
-    try { localStorage.setItem('u_student_group_id', grp); } catch {}
+    try { unitStorage.setItem('u_student_group_id', grp); } catch {}
   };
   const handleToggleClassPresident = () => {
     setIsClassPresident(prev => {
       const next = !prev;
-      try { localStorage.setItem('u_is_class_president', String(next)); } catch {}
+      try { unitStorage.setItem('u_is_class_president', String(next)); } catch {}
       showToast(next ? 'U aktivizua roli: Kryetar Klase për grupin tënd!' : 'Kalove në pamjen e zakonshme të studentit të grupit.', '👑');
       return next;
     });
@@ -25138,7 +25142,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextCols = [newCol, ...groupColloquiums];
     setGroupColloquiums(nextCols);
-    try { localStorage.setItem('u_group_colloquiums_v1', JSON.stringify(nextCols)); } catch {}
+    try { unitStorage.setItem('u_group_colloquiums_v1', JSON.stringify(nextCols)); } catch {}
     setColloquiumDraft(prev => ({ ...prev, date: '', notes: '' }));
     setPublishedInfo({ kind: 'col', l1: `${newCol.label} · ${cObj.title}`, l2: `${formatDateSq(newCol.date, { weekday: 'short', day: 'numeric', month: 'long' })} · ${newCol.time} · ${newCol.room}`, added: hubNoticesOn });
     setColNoteOpen(false);
@@ -25146,7 +25150,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const handleDeleteGroupColloquium = colId => {
     const nextCols = groupColloquiums.filter(item => item.id !== colId);
     setGroupColloquiums(nextCols);
-    try { localStorage.setItem('u_group_colloquiums_v1', JSON.stringify(nextCols)); } catch {}
+    try { unitStorage.setItem('u_group_colloquiums_v1', JSON.stringify(nextCols)); } catch {}
   };
   const handlePublishGroupAnnouncement = e => {
     e.preventDefault();
@@ -25167,7 +25171,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextAnns = [newAnn, ...groupAnnouncements];
     setGroupAnnouncements(nextAnns);
-    try { localStorage.setItem('u_group_announcements_v1', JSON.stringify(nextAnns)); } catch {}
+    try { unitStorage.setItem('u_group_announcements_v1', JSON.stringify(nextAnns)); } catch {}
     setAnnouncementDraft({ title: '', category: 'Kolokfium', group: studentGroupId, body: '', pinned: true });
     setAnnouncementFormOpen(false);
     showToast('Njoftimi u publikua.', '📢');
@@ -25175,7 +25179,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const handleDeleteGroupAnnouncement = annId => {
     const nextAnns = groupAnnouncements.filter(item => item.id !== annId);
     setGroupAnnouncements(nextAnns);
-    try { localStorage.setItem('u_group_announcements_v1', JSON.stringify(nextAnns)); } catch {}
+    try { unitStorage.setItem('u_group_announcements_v1', JSON.stringify(nextAnns)); } catch {}
   };
 
   /* ── FEATURE 1: GROUP POLLS & CALENDAR EXPORT HELPERS ── */
@@ -25203,7 +25207,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextPolls = [newPoll, ...groupPolls];
     setGroupPolls(nextPolls);
-    try { localStorage.setItem('u_group_polls_v1', JSON.stringify(nextPolls)); } catch {}
+    try { unitStorage.setItem('u_group_polls_v1', JSON.stringify(nextPolls)); } catch {}
     setPublishedInfo({ kind: 'poll', l1: question, l2: `${rawOptions.length} opsione`, added: false });
     setPollDraft({ question: '', optionsText: '', group: studentGroupId || 'Grupi 1' });
     setPollOpts([{ k: 't', v: '' }, { k: 't', v: '' }]);
@@ -25232,7 +25236,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }
         return { ...poll, options: newOptions, voters: newVoters };
       });
-      try { localStorage.setItem('u_group_polls_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_group_polls_v1', JSON.stringify(next)); } catch {}
       showToast('Vota jote u regjistrua me sukses!', '✓');
       return next;
     });
@@ -25241,7 +25245,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const handleDeleteGroupPoll = pollId => {
     const next = groupPolls.filter(p => p.id !== pollId);
     setGroupPolls(next);
-    try { localStorage.setItem('u_group_polls_v1', JSON.stringify(next)); } catch {}
+    try { unitStorage.setItem('u_group_polls_v1', JSON.stringify(next)); } catch {}
     showToast('Sondazhi u fshi.', '🗑️');
   };
 
@@ -25311,7 +25315,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     if (!unreadGroupMessageIds.has(id)) return;
     const next = [id, ...groupMessageReadIds].slice(0, 300);
     setGroupMessageReadIds(next);
-    try { localStorage.setItem('u_group_messages_read_v1', JSON.stringify(next)); } catch {}
+    try { unitStorage.setItem('u_group_messages_read_v1', JSON.stringify(next)); } catch {}
   };
 
   const renderClassPresidentHub = () => {
@@ -25613,7 +25617,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextList = [newSession, ...tutoringSessions];
     setTutoringSessions(nextList);
-    try { localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(nextList)); } catch {}
+    try { unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(nextList)); } catch {}
     setIsOfferTutoringModalOpen(false);
     setOfferTutoringDraft(prev => ({ ...prev, topicTitle: '', description: '' }));
     showToast('Grupi për Mësim Shtesë (max 7 studentë) u publikua me sukses!', '🎓');
@@ -25664,7 +25668,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           participants: [...otherParticipants, updatedParticipant]
         };
       });
-      try { localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Pagesa u regjistrua! Pasi plotësohet kuota, pranohesh në ligjëratë dhe mund të japësh Review.', '💳');
@@ -25689,7 +25693,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             }
           };
         });
-        try { localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
+        try { unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
         showToast(`Materiali "${file.name}" u ngarkua dhe është i disponueshëm vetëm për studentët e paguar!`, '📎');
         return next;
       });
@@ -25754,7 +25758,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           reviews: [newReview, ...filteredReviews]
         };
       });
-      try { localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(next)); } catch {}
       return next;
     });
     setTutoringReviewInputs(prev => ({ ...prev, [sessionId]: { rating: 5, comment: '' } }));
@@ -25793,7 +25797,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextReqs = [newReq, ...tutoringRequests];
     setTutoringRequests(nextReqs);
-    try { localStorage.setItem('u_tutoring_requests_v1', JSON.stringify(nextReqs)); } catch {}
+    try { unitStorage.setItem('u_tutoring_requests_v1', JSON.stringify(nextReqs)); } catch {}
     setIsRequestTutorModalOpen(false);
     setRequestTutorDraft(prev => ({ ...prev, topicNeed: '', notes: '' }));
     showToast('Kërkesa për Mësim Shtesë u hap! Studentët e tjerë mund të bashkohen dhe tutorët mund të aplikojnë.', '🙋‍♂️');
@@ -25828,7 +25832,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }
         return { ...req, pledges: updatedPledges };
       });
-      try { localStorage.setItem('u_tutoring_requests_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_tutoring_requests_v1', JSON.stringify(next)); } catch {}
       return next;
     });
     showToast('Kontributi yt u shtua në fondin e grupit për këtë lëndë!', '💶');
@@ -25851,7 +25855,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         ? { ...req, tutorApplications: [...(req.tutorApplications || []), newApp] }
         : req
       );
-      try { localStorage.setItem('u_tutoring_requests_v1', JSON.stringify(next)); } catch {}
+      try { unitStorage.setItem('u_tutoring_requests_v1', JSON.stringify(next)); } catch {}
       return next;
     });
     setTutorApplyModalRequestId(null);
@@ -25888,11 +25892,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const nextSessions = [newSession, ...tutoringSessions];
     setTutoringSessions(nextSessions);
-    try { localStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(nextSessions)); } catch {}
+    try { unitStorage.setItem('u_tutoring_sessions_v1', JSON.stringify(nextSessions)); } catch {}
 
     const nextReqs = tutoringRequests.filter(r => r.id !== req.id);
     setTutoringRequests(nextReqs);
-    try { localStorage.setItem('u_tutoring_requests_v1', JSON.stringify(nextReqs)); } catch {}
+    try { unitStorage.setItem('u_tutoring_requests_v1', JSON.stringify(nextReqs)); } catch {}
     showToast(`Tutori ${app.tutorName} u pranua! Kërkesa e grupit u kthye në ligjëratë aktive.`, '🎓');
   };
 
@@ -29434,7 +29438,7 @@ Nënshkrimi: _____________________`;
   };
 
   const renderNewHome = () => {
-    const lastOpenedCourseId = typeof localStorage !== 'undefined' ? localStorage.getItem('u_last_course') : '';
+    const lastOpenedCourseId = typeof unitStorage !== 'undefined' ? unitStorage.getItem('u_last_course') : '';
     const homeContinueCourse = enrolledCourses.find(item => item.id === lastOpenedCourseId) || enrolledCourses.find(item => !done.includes(item.id)) || enrolledCourses[0] || null;
     const homeVisibleHousing = profileServiceGender ? housingListings.filter(item => item.gender === profileServiceGender) : [];
     const homeNearbyHousing = [...homeVisibleHousing].sort((a, b) => (Number(a.distanceMinutes) || 999) - (Number(b.distanceMinutes) || 999))[0] || null;
@@ -32479,7 +32483,7 @@ Nënshkrimi: _____________________`;
     if (!q) return;
     const next = [q, ...recentSearches.filter(item => unitFold(item) !== unitFold(q))].slice(0, 6);
     setRecentSearches(next);
-    try { localStorage.setItem('u_recent_searches', JSON.stringify(next)); } catch (e) {}
+    try { unitStorage.setItem('u_recent_searches', JSON.stringify(next)); } catch (e) {}
   };
   const openChapterFromSearch = (c, idx) => {
     openCourseSection(c, 'syllabus');
@@ -32488,8 +32492,8 @@ Nënshkrimi: _____________________`;
     setCourseLessonDone(null);
     setCourseLessonStartedAt(Date.now());
     try {
-      localStorage.setItem(`u_course_chapter_${c.id}`, idx);
-      localStorage.setItem(`u_course_step_${c.id}`, JSON.stringify({ chapter: idx, step: 0 }));
+      unitStorage.setItem(`u_course_chapter_${c.id}`, idx);
+      unitStorage.setItem(`u_course_step_${c.id}`, JSON.stringify({ chapter: idx, step: 0 }));
     } catch (e) {}
   };
   const buildSearchGroups = () => {
@@ -32591,7 +32595,7 @@ Nënshkrimi: _____________________`;
           recentSearches.length > 0 && ce("section", { className: "space-y-2.5" },
             ce("div", { className: "flex items-baseline justify-between" },
               ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, "Kërkimet e fundit"),
-              ce("button", { type: "button", onClick: () => { setRecentSearches([]); try { localStorage.removeItem('u_recent_searches'); } catch (e) {} }, className: "text-[13px] text-tertiary hover:text-primary cursor-pointer" }, "Pastro")),
+              ce("button", { type: "button", onClick: () => { setRecentSearches([]); try { unitStorage.removeItem('u_recent_searches'); } catch (e) {} }, className: "text-[13px] text-tertiary hover:text-primary cursor-pointer" }, "Pastro")),
             ce("div", { className: "flex flex-wrap gap-2" }, recentSearches.map(item => ce("button", { key: item, type: "button", onClick: () => setSearch(item), className: "h-8 px-3 rounded-[10px] card-surface border border-default text-[13px] text-secondary flex items-center gap-1.5 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.history, "w-3.5 h-3.5 text-tertiary"), item)))),
           ce("p", { className: "text-sm text-tertiary leading-relaxed" }, "Kërko në lëndët, kapitujt, videot, materialet, kartelat dhe shënimet e tua."))));
   };
@@ -32624,10 +32628,10 @@ Nënshkrimi: _____________________`;
   const markNotificationsRead = ids => {
     const next = Array.from(new Set([...ids, ...notificationReadIds])).slice(0, 300);
     setNotificationReadIds(next);
-    try { localStorage.setItem('u_notifications_read', JSON.stringify(next)); } catch (e) {}
+    try { unitStorage.setItem('u_notifications_read', JSON.stringify(next)); } catch (e) {}
   };
   // Native notifications use the same unread items and destinations as this list.
-  const androidNotificationScope = JSON.stringify([studentName, branchId, yearId]);
+  const androidNotificationScope = JSON.stringify([window.FakultetiLocalAccounts.current()?.id || "", studentName, branchId, yearId]);
   const androidNotificationSnapshot = JSON.stringify({
     scope: androidNotificationScope,
     expires: new Date(`${today}T23:59:59`).getTime(),
@@ -32727,21 +32731,21 @@ Nënshkrimi: _____________________`;
   const getStudentCardData = () => {
     const branchObj = (typeof BRANCHES !== 'undefined' ? BRANCHES : []).find(b => b.id === branchId) || { label: 'Psikologji' };
     let startYear = 0;
-    try { startYear = Number(localStorage.getItem('u_card_enrolled_year')) || 0; } catch (e) {}
+    try { startYear = Number(unitStorage.getItem('u_card_enrolled_year')) || 0; } catch (e) {}
     if (!startYear) {
       const now = new Date();
       startYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-      try { localStorage.setItem('u_card_enrolled_year', String(startYear)); } catch (e) {}
+      try { unitStorage.setItem('u_card_enrolled_year', String(startYear)); } catch (e) {}
     }
     const identity = getStoredStudentIdentity(studentFullName || studentName);
     const surname = identity.lastName || '—';
     const givenName = identity.firstName || 'Student';
     const code = unitFold(branchObj.label).replace(/[^a-z]/g, '').slice(0, 3).toUpperCase() || 'STU';
     let serial = '';
-    try { serial = String(localStorage.getItem('u_card_serial') || ''); } catch (e) {}
+    try { serial = String(unitStorage.getItem('u_card_serial') || ''); } catch (e) {}
     if (!/^\d{5}$/.test(serial)) {
       serial = '04821';
-      try { localStorage.setItem('u_card_serial', serial); } catch (e) {}
+      try { unitStorage.setItem('u_card_serial', serial); } catch (e) {}
     }
     return {
       surname: surname.toLocaleUpperCase('sq'),
@@ -33360,7 +33364,7 @@ Nënshkrimi: _____________________`;
       ce("div", null,
         ce("div", { className: "text-[17px] font-bold text-primary mb-1" }, "Shto provim"),
         sheetRow("M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1", "Nga linku zyrtar", "Ngjite linkun dhe aplikacioni i lexon vetë", () => {
-          let saved = ''; try { saved = localStorage.getItem('u_exam_source_url') || ''; } catch (err) {}
+          let saved = ''; try { saved = unitStorage.getItem('u_exam_source_url') || ''; } catch (err) {}
           setExamAddMenu(false);
           setExamImport({ open: true, url: saved, status: 'idle', items: [], error: '' });
         }),
@@ -33369,7 +33373,7 @@ Nënshkrimi: _____________________`;
     const runImport = async source => {
       setExamImport(prev => ({ ...prev, status: 'loading', error: '', items: [] }));
       try {
-        if (typeof source === 'string') { try { localStorage.setItem('u_exam_source_url', source.trim()); } catch (err) {} }
+        if (typeof source === 'string') { try { unitStorage.setItem('u_exam_source_url', source.trim()); } catch (err) {} }
         const text = await examSourceToText(source);
         const pool = enrolledCourses.filter(c => !examDeadlines.some(e => e.courseId === c.id)).map(c => ({ id: c.id, title: c.title }));
         const items = parseExamSchedule(text, pool, today);
@@ -38060,7 +38064,7 @@ function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
   const toggleTheme = () => {
     const next = !isDark; setIsDark(next);
     document.documentElement.classList.toggle('dark', next);
-    try { localStorage.setItem('u_theme', next ? 'dark' : 'light'); } catch {}
+    try { unitStorage.setItem('u_theme', next ? 'dark' : 'light'); } catch {}
   };
   return h('div', { className: 'bujar-rooms-shell min-h-screen text-primary', 'data-rooms-fast-start': 'true' },
     h('header', { className: 'bujar-rooms-header' },
@@ -38076,21 +38080,21 @@ function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
 /* ──────── ROOT ──────── */
 function App() {
   const [uiLanguage, setUiLanguage] = useState(() => activeUiLanguage);
-  const [studentName, setStudentName] = useState(() => localStorage.getItem('u_name') || null);
+  const [studentName, setStudentName] = useState(() => unitStorage.getItem('u_name') || null);
   const [studentFullName, setStudentFullName] = useState(() => {
-    const saved = localStorage.getItem('u_real_name') || localStorage.getItem('u_name') || '';
+    const saved = unitStorage.getItem('u_real_name') || unitStorage.getItem('u_name') || '';
     return isValidStudentFullName(saved) ? normalizeStudentName(saved) : '';
   });
-  const [selectedBranch, setSelectedBranch] = useState(() => localStorage.getItem('u_branch') || null);
+  const [selectedBranch, setSelectedBranch] = useState(() => unitStorage.getItem('u_branch') || null);
   const [selectedYear, setSelectedYear] = useState(() => {
-    const s = localStorage.getItem('u_year');
+    const s = unitStorage.getItem('u_year');
     return s ? Number(s) : null;
   });
   const [selectedSemester, setSelectedSemester] = useState(() => {
-    const s = localStorage.getItem('u_semester');
+    const s = unitStorage.getItem('u_semester');
     return s ? Number(s) : null;
   });
-  const [actualRole, setActualRole] = useState(() => localStorage.getItem('u_role') || 'student');
+  const [actualRole, setActualRole] = useState(() => unitStorage.getItem('u_role') || 'student');
   const [roomsAppExpanded, setRoomsAppExpanded] = useState(false);
   const roomsHomeAccount = prefersFreeRoomsHome(studentFullName || studentName);
   useEffect(() => {
@@ -38104,7 +38108,7 @@ function App() {
   const handleLanguageChange = language => {
     const safeLanguage = language === 'en' ? 'en' : 'sq';
     activeUiLanguage = safeLanguage;
-    localStorage.setItem('u_language', safeLanguage);
+    unitStorage.setItem('u_language', safeLanguage);
     document.documentElement.lang = safeLanguage;
     setUiLanguage(safeLanguage);
   };
@@ -38112,25 +38116,25 @@ function App() {
     const lookup = await validateAskStudentIdentity(identity?.firstName, identity?.lastName);
     if (!lookup.ok) return lookup.error;
     n = normalizeStudentName(`${identity.firstName} ${identity.lastName}`);
-    localStorage.setItem('u_real_name', n);
-    localStorage.setItem('u_real_first_name', normalizeStudentName(identity.firstName));
-    localStorage.setItem('u_real_last_name', normalizeStudentName(identity.lastName));
-    localStorage.removeItem('u_nickname');
+    unitStorage.setItem('u_real_name', n);
+    unitStorage.setItem('u_real_first_name', normalizeStudentName(identity.firstName));
+    unitStorage.setItem('u_real_last_name', normalizeStudentName(identity.lastName));
+    unitStorage.removeItem('u_nickname');
     setStudentFullName(n);
-    localStorage.setItem('u_name', n);
-    localStorage.setItem('u_branch', bId);
-    localStorage.setItem('u_year', yId);
+    unitStorage.setItem('u_name', n);
+    unitStorage.setItem('u_branch', bId);
+    unitStorage.setItem('u_year', yId);
     const chosenSem = semId || (BRANCHES.find(branch => branch.id === bId)?.years.find(y => y.id === yId)?.semesters[0]?.id || 1);
-    localStorage.setItem('u_semester', chosenSem);
+    unitStorage.setItem('u_semester', chosenSem);
     const safeGender = ['male', 'female'].includes(gender) ? gender : '';
-    localStorage.setItem('u_gender', safeGender);
+    unitStorage.setItem('u_gender', safeGender);
     setSelectedSemester(chosenSem);
     if (r) {
-      localStorage.setItem('u_role', r);
+      unitStorage.setItem('u_role', r);
       setActualRole(r);
     }
     if (taughtArr) {
-      localStorage.setItem('u_taught_courses', JSON.stringify(taughtArr));
+      unitStorage.setItem('u_taught_courses', JSON.stringify(taughtArr));
     }
 
     // Unlock all years up to the selected year
@@ -38139,35 +38143,17 @@ function App() {
     for (let i = 1; i <= highestUnlockedYear; i++) {
       unlockedArray.push(i);
     }
-    localStorage.setItem('u_unlocked', JSON.stringify(unlockedArray));
+    unitStorage.setItem('u_unlocked', JSON.stringify(unlockedArray));
     setStudentName(n);
     setSelectedBranch(bId);
     setSelectedYear(yId);
   };
   const handleLogout = () => {
-    setRoomsAppExpanded(false);
-    setStudentName(null);
-    setStudentFullName('');
-    localStorage.removeItem('u_real_name');
-    localStorage.removeItem('u_real_first_name');
-    localStorage.removeItem('u_real_last_name');
-    localStorage.removeItem('u_nickname');
-    setSelectedBranch(null);
-    setSelectedYear(null);
-    setActualRole('student');
-    localStorage.removeItem('u_name');
-    localStorage.removeItem('u_branch');
-    localStorage.removeItem('u_year');
-    localStorage.removeItem('u_unlocked');
-    localStorage.removeItem('u_semester');
-    localStorage.removeItem('u_gender');
-    setSelectedSemester(null);
-    localStorage.removeItem('u_role');
-    localStorage.removeItem('u_simulated_role');
-    localStorage.removeItem('u_taught_courses');
+    window.FakultetiLocalAccounts.signOut();
+    window.location.reload();
   };
   const handleProfileUpdate = (displayName, fullName) => {
-    localStorage.setItem('u_name', displayName);
+    unitStorage.setItem('u_name', displayName);
     setStudentName(displayName);
     setStudentFullName(fullName);
   };
@@ -38177,7 +38163,7 @@ function App() {
     UnitInstallState.prepare();
     if (typeof window !== 'undefined' && window.history && 'scrollRestoration' in window.history) { window.history.scrollRestoration = 'manual'; }
     if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') window.scrollTo(0, 0);
-    const t = localStorage.getItem('u_theme');
+    const t = unitStorage.getItem('u_theme');
     document.documentElement.classList.toggle('dark', t === 'dark');
     document.documentElement.lang = uiLanguage;
   }, []);
@@ -38203,7 +38189,7 @@ function App() {
     onLanguageChange: handleLanguageChange
   });
 }
-ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/React.createElement(App, null)));
+ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/React.createElement(window.FakultetiLocalAccounts.current() ? App : window.FakultetiLocalAuthView, null)));
   
 
   </script>
