@@ -12,9 +12,9 @@
   <link rel="manifest" href="./manifest.webmanifest?v=4">
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
-  <script src="./assets/local-accounts.js?v=1"></script>
+  <script src="./assets/local-accounts.js?v=3"></script>
   <script>var unitStorage = window.FakultetiLocalAccounts.storage;</script>
-  <link rel="stylesheet" href="./assets/local-auth.css?v=2">
+  <link rel="stylesheet" href="./assets/local-auth.css?v=3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
   <style id="profile-refinement">
@@ -1519,7 +1519,7 @@
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
-  <script src="./assets/local-auth-ui.js?v=2"></script>
+  <script src="./assets/local-auth-ui.js?v=3"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -8491,19 +8491,22 @@ const getStoredStudentIdentity = value => {
   const parts = fullName.split(' ');
   return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') };
 };
+window.FakultetiStudentIdentity = Object.freeze({ validate: validateAskStudentIdentity, normalize: normalizeStudentName });
 function Onboarding({
   onSelect,
   uiLanguage,
   onLanguageChange
 }) {
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState(ASK_DEFAULT_STUDENT_NAME.split(' ')[0]);
-  const [lastName, setLastName] = useState(ASK_DEFAULT_STUDENT_NAME.split(' ').slice(1).join(' '));
+  const savedIdentity = getStoredStudentIdentity(unitStorage.getItem('u_real_name') || '');
+  const hasRegistrationProfile = !getAskStudentNameError(savedIdentity.firstName, savedIdentity.lastName) && ['male', 'female'].includes(unitStorage.getItem('u_gender'));
+  const [step, setStep] = useState(hasRegistrationProfile ? 2 : 1);
+  const [name, setName] = useState(savedIdentity.firstName || ASK_DEFAULT_STUDENT_NAME.split(' ')[0]);
+  const [lastName, setLastName] = useState(savedIdentity.lastName || ASK_DEFAULT_STUDENT_NAME.split(' ').slice(1).join(' '));
   const [nameTouched, setNameTouched] = useState(false);
   const [nameChecking, setNameChecking] = useState(false);
   const [nameCheckError, setNameCheckError] = useState('');
   const nameRequestRef = useRef(0);
-  const [role, setRole] = useState('student');
+  const [role, setRole] = useState(() => unitStorage.getItem('u_role') || 'student');
   const [gender, setGender] = useState(() => unitStorage.getItem('u_gender') || '');
   const [branchId, setBranchId] = useState(null);
   const [selectedYearId, setSelectedYearId] = useState(null);
@@ -8579,9 +8582,9 @@ function Onboarding({
     className: "flex justify-center"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setStep(1);
-      setName(ASK_DEFAULT_STUDENT_NAME.split(' ')[0]);
-      setLastName(ASK_DEFAULT_STUDENT_NAME.split(' ').slice(1).join(' '));
+      setStep(hasRegistrationProfile ? 2 : 1);
+      setName(savedIdentity.firstName || ASK_DEFAULT_STUDENT_NAME.split(' ')[0]);
+      setLastName(savedIdentity.lastName || ASK_DEFAULT_STUDENT_NAME.split(' ').slice(1).join(' '));
       setNameTouched(false);
       nameRequestRef.current++;
       setNameChecking(false);
@@ -8597,11 +8600,11 @@ function Onboarding({
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "text-2xl sm:text-4xl font-black text-primary tracking-tight leading-tight"
-  }, "Mirë se vjen në ", /*#__PURE__*/React.createElement("span", {
+  }, step === 2 ? "Zgjidh fakultetin" : step >= 3 ? "Zgjidh vitin" : "Mirë se vjen në ", /*#__PURE__*/React.createElement("span", {
     className: "text-brand-600 dark:text-brand-400"
-  }, "Fakulteti Online")), /*#__PURE__*/React.createElement("p", {
+  }, step === 1 ? "Fakulteti Online" : "")), /*#__PURE__*/React.createElement("p", {
     className: "text-secondary text-xs sm:text-sm leading-relaxed max-w-md mx-auto"
-  }, step === 1 ? 'Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh më vonë te Profili.' : step === 2 ? 'Zgjidh drejtimin tënd akademik në Fakulteti Online.' : `Mirë se vjen, ${name}! Tani zgjidh vitin tënd aktual.`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
+  }, step === 1 ? 'Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh më vonë te Profili.' : step === 2 ? 'Zgjidh fakultetin dhe drejtimin ku studion.' : `Mirë se vjen, ${name}! Tani zgjidh vitin tënd aktual.`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
     onSubmit: handleNameSubmit,
     className: "space-y-4 max-w-xs mx-auto"
   }, /*#__PURE__*/React.createElement("div", { className: 'grid grid-cols-2 gap-2' }, /*#__PURE__*/React.createElement("input", {
