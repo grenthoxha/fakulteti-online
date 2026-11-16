@@ -88,7 +88,7 @@
           h('div', { className: 'local-intro-copy' },
             h('p', { className: 'local-intro-eyebrow' }, 'Për mësimin dhe jetën studentore'),
             h('h1', { id: 'local-intro-title' }, 'Mëso më lehtë.', h('span', null, 'Organizohu më mirë.')),
-            h('p', { className: 'local-intro-lead' }, 'Fakulteti të ndihmon të organizosh ditën, orarin dhe mësimin. Ofron materiale, provime reale e shpjegime të thjeshta për temat e vështira, si dhe këshilla, banesa e vende për mësim.'),
+            h('p', { className: 'local-intro-lead' }, 'Fakulteti bashkon orarin, detyrat dhe mësimin në një vend. Lexo materiale e PDF, shiko video, mbaj shënime dhe ushtro me kuize e kartela mësimore. Organizo kohën me Pomodoro, ndiq notat dhe qasu te sallat e lira e shërbimet studentore.'),
             h('div', { className: 'local-intro-actions' },
               h('button', { type: 'button', className: 'local-auth-primary', onClick: () => changeMode('signup') }, 'Krijo llogari', icon('M5 12h14M13 6l6 6-6 6')),
               h('a', { className: 'local-intro-explore', href: '#local-intro-features' }, 'Shiko çfarë ofron', icon('M6 9l6 6 6-6'))),
@@ -106,12 +106,12 @@
                 h('div', { className: 'local-intro-preview-room' }, h('span', { className: 'local-intro-preview-label' }, icon('M7 3h12v15H7zM4 6v15h12'), 'Përsëritja'), h('b', null, 'Aty ku ngeca'), h('small', null, 'Rikthehu dhe ushtroje sërish')))),
             h('p', { className: 'local-intro-product-caption' }, 'Një shembull i një seance mësimi në Fakulteti.'))),
         h('section', { className: 'local-intro-benefits', id: 'local-intro-features', 'aria-labelledby': 'local-intro-benefits-title' },
-          h('div', { className: 'local-intro-section-heading' }, h('p', { className: 'local-intro-eyebrow' }, 'Përmbajtje nga përvoja e studentëve'), h('h2', { id: 'local-intro-benefits-title' }, 'Materiale të përgatitura me kujdes.'), h('p', null, 'Shpjegime, transkripte e përmbledhje të kontrolluara, të përgatitura nga studentë të viteve më të larta, të diplomuar dhe studentë të masterit.')),
+          h('div', { className: 'local-intro-section-heading' }, h('p', { className: 'local-intro-eyebrow' }, 'Mësim dhe organizim në praktikë'), h('h2', { id: 'local-intro-benefits-title' }, 'Mjetet që gjen në app.'), h('p', null, 'Nga leximi dhe përsëritja, te planifikimi i ditës — zgjidh çfarë të duhet.')),
           h('div', { className: 'local-intro-benefit-grid' }, [
-            ['M4 4h6a3 3 0 013 3v14a4 4 0 00-4-2H4zM13 7a3 3 0 013-3h5v15h-5a3 3 0 00-3 2', 'Mësim më i qartë', 'Materiale dhe shpjegime shtesë që i zbërthejnë temat e vështira.'],
-            ['M9 5h11v16H4V5h2M9 3h6v4H9zM8 12l2 2 5-5', 'Provime reale', 'Përgatitu me provime reale, kuize dhe kartela mësimore.'],
-            ['M8 2v4M16 2v4M3 10h18M3 4h18v17H3z', 'Organizim i ditës', 'Mbaji bashkë orarin, detyrat dhe planin e mësimit.'],
-            ['M3 21h18M5 21V9M10 21V9M14 21V9M19 21V9M2 9h20L12 3z', 'Jeta studentore', 'Gjej këshilla, banesa, vende për mësim dhe shërbime studentore.']
+            ['M4 4h6a3 3 0 013 3v14a4 4 0 00-4-2H4zM13 7a3 3 0 013-3h5v15h-5a3 3 0 00-3 2', 'Mësim më i qartë', 'Lexim PDF, video, shënime dhe përmbledhje pranë lëndës.'],
+            ['M9 5h11v16H4V5h2M9 3h6v4H9zM8 12l2 2 5-5', 'Përgatitje për provim', 'Kuize, kartela mësimore, afate provimesh dhe kalkulator i notës.'],
+            ['M8 2v4M16 2v4M3 10h18M3 4h18v17H3z', 'Organizim i ditës', 'Orari, detyrat, Pomodoro, sallat e lira dhe zëvendësimet.'],
+            ['M3 21h18M5 21V9M10 21V9M14 21V9M19 21V9M2 9h20L12 3z', 'Jeta studentore', 'Seksione për këshilla, banesa, vende për mësim dhe libra.']
           ].map(([path, title, copy]) => h('article', { key: title, className: 'local-intro-benefit' }, h('span', { className: 'local-intro-icon' }, icon(path)), h('div', null, h('h3', null, title), h('p', null, copy)))))),
         h('section', { className: 'local-intro-start', 'aria-labelledby': 'local-intro-start-title' },
           h('div', { className: 'local-intro-section-heading' }, h('p', { className: 'local-intro-eyebrow' }, 'Si fillon'), h('h2', { id: 'local-intro-start-title' }, 'Pak hapa për të filluar.')),
