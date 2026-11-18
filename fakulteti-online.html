@@ -8081,7 +8081,7 @@ const BRANCHES = [
   },
   {
     id: 'sociologji',
-    label: 'Sociologji & Shkenca Shoqërore',
+    label: 'Sociologji',
     icon: '👥',
     faculty: 'Fakulteti Filozofik · UP',
     facultyShort: 'Filozofik',
@@ -8090,7 +8090,7 @@ const BRANCHES = [
   },
   {
     id: 'shkenca-politike',
-    label: 'Shkenca Politike & Administratë',
+    label: 'Shkenca Politike',
     icon: '🏛️',
     faculty: 'Fakulteti Filozofik · UP',
     facultyShort: 'Filozofik',
@@ -8250,6 +8250,77 @@ BRANCHES.forEach(branch => {
     }
   })));
 });
+
+
+/* Faculty membership is separate from the student's programme and year. */
+const UNIT_FACULTIES = Object.freeze([
+  { id: 'filozofik', label: 'Fakulteti Filozofik', shortLabel: 'Filozofik', icon: '🏛️', rooms: true },
+  { id: 'fiek', label: 'Fakulteti i Inxhinierisë Elektrike dhe Kompjuterike', shortLabel: 'FIEK', icon: '💻' },
+  { id: 'fshmn', label: 'FSHMN', shortLabel: 'FSHMN', icon: '🔬' },
+  { id: 'mjekesi', label: 'Fakulteti i Mjekësisë', shortLabel: 'Mjekësi', icon: '⚕️' },
+  { id: 'ekonomik', label: 'Fakulteti Ekonomik', shortLabel: 'Ekonomik', icon: '📈' },
+  { id: 'juridik', label: 'Fakulteti Juridik', shortLabel: 'Juridik', icon: '⚖️' },
+  { id: 'edukim', label: 'Fakulteti i Edukimit', shortLabel: 'Edukim', icon: '📚' },
+  { id: 'filologji', label: 'Fakulteti i Filologjisë', shortLabel: 'Filologji', icon: '📖' },
+  { id: 'arkitekture', label: 'Fakulteti i Ndërtimtarisë dhe Arkitekturës', shortLabel: 'Ndërtimtari & Arkitekturë', icon: '📐' }
+]);
+const FILOZOFIKU_PROGRAM_GROUPS = Object.freeze({
+  psikologji: 'Psikologji', sociologji: 'Sociologji', 'shkenca-politike': 'Shkenca Politike',
+  'pune-sociale': 'Punë Sociale', filozofi: 'Filozofi', histori: 'Histori',
+  antropologji: 'Antropologji dhe Trashëgimi Kulturore', 'administrim-publik': 'Administrim Publik',
+  'marredhenie-nderkombetare': 'Marrëdhënie Ndërkombëtare'
+});
+const foldFacultyText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const getBranchFacultyIds = branch => {
+  if (!branch) return [];
+  if (branch.facultyShort === 'Filozofik') return ['filozofik'];
+  if (branch.id === 'inteligjence-artificiale') return ['fiek', 'fshmn']; // existing shared FIEK / FSHMN catalogue
+  if (branch.facultyShort === 'FIEK' || /Inxhinierisë Elektrike/.test(branch.faculty || '')) return ['fiek'];
+  const id = { 'Mjekësi':'mjekesi', Ekonomik:'ekonomik', Juridik:'juridik', Edukim:'edukim', Filologji:'filologji', 'Arkitekturë':'arkitekture' }[branch.facultyShort];
+  return id ? [id] : [];
+};
+const getFacultyBranches = (facultyId, query = '') => {
+  const words = foldFacultyText(query).split(' ').filter(Boolean);
+  return BRANCHES.filter(branch => getBranchFacultyIds(branch).includes(facultyId)
+    && words.every(word => foldFacultyText(branch.label + ' ' + (branch.desc || '')).includes(word)));
+};
+const getStudentFacultyContext = (branchId, preferredFacultyId = '') => {
+  const branch = BRANCHES.find(item => item.id === branchId) || null;
+  const ids = getBranchFacultyIds(branch);
+  const faculty = UNIT_FACULTIES.find(item => item.id === (ids.includes(preferredFacultyId) ? preferredFacultyId : ids[0])) || null;
+  return { branch, faculty, hasFreeRooms: faculty?.rooms === true };
+};
+const getFacultyScheduleProgram = (branchId, yearId) => {
+  const context = getStudentFacultyContext(branchId);
+  const year = context.branch?.years.find(item => String(item.id) === String(yearId));
+  const groupName = FILOZOFIKU_PROGRAM_GROUPS[branchId];
+  return context.hasFreeRooms && groupName && year ? { branchId, yearId: Number(year.id), groupName, label: `${context.branch.label} · ${year.label}` } : null;
+};
+function renderFacultyProgramChooser({ facultyId, onFaculty, query, onQuery, onBranch, busy = false }) {
+  const h = React.createElement;
+  const faculty = UNIT_FACULTIES.find(item => item.id === facultyId);
+  const branches = faculty ? getFacultyBranches(faculty.id, query) : [];
+  const cardClass = 'card-surface border border-default rounded-2xl p-4 sm:p-5 text-left transition-colors hover:border-brand-400 disabled:opacity-50';
+  if (!faculty) return h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-left', 'aria-label': 'Fakultetet' },
+    UNIT_FACULTIES.filter(item => getFacultyBranches(item.id).length).map(item => h('button', {
+      key: item.id, type: 'button', disabled: busy, onClick: () => onFaculty(item.id), className: cardClass
+    }, h('span', { className: 'block text-2xl mb-3', 'aria-hidden': true }, item.icon),
+      h('span', { className: 'block text-sm font-semibold text-primary leading-5' }, item.label),
+      h('span', { className: 'block text-xs text-secondary mt-2' }, `${getFacultyBranches(item.id).length} drejtime në app`),
+      h('span', { className: 'block text-xs font-semibold text-brand-600 dark:text-brand-300 mt-3' }, 'Zgjidh fakultetin →'))));
+  return h('section', { className: 'space-y-4 text-left', 'aria-label': `Drejtimet e ${faculty.label}` },
+    h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
+      h('button', { type: 'button', disabled: busy, onClick: () => onFaculty(null), className: 'min-h-10 text-xs font-semibold text-brand-600 dark:text-brand-300' }, '← Ndrysho fakultetin'),
+      h('span', { className: 'text-xs font-semibold text-secondary' }, faculty.label)),
+    h('input', { type: 'search', value: query, onChange: event => onQuery(event.target.value), disabled: busy, placeholder: 'Kërko drejtimin…', 'aria-label': 'Kërko drejtimin në fakultetin e zgjedhur', className: 'w-full card-surface border border-default px-4 py-3 rounded-xl text-sm text-primary outline-none focus:border-brand-500' }),
+    h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' }, branches.map(branch => h('button', {
+      key: branch.id, type: 'button', disabled: busy || !branch.years.length, onClick: () => onBranch(branch.id), className: cardClass
+    }, h('span', { className: 'block text-sm font-semibold text-primary' }, branch.label),
+      h('span', { className: 'block text-xs text-secondary leading-5 mt-2' }, branch.desc),
+      h('span', { className: 'block text-xs font-semibold text-brand-600 dark:text-brand-300 mt-3' }, 'Zgjidh drejtimin →')))),
+    !branches.length && h('p', { className: 'text-sm text-secondary py-4', role: 'status' }, 'Nuk u gjet drejtim në këtë fakultet.'));
+}
+/* End faculty context helpers. */
 
 /* ──────── ONBOARDING SCREEN ──────── */
 const normalizeStudentName = value => String(value || '').trim().replace(/\s+/g, ' ');
@@ -8495,7 +8566,8 @@ window.FakultetiStudentIdentity = Object.freeze({ validate: validateAskStudentId
 function Onboarding({
   onSelect,
   uiLanguage,
-  onLanguageChange
+  onLanguageChange,
+  onCancel
 }) {
   const savedIdentity = getStoredStudentIdentity(unitStorage.getItem('u_real_name') || '');
   const hasRegistrationProfile = !getAskStudentNameError(savedIdentity.firstName, savedIdentity.lastName) && ['male', 'female'].includes(unitStorage.getItem('u_gender'));
@@ -8511,26 +8583,8 @@ function Onboarding({
   const [branchId, setBranchId] = useState(null);
   const [selectedYearId, setSelectedYearId] = useState(null);
   const [taughtCourses, setTaughtCourses] = useState([]);
-  const [facultyFilter, setFacultyFilter] = useState('all');
+  const [facultyId, setFacultyId] = useState(null);
   const [searchMajor, setSearchMajor] = useState('');
-
-  const FACULTY_PILLS = [
-    { id: 'all', label: 'Të gjitha', icon: '🎓' },
-    { id: 'Mjekësi', label: 'Mjekësi', icon: '⚕️' },
-    { id: 'FIEK / FSHMN', label: 'Inxhinieri & TIK', icon: '💻' },
-    { id: 'Filozofik', label: 'Filozofik', icon: '🧠' },
-    { id: 'Ekonomik', label: 'Ekonomik', icon: '📈' },
-    { id: 'Juridik', label: 'Juridik', icon: '⚖️' },
-    { id: 'Edukim', label: 'Edukim', icon: '📚' },
-    { id: 'Filologji', label: 'Filologji', icon: '📖' },
-    { id: 'Arkitekturë', label: 'Ndërtimtari & Ark.', icon: '📐' }
-  ];
-
-  const filteredBranches = BRANCHES.filter(b => {
-    const matchesFaculty = facultyFilter === 'all' || b.facultyShort === facultyFilter || b.faculty?.includes(facultyFilter);
-    const matchesSearch = !searchMajor || b.label.toLowerCase().includes(searchMajor.toLowerCase()) || b.desc?.toLowerCase().includes(searchMajor.toLowerCase()) || b.faculty?.toLowerCase().includes(searchMajor.toLowerCase());
-    return matchesFaculty && matchesSearch;
-  });
 
   const handleNameSubmit = async e => {
     e.preventDefault();
@@ -8552,17 +8606,19 @@ function Onboarding({
       const identity = { firstName: normalizeStudentName(name), lastName: normalizeStudentName(lastName) };
       const result = await validateAskStudentIdentity(identity.firstName, identity.lastName);
       if (requestId !== nameRequestRef.current) return;
-      const error = result.ok ? await onSelect(`${identity.firstName} ${identity.lastName}`, ...args.slice(1), identity) : result.error;
+      const error = result.ok ? await onSelect(`${identity.firstName} ${identity.lastName}`, ...args.slice(1), identity, facultyId) : result.error;
       if (error) { setNameCheckError(error); setNameTouched(true); setStep(1); }
     } finally { if (requestId === nameRequestRef.current) setNameChecking(false); }
   };
   const handleBranchSelect = bId => {
     const b = BRANCHES.find(x => x.id === bId);
-    if (!b || b.years.length === 0) {
+    if (!b || !getBranchFacultyIds(b).includes(facultyId) || b.years.length === 0) {
       alert('Kjo degë është në zhvillim e sipër.');
       return;
     }
     setBranchId(bId);
+    setSelectedYearId(null);
+    setTaughtCourses([]);
     setStep(3);
   };
   return /*#__PURE__*/React.createElement("div", {
@@ -8578,7 +8634,7 @@ function Onboarding({
     className: "absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] bg-purple-500/8 dark:bg-purple-500/6 rounded-full blur-[100px] pointer-events-none"
   }), /*#__PURE__*/React.createElement("div", {
     className: `relative z-10 w-full text-center space-y-6 anim-fade-up ${step === 2 ? 'max-w-4xl' : 'max-w-lg'}`
-  }, React.createElement(UnitInstallButton, { variant: 'banner', uiLanguage }), /*#__PURE__*/React.createElement("div", {
+  }, onCancel && React.createElement('button', { type: 'button', onClick: onCancel, className: 'block min-h-10 text-xs text-secondary mb-2' }, '← Kthehu te profili'), React.createElement(UnitInstallButton, { variant: 'banner', uiLanguage }), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
@@ -8590,6 +8646,8 @@ function Onboarding({
       setNameChecking(false);
       setNameCheckError('');
       setBranchId(null);
+      setFacultyId(null);
+      setSearchMajor('');
     },
     "aria-label": "Kthehu në fillim të Fakulteti Online",
     className: "unit-brand-mark unit-brand-mark--hero  transition-colors cursor-pointer"
@@ -8600,11 +8658,11 @@ function Onboarding({
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "text-2xl sm:text-4xl font-black text-primary tracking-tight leading-tight"
-  }, step === 2 ? "Zgjidh fakultetin" : step >= 3 ? "Zgjidh vitin" : "Mirë se vjen në ", /*#__PURE__*/React.createElement("span", {
+  }, step === 2 ? (facultyId ? "Zgjidh drejtimin" : "Zgjidh fakultetin") : step === 4 ? "Zgjidh lëndët" : step === 3 ? "Zgjidh vitin" : "Mirë se vjen në ", /*#__PURE__*/React.createElement("span", {
     className: "text-brand-600 dark:text-brand-400"
   }, step === 1 ? "Fakulteti Online" : "")), /*#__PURE__*/React.createElement("p", {
     className: "text-secondary text-xs sm:text-sm leading-relaxed max-w-md mx-auto"
-  }, step === 1 ? 'Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh më vonë te Profili.' : step === 2 ? 'Zgjidh fakultetin dhe drejtimin ku studion.' : `Mirë se vjen, ${name}! Tani zgjidh vitin tënd aktual.`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
+  }, step === 1 ? 'Shkruaj emrin dhe mbiemrin real. Nofkën mund ta shtosh më vonë te Profili.' : step === 2 ? (facultyId ? UNIT_FACULTIES.find(item => item.id === facultyId)?.label : 'Fillimisht zgjidh fakultetin ku studion.') : `${BRANCHES.find(item => item.id === branchId)?.label || ''} · ${UNIT_FACULTIES.find(item => item.id === facultyId)?.shortLabel || ''}`)), step === 1 ? /*#__PURE__*/React.createElement("form", {
     onSubmit: handleNameSubmit,
     className: "space-y-4 max-w-xs mx-auto"
   }, /*#__PURE__*/React.createElement("div", { className: 'grid grid-cols-2 gap-2' }, /*#__PURE__*/React.createElement("input", {
@@ -8701,71 +8759,7 @@ function Onboarding({
     disabled: nameChecking || Boolean(getAskStudentNameError(name, lastName)) || !['male', 'female'].includes(gender),
     "aria-busy": nameChecking,
     className: "w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-500 transition-colors disabled:opacity-50 mt-2 cursor-pointer shadow-sm"
-  }, nameChecking ? "Po kontrollohet emri…" : "Vazhdo →")) : step === 2 ? /*#__PURE__*/React.createElement("div", {
-    className: "space-y-4"
-  },
-    /* SEARCH & FILTER CONTROLS */
-    /*#__PURE__*/React.createElement("div", {
-      className: "space-y-2.5 max-w-2xl mx-auto"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "relative"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      value: searchMajor,
-      onChange: e => setSearchMajor(e.target.value),
-      placeholder: "🔍 Kërko drejtimin tënd në UP (psh. Mjekësi, Juridik, Softuer, Financa)...",
-      className: "w-full card-surface border border-default px-4 py-3 rounded-2xl text-xs sm:text-sm text-primary placeholder:text-secondary outline-none focus:border-brand-500 shadow-2xs"
-    }), searchMajor && /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => setSearchMajor(''),
-      className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary hover:text-primary px-1.5 py-0.5"
-    }, "✕")),
-    /* FILTER PILLS */
-    /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 justify-start sm:justify-center"
-    }, FACULTY_PILLS.map(pill => /*#__PURE__*/React.createElement("button", {
-      key: pill.id,
-      type: "button",
-      onClick: () => setFacultyFilter(pill.id),
-      className: `whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${facultyFilter === pill.id ? 'bg-brand-600 text-white shadow-xs' : 'card-surface border border-default text-secondary hover:text-primary hover:border-brand-300'}`
-    }, /*#__PURE__*/React.createElement("span", null, pill.icon), pill.label)))),
-
-    /* MAJORS GRID */
-    /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-left max-h-[58vh] overflow-y-auto pr-1 hide-scrollbar"
-    }, filteredBranches.map((b, i) => /*#__PURE__*/React.createElement("button", {
-      key: b.id,
-      onClick: () => handleBranchSelect(b.id),
-      className: `p-4 sm:p-5 rounded-2xl card-surface border border-default transition-all duration-200 group hover:border-brand-400 hover:shadow-md  flex flex-col justify-between text-left cursor-pointer space-y-2.5`
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "space-y-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between gap-2"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-[9px] font-black uppercase tracking-wider text-brand-600 dark:text-brand-400 line-clamp-1"
-    }, b.faculty || 'Universiteti i Prishtinës'), /*#__PURE__*/React.createElement("span", {
-      className: `shrink-0 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider ${'bg-brand-500/10 text-brand-700 dark:text-brand-300'}`
-    }, b.catalogStatus === 'verified' ? 'Program zyrtar' : 'Program akademik')), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xl shrink-0 group- transition-colors origin-center"
-    }, b.icon), /*#__PURE__*/React.createElement("h3", {
-      className: "font-black text-primary text-xs sm:text-sm leading-snug group-hover:text-brand-600 transition-colors"
-    }, b.label))), /*#__PURE__*/React.createElement("p", {
-      className: "text-secondary text-[11px] leading-relaxed line-clamp-2"
-    }, b.desc), /*#__PURE__*/React.createElement("div", {
-      className: "pt-2 border-t border-default flex items-center justify-between text-[10px] font-bold text-secondary"
-    }, /*#__PURE__*/React.createElement("span", null, b.years.length, " vite akademike"), /*#__PURE__*/React.createElement("span", {
-      className: "text-brand-600 group-hover:translate-x-0.5 transition-colors"
-    }, "Zgjidh →"))))),
-    filteredBranches.length === 0 && /*#__PURE__*/React.createElement("div", {
-      className: "p-8 rounded-2xl border border-dashed border-default text-center text-xs text-secondary space-y-2"
-    }, /*#__PURE__*/React.createElement("p", null, "Nuk u gjet asnjë drejtim me këtë emër."), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => { setFacultyFilter('all'); setSearchMajor(''); },
-      className: "text-brand-600 font-bold hover:underline"
-    }, "Pastro filtrat"))
-  ) : step === 3 ? /*#__PURE__*/React.createElement("div", {
+  }, nameChecking ? "Po kontrollohet emri…" : "Vazhdo →")) : step === 2 ? renderFacultyProgramChooser({ facultyId, onFaculty: id => { setFacultyId(id); setBranchId(null); setSelectedYearId(null); setTaughtCourses([]); setSearchMajor(''); }, query: searchMajor, onQuery: setSearchMajor, onBranch: handleBranchSelect, busy: nameChecking }) : step === 3 ? /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 max-w-md mx-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
@@ -8773,7 +8767,9 @@ function Onboarding({
     const isFinalYear = y.id === BRANCHES.find(branch => branch.id === branchId)?.years.at(-1)?.id;
     return /*#__PURE__*/React.createElement("button", {
       key: y.id,
+      disabled: nameChecking,
       onClick: () => {
+        if (nameChecking) return;
         setSelectedYearId(y.id);
         if (role === 'instructor') {
           setStep(4);
@@ -9799,6 +9795,33 @@ const FILOZOFIKU_ROOM_FEATURES = {
 const FILOZOFIKU_DAILY_SYNC_KEY = 'u_filozofiku_rooms_sync_v4';
 const FILOZOFIKU_REFRESH_MS = 8 * 60 * 60 * 1000;
 const FILOZOFIKU_SOURCE_URL = 'https://filozofiku.github.io/WinterF_rooms_days_vertical.html';
+function installFilozofikuScheduleDirections(data) {
+  const events = (data.rooms || []).flatMap(room => room.e || []);
+  const source = { label: 'Orari i Fakultetit Filozofik', url: FILOZOFIKU_SOURCE_URL };
+  const roman = ['I','II','III','IV','V','VI'];
+  for (const [id, groupName] of Object.entries(FILOZOFIKU_PROGRAM_GROUPS)) {
+    if (BRANCHES.some(branch => branch.id === id)) continue;
+    const years = [];
+    for (let yearId = 1; yearId <= 3; yearId++) {
+      const sessions = events.filter(event => String(event.g || '').split(/[,;]/).some(group => foldFacultyText(group).startsWith(foldFacultyText(groupName) + '-' + yearId + 'ba')));
+      if (!sessions.length) continue;
+      const subjects = [...new Map(sessions.map(event => [foldFacultyText(event.t), event])).values()].sort((a, b) => a.t.localeCompare(b.t, 'sq'));
+      const semesterId = yearId * 2 - 1;
+      const courses = subjects.map(event => ({
+        id: `filo_${id}_${yearId}_${foldFacultyText(event.t).replace(/[^a-z0-9]+/g,'_')}`,
+        title: event.t, ects: null, status: /zgjedhore/i.test(event.a || '') ? 'Z' : 'O',
+        prof: event.p || '', color: 'brand', desc: 'Lëndë e listuar në orarin e fakultetit.',
+        chapters: [], cards: [], quiz: [], cases: [], official: false, officialSource: source, catalogStatus: 'schedule'
+      }));
+      years.push({ id: yearId, label: `Viti ${roman[yearId - 1]}`, full: 'Bachelor', desc: 'Lëndët dhe orari sipas burimit të lidhur.', semesters: [
+        { id: semesterId, label: `Semestri ${roman[semesterId - 1]}`, courses },
+        { id: semesterId + 1, label: `Semestri ${roman[semesterId]}`, courses: [] }
+      ] });
+    }
+    if (years.length) BRANCHES.push({ id, label: groupName, faculty: 'Fakulteti Filozofik · UP', facultyShort: 'Filozofik', icon: '🏛️', desc: 'Drejtim me orar të lidhur me sallat e Fakultetit Filozofik.', years, catalogStatus: 'schedule', source });
+  }
+}
+installFilozofikuScheduleDirections(FILOZOFIKU_ROOMS_FALLBACK);
 
 function formatFilozofikuProf(rawName) {
   if (!rawName) return 'I pacaktuar';
@@ -9981,6 +10004,9 @@ const FilozofikuDailyStore = (() => {
   };
 })();
 
+
+
+
 function getFilozofikuFloorMeta(roomName) {
   const numMatch = (roomName || '').match(/(\d+)/);
   const raw = numMatch ? numMatch[1] : '';
@@ -10074,12 +10100,18 @@ function getFilozofikuRoomEvents(data, room, dayIdx, date = getFilozofikuDateFor
 }
 
 function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofikuDateForDay(Number(dayId) - 1)) {
-  const groupPattern = program === 'social-work' ? /\bpune sociale\s*-\s*1ba\b/ : program === 'psychology' ? /\bpsikologji\s*-\s*3ba\b/ : null;
-  if (!groupPattern || !data) return [];
-  const normalize = text => String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const selected = program === 'social-work' ? { groupName: 'Punë Sociale', yearId: 1 }
+    : program === 'psychology' ? { groupName: 'Psikologji', yearId: 3 } : program;
+  if (!selected || typeof selected !== 'object' || typeof selected.groupName !== 'string' || !Number.isInteger(Number(selected.yearId)) || Number(selected.yearId) < 1 || Number(selected.yearId) > 6 || !data) return [];
+  const normalize = text => String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const target = normalize(selected.groupName);
+  const matches = value => String(value || '').split(/[,;]/).some(member => {
+    const parts = normalize(member).match(/^(.*?)\s*-\s*(\d)ba\b/);
+    return parts && parts[1].trim() === target && Number(parts[2]) === Number(selected.yearId);
+  });
   const recurring = (data.rooms || []).flatMap(room => (room.e || []).filter(event => event.d === Number(dayId) - 1).map(event => ({ ...event, room: room.l || room.n })));
   const dated = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.events(data, date) : [];
-  return [...recurring, ...dated].filter(event => groupPattern.test(normalize(event.g)))
+  return [...recurring, ...dated].filter(event => matches(event.g))
     .map(event => ({ ...event, start: data.times[event.s], end: data.times[event.e] }))
     .filter(event => event.start && event.end)
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
@@ -10851,8 +10883,12 @@ const removeLegacyRoomChanges = () => {
 // A personal landing preference, based on the real name rather than a nickname.
 const prefersFreeRoomsHome = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'bujar hoti';
 const prefersSocialWorkSchedule = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'grent hoxha';
-const getInitialScheduleProgram = fullName => prefersSocialWorkSchedule(fullName) ? 'social-work' : 'personal';
-const getInitialAcademyView = (role, fullName) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
+const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty = false) => {
+  if (branchId && !getStudentFacultyContext(branchId).hasFreeRooms) return 'personal';
+  if (!explicitFaculty && prefersSocialWorkSchedule(fullName)) return 'social-work';
+  return getFacultyScheduleProgram(branchId, yearId) ? 'faculty-program' : 'personal';
+};
+const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
 const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.5', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.5-android-preview/Fakulteti-Online.apk' });
@@ -10968,6 +11004,7 @@ function AcademyApp({
   actualRole,
   onLogout,
   onProfileUpdate,
+  onAcademicChange,
   uiLanguage,
   onLanguageChange
 }) {
@@ -10976,8 +11013,8 @@ function AcademyApp({
   const profileNameParts = String(studentName || '').trim().split(/\s+/).filter(Boolean);
   const profileRealIdentity = getStoredStudentIdentity(studentFullName || studentName);
   const profileNeedsRealName = !isValidStudentFullName(studentFullName);
-  const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName);
-  const socialWorkScheduleUser = prefersSocialWorkSchedule(studentFullName || studentName);
+  const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName) && getStudentFacultyContext(initialBranch, unitStorage.getItem('u_faculty')).hasFreeRooms;
+  const socialWorkScheduleUser = prefersSocialWorkSchedule(studentFullName || studentName) && !unitStorage.getItem('u_faculty_selected_v1') && getStudentFacultyContext(initialBranch).hasFreeRooms;
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
     let preferences;
@@ -11592,8 +11629,10 @@ function AcademyApp({
     const s = unitStorage.getItem('u_semester');
     return s ? Number(s) : null;
   });
+  const facultyContext = getStudentFacultyContext(branchId, unitStorage.getItem('u_faculty'));
+  const facultyScheduleProgram = getFacultyScheduleProgram(branchId, yearId);
   const [course, setCourse] = useState(null);
-  const [view, setViewRaw] = useState(() => initialView || getInitialAcademyView(actualRole, studentFullName || studentName)); // home | course | settings | exam
+  const [view, setViewRaw] = useState(() => initialView || getInitialAcademyView(actualRole, studentFullName || studentName, branchId)); // home | course | settings | exam
   /* Historia e navigimit: "kthehu" të çon gjithmonë aty ku ishe më parë */
   const navStackRef = useRef([]);
   const navCtxRef = useRef({ view: 'home', studentTab: 'exams' });
@@ -13102,8 +13141,8 @@ function AcademyApp({
     }
   });
   const [scheduleWeekOffset, setScheduleWeekOffset] = useState(0);
-  const [scheduleProgramFilter, setScheduleProgramFilter] = useState(() => getInitialScheduleProgram(studentFullName || studentName));
-  useEffect(() => { setScheduleProgramFilter(socialWorkScheduleUser ? 'social-work' : 'personal'); }, [socialWorkScheduleUser]);
+  const [scheduleProgramFilter, setScheduleProgramFilter] = useState(() => getInitialScheduleProgram(studentFullName || studentName, branchId, yearId, Boolean(unitStorage.getItem('u_faculty_selected_v1'))));
+  useEffect(() => { setScheduleProgramFilter(getInitialScheduleProgram(studentFullName || studentName, branchId, yearId, Boolean(unitStorage.getItem('u_faculty_selected_v1')))); }, [socialWorkScheduleUser, branchId, yearId]);
   const [scheduleProgramData, setScheduleProgramData] = useState(() => FilozofikuDailyStore.getData());
   useEffect(() => {
     const unsubscribe = FilozofikuDailyStore.subscribe(setScheduleProgramData);
@@ -13111,10 +13150,12 @@ function AcademyApp({
     return unsubscribe;
   }, []);
   useEffect(() => {
-    if (view !== 'week' || scheduleProgramFilter === 'personal') return;
+    if (!facultyContext.hasFreeRooms || !['week', 'home'].includes(view) || (view === 'week' && scheduleProgramFilter === 'personal')) return;
     setScheduleProgramData(FilozofikuDailyStore.getData());
     FilozofikuDailyStore.refresh();
-  }, [view, scheduleProgramFilter]);
+  }, [view, scheduleProgramFilter, branchId]);
+  const selectedScheduleProgram = scheduleProgramFilter === 'faculty-program' ? facultyScheduleProgram : scheduleProgramFilter;
+  const programScheduleSessions = (dayId, dayKey) => getFilozofikuProgramSessions(scheduleProgramData, selectedScheduleProgram, dayId, dayKey);
   const [scheduleScope, setScheduleScope] = useState('today');
   const [scheduleSelectedDayKey, setScheduleSelectedDayKey] = useState(null);
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
@@ -14510,7 +14551,7 @@ function AcademyApp({
         { view: 'studentrights', label: t('Të drejtat dhe statuti', 'Rights and statute'), icon: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8' },
         { view: 'invisiblecurriculum', label: t('Kurrikula e padukshme', 'Hidden curriculum'), icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6z' }
       ]}
-    ];
+    ].map(group => ({ ...group, items: group.items.filter(item => item.view !== 'freerooms' || facultyContext.hasFreeRooms) }));
     const completedProfileExams = enrolledCourses.filter(course => done.includes(course.id));
     return h('div', { className: 'profile-minimal profile-refined w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
       h('section', { className: 'profile-overview flex items-center gap-3.5' },
@@ -14519,7 +14560,7 @@ function AcademyApp({
         h('div', { className: 'flex-1 min-w-0' },
           h('div', { className: 'profile-overview-name text-[19px] font-bold tracking-tight text-primary truncate' }, studentName || 'Student'),
           studentFullName && studentName !== studentFullName && h('div', { className: 'text-xs text-secondary mt-0.5 truncate' }, studentFullName),
-          h('div', { className: 'text-sm text-secondary mt-0.5' }, branchObj.label + ' · ' + yearLabel)),
+          h('button', { type: 'button', onClick: onAcademicChange, 'aria-label': t('Ndrysho fakultetin dhe drejtimin', 'Change faculty and programme'), className: 'text-sm text-secondary mt-0.5 text-left' }, h('span', { className: 'block text-xs mb-0.5' }, facultyContext.faculty?.label || ''), branchObj.label + ' · ' + yearLabel + ' ›')),
         h('button', { type: 'button', onClick: () => { profileNameRequestRef.current++; setProfileNameChecking(false); if (isEditingName && !profileNeedsRealName) setIsEditingName(false); else openProfileEditor(); }, 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', className: 'profile-overview-edit text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName && !profileNeedsRealName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
       (isEditingName || profileNeedsRealName) && h('form', {
         id: 'profile-edit',
@@ -14645,7 +14686,7 @@ function AcademyApp({
       ['tips', t('Këshilla nga studentët','Tips from students'), 'bulb', () => setView('seniortips')],
       ['simulator', t('Simulatori i bursës','Scholarship simulator'), 'calc', () => setView('scholarshiptarget')],
       ['scholarship', t('Bursa & mesatarja','Scholarship & average'), 'cap', () => setView('scholarship')]
-    ];
+    ].filter(tile => tile[0] !== 'freerooms' || facultyContext.hasFreeRooms);
   };
   const renderStudentServicesHome = tiles => {
     const t = (sq, en) => uiLanguage === 'en' ? en : sq;
@@ -15925,7 +15966,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   }))).filter(item => item.startsAt >= new Date()).sort((a, b) => a.startsAt - b.startsAt);
   useEffect(() => {
     const scopeKey = `${branchId}:${yearId}:up-official-v1`;
-    if (scheduleSeededScopes.includes(scopeKey) || !visCourses.length) return;
+    if (facultyScheduleProgram || unitStorage.getItem('u_faculty_selected_v1') || scheduleSeededScopes.includes(scopeKey) || !visCourses.length) return;
     const starterCourses = visCourses.filter(item => item.status !== 'Z').slice(0, 6);
     const starts = ['08:30', '10:15', '12:00', '13:45', '15:30', '17:15'];
     const seeded = starterCourses.flatMap((selectedCourse, index) => {
@@ -23851,6 +23892,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     /* ── 4k-bis. RENDER FREE ROOMS (SALLAT E LIRA - FILOZOFIKU.GITHUB.IO) VIEW ── */
   const renderFreeRoomsView = () => {
+    if (!facultyContext.hasFreeRooms) return React.createElement('div', { className: 'p-4 space-y-3' }, React.createElement('button', { type: 'button', onClick: () => goBackOr('studentservices'), className: 'text-sm text-brand-600 min-h-10' }, '← Kthehu'), React.createElement('h1', { className: 'font-semibold text-primary' }, facultyContext.faculty?.label || 'Fakulteti'), React.createElement('p', { className: 'text-sm text-secondary' }, 'Për këtë fakultet nuk ka ende burim të lidhur për sallat e lira.'));
     return React.createElement(React.Fragment, null, React.createElement(UnitInstallButton, { variant: 'banner', uiLanguage, className: 'mx-4 mt-3 max-w-6xl lg:mx-auto' }), React.createElement(FilozofikuFreeRoomsPage, {
       onBack: () => goBackOr('studentservices'),
       initialStatusFilter: freeRoomsHomeUser ? 'free' : 'all',
@@ -29406,23 +29448,25 @@ Nënshkrimi: _____________________`;
     const h = React.createElement;
     const homeNow = new Date();
     const homeNowMin = homeNow.getHours() * 60 + homeNow.getMinutes();
+    const homeProgram = socialWorkScheduleUser ? 'social-work' : facultyScheduleProgram;
+    const homeDaySessions = (dayId, dayKey) => homeProgram ? getFilozofikuProgramSessions(scheduleProgramData, homeProgram, dayId, dayKey).map((event, index) => ({ ...event, id: `official_${dayKey}_${index}`, title: event.t, official: true, type: /ushtrime/i.test(event.a || '') ? 'exercise' : 'lecture' })) : scheduleMinDaySessions(dayId);
     const homeTodayDayId = homeNow.getDay();
-    const homeTodaySessions = homeTodayDayId >= 1 && homeTodayDayId <= 5 ? scheduleMinDaySessions(homeTodayDayId) : [];
+    const homeTodaySessions = homeTodayDayId >= 1 && homeTodayDayId <= 5 ? homeDaySessions(homeTodayDayId, dateKey(homeNow)) : [];
     const showTomorrow = homeTodaySessions.length > 0 && homeTodaySessions.every(item => scheduleMinToMinutes(item.end) <= homeNowMin);
     const homeDate = showTomorrow ? addCalendarDays(homeNow, 1) : homeNow;
     const homeDateKey = dateKey(homeDate);
     const homeDayId = homeDate.getDay();
-    const homeSessions = showTomorrow ? (homeDayId >= 1 && homeDayId <= 5 ? scheduleMinDaySessions(homeDayId) : []) : homeTodaySessions;
+    const homeSessions = showTomorrow ? (homeDayId >= 1 && homeDayId <= 5 ? homeDaySessions(homeDayId, homeDateKey) : []) : homeTodaySessions;
     const rows = homeSessions.map(item => {
       const course = allCourses.find(c => c.id === item.courseId);
       const isPast = !showTomorrow && scheduleMinToMinutes(item.end) <= homeNowMin;
       const isExercise = item.type === 'exercise';
       return h('button', {
-        key: item.id, type: 'button', onClick: () => openAcademicSession(item, homeDateKey),
+        key: item.id, type: 'button', onClick: () => { if (item.official) { setScheduleWeekOffset(0); setScheduleSelectedDayKey(homeDateKey); setScheduleProgramFilter(socialWorkScheduleUser ? 'social-work' : 'faculty-program'); setView('week'); } else openAcademicSession(item, homeDateKey); },
         className: 'w-full flex items-center gap-2.5 py-[11px] text-left cursor-pointer border-b border-default last:border-b-0'
       },
         h('span', { className: `w-[42px] shrink-0 text-[14px] tabular-nums ${isPast ? 'font-semibold text-secondary' : 'font-bold text-primary'}` }, item.start),
-        h('span', { className: `flex-1 min-w-0 text-[15px] ${isPast ? 'text-secondary' : 'font-semibold text-primary'}` }, (course && course.title) || 'Lënda'),
+        h('span', { className: `flex-1 min-w-0 text-[15px] ${isPast ? 'text-secondary' : 'font-semibold text-primary'}` }, item.title || (course && course.title) || 'Lënda'),
         h('span', { className: `shrink-0 px-2 py-1 rounded-full text-[11px] font-semibold ${isPast ? 'bg-slate-500/10 text-secondary' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300'}` }, isExercise ? 'Ushtrime' : 'Ligjëratë'));
     });
     return h('section', {
@@ -33890,7 +33934,7 @@ Nënshkrimi: _____________________`;
       { id:'scholarship', title:appearanceText('Simulatori i Bursës','Scholarship Calculator'), detail:appearanceText('Llogarit mundësitë për bursë','Explore scholarship eligibility'), icon:'M2 8l10-5 10 5-10 5-10-5zM6 10v7c4 3 8 3 12 0v-7M22 8v8' },
       { id:'studygroups', title:appearanceText('Grupet e Studimit','Study Groups'), detail:appearanceText('Mësoni bashkë, online ose në kampus','Study together, online or on campus'), icon:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0' },
       { id:'urbantraffic', title:appearanceText('Trafiku Urban','Urban Transit'), detail:appearanceText('Linjat, stacionet dhe oraret','Routes, stops and timetables'), icon:'M5 4h14v14H5zM5 10h14M9 4v6M15 4v6M7 18v3M17 18v3M8 14h.01M16 14h.01' }
-    ];
+    ].filter(service => service.id !== 'freerooms' || facultyContext.hasFreeRooms);
     return h('section', { 'data-home-section':'student-services', className:'home-services-reference' },
       h('div', { className:'home-reference-heading' },
         h('div', { className:'home-services-heading-main' },
@@ -34049,6 +34093,9 @@ Nënshkrimi: _____________________`;
           circle("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
           circle("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
           circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
+      ce('div', { className: 'flex items-center justify-between gap-3 mt-2' },
+        ce('span', { className: 'text-[11px] text-secondary truncate' }, facultyContext.faculty?.label || ''),
+        facultyContext.hasFreeRooms && ce('button', { type: 'button', onClick: () => setView('freerooms'), className: 'min-h-8 text-xs font-semibold text-brand-700 dark:text-brand-300 shrink-0' }, 'Sallat e lira →')),
       ce('label', { className: 'block mt-1.5' },
         ce('span', { className: 'sr-only' }, 'Shfaq orarin'),
         ce('select', {
@@ -34058,13 +34105,13 @@ Nënshkrimi: _____________________`;
           'aria-label': 'Filtro orarin sipas programit'
         },
           ce('option', { value: 'personal' }, 'Orari im'),
-          ce('option', { value: 'social-work' }, 'Punë Sociale · Viti I'),
-          !socialWorkScheduleUser && ce('option', { value: 'psychology' }, 'Psikologji · Viti III'))),
+          facultyScheduleProgram && !socialWorkScheduleUser && ce('option', { value: 'faculty-program' }, facultyScheduleProgram.label),
+          socialWorkScheduleUser && ce('option', { value: 'social-work' }, 'Punë Sociale · Viti I'))),
       (!isPastAcademicWeek || scheduleProgramFilter !== 'personal') && ce("div", { className: "grid grid-cols-5 gap-1.5 mt-1.5", role: "tablist", "aria-label": "Ditët e javës" },
         academicWeekDays.map(day => {
           const isSel = day.key === selected.key;
           const isToday = day.key === today;
-          const count = scheduleProgramFilter === 'personal' ? scheduleMinDaySessions(day.id).length : getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id, day.key).length;
+          const count = scheduleProgramFilter === 'personal' ? scheduleMinDaySessions(day.id).length : programScheduleSessions(day.id, day.key).length;
           return ce("button", {
             key: day.key, type: "button", role: "tab", "aria-selected": isSel,
             "aria-label": `${day.label}, ${formatDateSq(day.key, { day: 'numeric', month: 'long' })}${count ? `, ${count} orë` : ''}`,
@@ -34079,8 +34126,8 @@ Nënshkrimi: _____________________`;
   const renderProgramScheduleDay = () => {
     const h = React.createElement;
     const day = getScheduleMinSelectedDay();
-    const sessions = getFilozofikuProgramSessions(scheduleProgramData, scheduleProgramFilter, day.id, day.key);
-    const programName = scheduleProgramFilter === 'social-work' ? 'Punë Sociale · Viti I' : 'Psikologji · Viti III';
+    const sessions = programScheduleSessions(day.id, day.key);
+    const programName = scheduleProgramFilter === 'social-work' ? 'Punë Sociale · Viti I' : facultyScheduleProgram?.label || 'Orari i drejtimit';
     return h('section', { className: 'space-y-3', 'aria-label': `Orari i ${programName}` },
       h('div', null,
         h('h2', { className: 'text-base font-bold text-primary' }, programName)),
@@ -38099,7 +38146,10 @@ function App() {
   });
   const [actualRole, setActualRole] = useState(() => unitStorage.getItem('u_role') || 'student');
   const [roomsAppExpanded, setRoomsAppExpanded] = useState(false);
-  const roomsHomeAccount = prefersFreeRoomsHome(studentFullName || studentName);
+  const [choosingAcademics, setChoosingAcademics] = useState(false);
+  const selectedFacultyContext = getStudentFacultyContext(selectedBranch, unitStorage.getItem('u_faculty'));
+  useEffect(() => { if (selectedFacultyContext.faculty) unitStorage.setItem('u_faculty', selectedFacultyContext.faculty.id); }, [selectedBranch]);
+  const roomsHomeAccount = prefersFreeRoomsHome(studentFullName || studentName) && selectedFacultyContext.hasFreeRooms;
   useEffect(() => {
     if (!roomsHomeAccount) return;
     const resume = () => { if (!document.hidden && (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)) setRoomsAppExpanded(false); };
@@ -38115,16 +38165,21 @@ function App() {
     document.documentElement.lang = safeLanguage;
     setUiLanguage(safeLanguage);
   };
-  const handleSelect = async (n, bId, yId, r, taughtArr, semId, gender, identity) => {
+  const handleSelect = async (n, bId, yId, r, taughtArr, semId, gender, identity, facultyId) => {
+    const selectedContext = getStudentFacultyContext(bId, facultyId);
+    if (!facultyId || selectedContext.faculty?.id !== facultyId || !selectedContext.branch?.years.some(year => String(year.id) === String(yId))) return 'Zgjidh fakultetin, drejtimin dhe vitin përkatës.';
     const lookup = await validateAskStudentIdentity(identity?.firstName, identity?.lastName);
     if (!lookup.ok) return lookup.error;
     n = normalizeStudentName(`${identity.firstName} ${identity.lastName}`);
     unitStorage.setItem('u_real_name', n);
     unitStorage.setItem('u_real_first_name', normalizeStudentName(identity.firstName));
     unitStorage.setItem('u_real_last_name', normalizeStudentName(identity.lastName));
-    unitStorage.removeItem('u_nickname');
+    if (!choosingAcademics) unitStorage.removeItem('u_nickname');
+    const displayName = choosingAcademics ? unitStorage.getItem('u_name') || n : n;
     setStudentFullName(n);
-    unitStorage.setItem('u_name', n);
+    unitStorage.setItem('u_name', displayName);
+    unitStorage.setItem('u_faculty', facultyId);
+    unitStorage.setItem('u_faculty_selected_v1', '1');
     unitStorage.setItem('u_branch', bId);
     unitStorage.setItem('u_year', yId);
     const chosenSem = semId || (BRANCHES.find(branch => branch.id === bId)?.years.find(y => y.id === yId)?.semesters[0]?.id || 1);
@@ -38147,7 +38202,8 @@ function App() {
       unlockedArray.push(i);
     }
     unitStorage.setItem('u_unlocked', JSON.stringify(unlockedArray));
-    setStudentName(n);
+    setStudentName(displayName);
+    setChoosingAcademics(false);
     setSelectedBranch(bId);
     setSelectedYear(yId);
   };
@@ -38170,8 +38226,9 @@ function App() {
     document.documentElement.classList.toggle('dark', t === 'dark');
     document.documentElement.lang = uiLanguage;
   }, []);
-  if (!studentName || !selectedBranch || !selectedYear) return /*#__PURE__*/React.createElement(Onboarding, {
+  if (choosingAcademics || !studentName || !selectedFacultyContext.branch?.years.some(year => String(year.id) === String(selectedYear))) return /*#__PURE__*/React.createElement(Onboarding, {
     onSelect: handleSelect,
+    onCancel: choosingAcademics ? () => setChoosingAcademics(false) : undefined,
     uiLanguage: uiLanguage,
     onLanguageChange: handleLanguageChange
   });
@@ -38188,6 +38245,7 @@ function App() {
     actualRole: actualRole,
     onLogout: handleLogout,
     onProfileUpdate: handleProfileUpdate,
+    onAcademicChange: () => setChoosingAcademics(true),
     uiLanguage: uiLanguage,
     onLanguageChange: handleLanguageChange
   });
