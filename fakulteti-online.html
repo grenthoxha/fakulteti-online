@@ -15,6 +15,7 @@
   <script src="./assets/local-accounts.js?v=3"></script>
   <script>var unitStorage = window.FakultetiLocalAccounts.storage;</script>
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
+  <link rel="stylesheet" href="./assets/account-approvals.css?v=1">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
   <style id="profile-refinement">
@@ -1526,7 +1527,8 @@
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
-  <script src="./assets/local-auth-ui.js?v=8"></script>
+  <script src="./assets/local-auth-ui.js?v=9"></script>
+  <script src="./assets/account-approvals.js?v=1"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -8745,7 +8747,7 @@ function Onboarding({
     d: "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
   })), /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold uppercase tracking-wider"
-  }, "Profesor")), /*#__PURE__*/React.createElement("button", {
+  }, "Profesor")), window.FakultetiApprovals?.isAdmin() && /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => setRole('admin'),
     className: `p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${role === 'admin' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'input-bg border-default text-secondary hover-surface'}`
@@ -11064,7 +11066,7 @@ function AcademyApp({
   const profileNameParts = String(studentName || '').trim().split(/\s+/).filter(Boolean);
   const profileRealIdentity = getStoredStudentIdentity(studentFullName || studentName);
   const profileNeedsRealName = !isValidStudentFullName(studentFullName);
-  const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName) && getStudentFacultyContext(initialBranch, unitStorage.getItem('u_faculty')).hasFreeRooms;
+  const freeRoomsHomeUser = prefersFreeRoomsHome(studentFullName || studentName) && getStudentFacultyContext(initialBranch, unitStorage.getItem('u_faculty')).hasFreeRooms && (!window.FakultetiApprovals || window.FakultetiApprovals.fallback('freerooms') === 'freerooms');
   const socialWorkScheduleUser = prefersSocialWorkSchedule(studentFullName || studentName) && !unitStorage.getItem('u_faculty_selected_v1') && getStudentFacultyContext(initialBranch).hasFreeRooms;
   const profileInitials = profileNameParts.length > 1 ? `${profileNameParts[0][0]}${profileNameParts[profileNameParts.length - 1][0]}`.toUpperCase() : (profileNameParts[0]?.slice(0, 2) || 'ST').toUpperCase();
   const [homePreferences, setHomePreferences] = useState(() => {
@@ -11284,8 +11286,14 @@ function AcademyApp({
     };
   }, []);
   
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
-  const [notificationPreviewOpen, setNotificationPreviewOpen] = useState(false);
+  const [notificationCenterOpen, setNotificationCenterOpenRaw] = useState(false);
+  const setNotificationCenterOpen = useCallback(next => {
+    if (next === false || !window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) setNotificationCenterOpenRaw(next);
+  }, []);
+  const [notificationPreviewOpen, setNotificationPreviewOpenRaw] = useState(false);
+  const setNotificationPreviewOpen = useCallback(next => {
+    if (next === false || !window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) setNotificationPreviewOpenRaw(next);
+  }, []);
   const notificationBellRef = useRef(null);
   const [notificationPreviewPosition, setNotificationPreviewPosition] = useState({ top: 64, right: 12 });
   useEffect(() => {
@@ -11595,7 +11603,7 @@ function AcademyApp({
   const BACKUP_APP_ID = 'Fakulteti Online';
   const BACKUP_VERSION = 1;
   const BACKUP_MAX_BYTES = 2 * 1024 * 1024;
-  const isAllowedBackupKey = key => /^u_[a-z0-9_:-]{1,100}$/i.test(String(key || '')) && key !== 'u_profile_photo';
+  const isAllowedBackupKey = key => /^u_[a-z0-9_:-]{1,100}$/i.test(String(key || '')) && key !== 'u_profile_photo' && !key.startsWith('u_approval_');
   const stripBinaryBackupData = storedValue => {
     if (typeof storedValue !== 'string' || (!storedValue.startsWith('{') && !storedValue.startsWith('['))) return storedValue;
     try {
@@ -11683,13 +11691,14 @@ function AcademyApp({
   const facultyContext = getStudentFacultyContext(branchId, unitStorage.getItem('u_faculty'));
   const facultyScheduleProgram = getFacultyScheduleProgram(branchId, yearId);
   const [course, setCourse] = useState(null);
-  const [view, setViewRaw] = useState(() => initialView || getInitialAcademyView(actualRole, studentFullName || studentName, branchId)); // home | course | settings | exam
+  const [view, setViewRaw] = useState(() => (initialView ? window.FakultetiApprovals?.fallback(initialView) : window.FakultetiApprovals?.landing(getInitialAcademyView(actualRole, studentFullName || studentName, branchId))) || initialView || getInitialAcademyView(actualRole, studentFullName || studentName, branchId)); // home | course | settings | exam
   /* Historia e navigimit: "kthehu" të çon gjithmonë aty ku ishe më parë */
   const navStackRef = useRef([]);
   const navCtxRef = useRef({ view: 'home', studentTab: 'exams' });
   const setView = useCallback(next => {
     const ctx = navCtxRef.current;
     const target = typeof next === 'function' ? next(ctx.view) : next;
+    if (window.FakultetiApprovals && !window.FakultetiApprovals.canView(target)) return;
     if (target !== ctx.view) {
       const stack = navStackRef.current;
       const found = stack.map(entry => entry.view).lastIndexOf(target);
@@ -11701,13 +11710,16 @@ function AcademyApp({
         if (stack.length > 40) stack.shift();
       }
     }
-    setViewRaw(next);
+    setViewRaw(target);
   }, []);
   useEffect(() => { if (freeRoomsHomeUser && actualRole !== 'instructor' && !initialView) setView('freerooms'); }, [freeRoomsHomeUser, actualRole, initialView]);
   useEffect(() => { if (view === 'freerooms' && onRoomsHome) onRoomsHome(); }, [view, onRoomsHome]);
-  useEffect(() => { if (socialWorkScheduleUser && actualRole !== 'instructor') setView('week'); }, [socialWorkScheduleUser, actualRole]);
+  useEffect(() => { if (socialWorkScheduleUser && actualRole !== 'instructor' && (!window.FakultetiApprovals?.policy || ['auto','week'].includes(window.FakultetiApprovals.policy.landing))) setView('week'); }, [socialWorkScheduleUser, actualRole]);
   useEffect(() => { if (view !== 'settings') { profileNameRequestRef.current++; setProfileNameChecking(false); setIsEditingName(false); } }, [view]);
-  const [groupMessagesOpen, setGroupMessagesOpen] = useState(false);
+  const [groupMessagesOpen, setGroupMessagesOpenRaw] = useState(false);
+  const setGroupMessagesOpen = useCallback(next => {
+    if (next === false || !window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) setGroupMessagesOpenRaw(next);
+  }, []);
 
   const pageSwipeMotionRef = useRef(null);
   const pageSwipeOverlayRef = useRef(null);
@@ -11835,7 +11847,7 @@ function AcademyApp({
   const openHeaderHome = () => {
     setSidebarOpen(false);
     if (freeRoomsHomeUser && onRoomsHome) onRoomsHome();
-    else setView(freeRoomsHomeUser ? 'freerooms' : 'home');
+    else setView(window.FakultetiApprovals?.fallback(freeRoomsHomeUser ? 'freerooms' : 'home') || (freeRoomsHomeUser ? 'freerooms' : 'home'));
   };
   const [isDesktopViewport, setIsDesktopViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(min-width: 1024px)').matches : true);
 
@@ -11920,7 +11932,7 @@ function AcademyApp({
   
   
   // Instructor State
-  const [role, setRole] = useState(() => unitStorage.getItem('u_simulated_role') || actualRole);
+  const [role, setRole] = useState(() => window.FakultetiApprovals?.policy ? actualRole : unitStorage.getItem('u_simulated_role') || actualRole);
   const [customData, setCustomData] = useState(() => {
     try {
       return JSON.parse(unitStorage.getItem('u_custom_data') || '{"editedCourses":{},"newCourses":{},"cases":{},"professorEdits":{}}');
@@ -12158,7 +12170,7 @@ function AcademyApp({
     const prev = stack.pop();
     if (prev) {
       if (prev.view === 'student' && prev.studentTab) setStudentTab(prev.studentTab);
-      setViewRaw(prev.view);
+      setViewRaw(window.FakultetiApprovals?.fallback(prev.view) || prev.view);
       setSidebarOpen(false);
       setTimeout(() => { try { window.scrollTo(0, prev.scrollY || 0); } catch {} }, 60);
     } else if (typeof fallback === 'function') fallback();
@@ -14602,9 +14614,10 @@ function AcademyApp({
         { view: 'studentrights', label: t('Të drejtat dhe statuti', 'Rights and statute'), icon: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0zM8 21h8' },
         { view: 'invisiblecurriculum', label: t('Kurrikula e padukshme', 'Hidden curriculum'), icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6z' }
       ]}
-    ].map(group => ({ ...group, items: group.items.filter(item => item.view !== 'freerooms' || facultyContext.hasFreeRooms) }));
+    ].map(group => ({ ...group, items: group.items.filter(item => (item.view !== 'freerooms' || facultyContext.hasFreeRooms) && (!window.FakultetiApprovals || window.FakultetiApprovals.canView(item.view))) })).filter(group => group.items.length);
     const completedProfileExams = enrolledCourses.filter(course => done.includes(course.id));
     return h('div', { className: 'profile-minimal profile-refined w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
+      window.FakultetiManageAccountsButton && h(window.FakultetiManageAccountsButton),
       h('section', { className: 'profile-overview flex items-center gap-3.5' },
         h('div', { className: 'profile-overview-avatar w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
           profilePhoto ? h('img', { src: profilePhoto, alt: t('Fotografia e profilit', 'Profile photo'), className: 'w-full h-full object-cover' }) : profileInitials),
@@ -14654,11 +14667,13 @@ function AcademyApp({
           h('span', { className: 'profile-card-qr w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center flex-shrink-0' },
             h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2' }))));
       })(),
-      h('button', { type: 'button', onClick: () => setView('academic-progress'), className: 'profile-quick-link profile-progress-link w-full min-h-[58px] rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
+      h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("academic-progress")) ? 'true' : undefined, type: 'button', onClick: () => setView('academic-progress'), className: 'profile-quick-link profile-progress-link w-full min-h-[58px] rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M4 20V10M10 20V4M16 20v-7M22 20H2'),
         h('span', { className: 'flex-1 text-left' }, t('Progresi dhe notat', 'Progress and grades')),
         h('span', { className: 'text-xs text-secondary tabular-nums' }, `${Number(pct) || 0}% · ${completedProfileExams.length} ${t('provime', 'exams')}`), chevron()),
-      h('button', { type: 'button', onClick: () => setView('studentservices'), className: 'profile-quick-link w-full h-12 rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
+      h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentservices")) ? 'true' : undefined, type: 'button', onClick: () => setView('studentservices'), className: 'profile-quick-link w-full h-12 rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M3 5h18v14H3zM8 10a2 2 0 1 1 0 .01M6 15c.5-1.2 1.4-2 2-2s1.5.8 2 2M14 10h4M14 14h3'),
         h('span', { className: 'flex-1 text-left' }, t('Shërbimet studentore', 'Student services')),
         chevron()),
@@ -14737,7 +14752,7 @@ function AcademyApp({
       ['tips', t('Këshilla nga studentët','Tips from students'), 'bulb', () => setView('seniortips')],
       ['simulator', t('Simulatori i bursës','Scholarship simulator'), 'calc', () => setView('scholarshiptarget')],
       ['scholarship', t('Bursa & mesatarja','Scholarship & average'), 'cap', () => setView('scholarship')]
-    ].filter(tile => tile[0] !== 'freerooms' || facultyContext.hasFreeRooms);
+    ].filter(tile => (tile[0] !== 'freerooms' || facultyContext.hasFreeRooms) && (!window.FakultetiApprovals || window.FakultetiApprovals.can(tile[0] === 'freerooms' ? 'rooms' : tile[0] === 'pastexams' ? 'exams' : 'services')));
   };
   const renderStudentServicesHome = tiles => {
     const t = (sq, en) => uiLanguage === 'en' ? en : sq;
@@ -14778,7 +14793,8 @@ function AcademyApp({
     try { if (readStore) readStore('unit_student_exchange_v1:' + supportScope).data.gifts.filter(item => item.owner === scope && !item.claimed).forEach(item => mineListings.push({ key: 'g' + item.id, icon: 'heart', title: item.title, meta: t('Dhuro & shit lirë', 'Donate & sell affordably'), right: t('Aktive', 'Active'), onClick: () => setView('support-donations') })); } catch (error) {}
     try { if (readStore) readStore('unit_student_notices_v1:' + supportScope).data.notices.filter(item => item.owner === scope && !item.resolved).forEach(item => mineListings.push({ key: 'n' + item.id, icon: 'search', title: item.title, meta: t('Humbur / gjetur', 'Lost / found'), right: t('Aktive', 'Active'), onClick: () => setView('support-lostfound') })); } catch (error) {}
     const updates = e(React.Fragment, null,
-      first && e('button', { type: 'button', className: 'sv2-deadline', onClick: () => setView('support-applications'), 'aria-label': `${t('Afati më i afërt','Nearest deadline')}: ${first.title}, ${dayText(first.deadline)}` },
+      first && e('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("support-applications")) ? 'true' : undefined, type: 'button', className: 'sv2-deadline', onClick: () => setView('support-applications'), 'aria-label': `${t('Afati më i afërt','Nearest deadline')}: ${first.title}, ${dayText(first.deadline)}` },
         e('small', null, t('Afati më i afërt','Nearest deadline')),
         e('strong', null, first.title),
         e('span', { className: 'sv2-row' }, e('span', null, t('Aplikime & dokumente','Applications & documents')), e('b', null, dayText(first.deadline))),
@@ -14809,6 +14825,7 @@ function AcademyApp({
         },
           /* Back Button */
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
             type: "button",
             onClick: () => setView('settings'),
             "aria-label": "Kthehu te Profili",
@@ -14860,6 +14877,7 @@ function AcademyApp({
         }, "Shiko në kohë reale cilat salla janë të lira në Fakultetin Filozofik sipas orarit zyrtar (filozofiku.github.io)."))), /*#__PURE__*/React.createElement("div", {
           className: "flex items-center gap-2 shrink-0 flex-wrap"
         }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("freerooms")) ? 'true' : undefined,
           type: "button",
           onClick: () => setView('freerooms'),
           className: "px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -14892,6 +14910,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Regjistrohu për mësim shtesë në lëndë të caktuara, paguaj ngapak pjesën tënde (max 7 studentë) dhe shiko/jep Review të verifikuar."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("tutoring")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsOfferTutoringModalOpen(true);
@@ -14899,6 +14918,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, "+ Ofro Mësim Shtesë"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("tutoring")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('tutoring'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -14941,6 +14961,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Gjej cimerin ideal, liro nj\u00EB dhom\u00EB ose reklamo banes\u00EB me qira af\u00EBr Fakultetit.")))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("housing")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsHousingModalOpen(true);
@@ -14948,6 +14969,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, /*#__PURE__*/React.createElement("span", null, "+ Posto Shpallje")), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("housing")) ? 'true' : undefined,
         type: "button",
          onClick: () => {
            setHousingFilterGender(profileServiceGender);
@@ -14982,6 +15004,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Bashk\u00EBpuno me koleg\u00EB p\u00EBr provime n\u00EB Bibliotek\u00EBn Komb\u00EBtare ose online."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studygroups")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsCreateGroupModalOpen(true);
@@ -14989,6 +15012,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, /*#__PURE__*/React.createElement("span", null, "+ Krijo Grup")), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studygroups")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('studygroups'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15020,6 +15044,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "P\u00EBrgatitu me teste dhe pyetje t\u00EB zgjidhura nga afatet e m\u00EBparshme."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("pastexams")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsAddQuestionModalOpen(true);
@@ -15027,6 +15052,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-amber-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, /*#__PURE__*/React.createElement("span", null, "+ Shto Pyetje")), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("pastexams")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('pastexams'),
         className: "px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15058,6 +15084,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Zbuloni sallat e leximit, mens\u00EBn dhe sh\u00EBrbimet studentore n\u00EB Prishtin\u00EB."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("campusguide")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsAddSpotModalOpen(true);
@@ -15065,6 +15092,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-teal-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, /*#__PURE__*/React.createElement("span", null, "+ Sugjero Vend")), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("campusguide")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('campusguide'),
         className: "px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15097,6 +15125,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Linjat e autobus\u00EBve, stacionet kryesore dhe abonimi mujor."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("urbantraffic")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('urbantraffic'),
         className: "px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15128,6 +15157,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Eksploroni dhe ruani zbritjet universitare n\u00EB Prishtin\u00EB."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentperks")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('studentperks'),
         className: "px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15159,6 +15189,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "P\u00EBrvoja e student\u00EBve t\u00EB viteve m\u00EB t\u00EB larta p\u00EBr l\u00EBnd\u00EBt universitare."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("seniortips")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('seniortips'),
         className: "px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15186,6 +15217,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }, "Llogarisni notat minimale q\u00EB ju duhen n\u00EB provimet e mbetura p\u00EBr burs\u00EB."))), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2 shrink-0 flex-wrap"
     }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("scholarshiptarget")) ? 'true' : undefined,
       type: "button",
       onClick: () => setView('scholarshiptarget'),
       className: "px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15204,6 +15236,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, /*#__PURE__*/React.createElement("span", {
         className: "text-secondary flex items-center gap-1.5"
       }, /*#__PURE__*/React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 inline-block" }), "Ke ", /*#__PURE__*/React.createElement("b", { className: "text-primary" }, housingListings.filter(item => item.authorName === (studentName || 'Student')).length), " shpallje t\u00EB postuara nga llogaria jote"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("housing")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('housing'),
         className: "text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer"
@@ -15233,6 +15266,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Dhuro libra falas, k\u00EBmbe skripta ose shit materiale t\u00EB semestrit."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0 flex-wrap"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("books")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsBookModalOpen(true);
@@ -15240,6 +15274,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
       }, /*#__PURE__*/React.createElement("span", null, "+ Posto Lib\u00EBr")), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("books")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('books'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -15250,6 +15285,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, /*#__PURE__*/React.createElement("span", {
         className: "text-secondary flex items-center gap-1.5"
       }, /*#__PURE__*/React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 inline-block" }), "Ke ", /*#__PURE__*/React.createElement("b", { className: "text-primary" }, booksListings.filter(item => item.authorName === (studentName || 'Student')).length), " shpallje t\u00EB librave t\u00EB postuara nga llogaria jote"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("books")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('books'),
         className: "text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer"
@@ -15277,6 +15313,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, "Pragu: 9.00")), /*#__PURE__*/React.createElement("p", {
         className: "text-xs text-secondary mt-0.5"
       }, "Parashiko mesataren e semestrit dhe kontrollo kushtet e burs\u00EBs s\u00EB UP-s\u00EB."))), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("scholarship")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('scholarship'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
@@ -18973,6 +19010,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setView('home');
   };
   const openCourse = (c, resume = true) => {
+    if (window.FakultetiApprovals && !window.FakultetiApprovals.can('courses')) return;
     if (isInstructorAccount && (!c?.id || !instructorCourseIds.includes(c.id))) {
       setView('instructor');
       setSidebarOpen(false);
@@ -19930,6 +19968,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     animation.frame = requestAnimationFrame(animate);
   };
   const openCourseVideoFeed = (index = 0) => {
+    if (window.FakultetiApprovals && !window.FakultetiApprovals.can('articles')) return;
     const safeIndex = Math.max(0, Math.min(index, Math.max(0, courseVideoFeed.length - 1)));
     if (view !== 'videos') setView('videos');
     setCourseVideoFeedIndex(safeIndex);
@@ -20274,6 +20313,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, /*#__PURE__*/React.createElement("p", {
           className: "text-xs text-secondary"
         }, showTomorrowPrep ? "Nuk ke ligjërata ose ushtrime të planifikuara për nesër." : "Nuk ke ligjërata ose ushtrime të planifikuara për sot."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
           type: "button",
           onClick: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(null); setView('week'); },
           className: "mt-3 min-h-11 px-4 rounded-xl input-bg border border-default text-[11px] font-bold text-primary hover:border-brand-300"
@@ -20291,6 +20331,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       },
         /*#__PURE__*/React.createElement("h2", { className: "text-base font-bold text-primary" }, "Nuk është zgjedhur asnjë lëndë."),
         /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("courses")) ? 'true' : undefined,
           onClick: () => setView('courses'),
           className: "px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-sm cursor-pointer"
         }, "← Shiko të gjitha lëndët")
@@ -21874,10 +21915,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }, "\u00D7 Mungoj"))), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
       type: "button",
       onClick: () => openCourse(activeInClassCourse),
       className: "flex-1 py-2 px-2.5 rounded-xl input-bg border border-default hover:border-brand-300 text-primary text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
     }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCD6"), "Hap Materialet"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("course")) ? 'true' : undefined,
       type: "button",
       onClick: () => {
         setCourse(activeInClassCourse);
@@ -21908,6 +21951,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-secondary flex items-center justify-between pt-0.5"
     }, /*#__PURE__*/React.createElement("span", null, "Sh\u00EBnimet sinkronizohen automatikisht me l\u00EBnd\u00EBn"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("course")) ? 'true' : undefined,
       type: "button",
       onClick: () => {
         setCourse(activeInClassCourse);
@@ -26015,6 +26059,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           className: "flex items-start gap-3.5 min-w-0"
         },
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentservices")) ? 'true' : undefined,
             type: "button",
             onClick: () => setView('studentservices'),
             className: "w-10 h-10 rounded-xl input-bg border border-default flex items-center justify-center text-secondary hover:text-primary transition-all cursor-pointer shrink-0"
@@ -29513,6 +29558,7 @@ Nënshkrimi: _____________________`;
       const isPast = !showTomorrow && scheduleMinToMinutes(item.end) <= homeNowMin;
       const isExercise = item.type === 'exercise';
       return h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
         key: item.id, type: 'button', onClick: () => { if (item.official) { setScheduleWeekOffset(0); setScheduleSelectedDayKey(homeDateKey); setScheduleProgramFilter(socialWorkScheduleUser ? 'social-work' : 'faculty-program'); setView('week'); } else openAcademicSession(item, homeDateKey); },
         className: 'w-full flex items-center gap-2.5 py-[11px] text-left cursor-pointer border-b border-default last:border-b-0'
       },
@@ -29527,6 +29573,7 @@ Nënshkrimi: _____________________`;
       h('div', { className: 'flex items-center justify-between gap-3 pb-3 mb-2 border-b border-default' },
         h('h2', { className: 'text-base font-[650] tracking-tight text-primary' }, showTomorrow ? 'Nesër në fakultet' : 'Sot në fakultet'),
         h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
           type: 'button', className: 'text-[13px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer',
           onClick: () => { setScheduleWeekOffset(0); setScheduleSelectedDayKey(homeDateKey); setView('week'); }
         }, 'Orari →')),
@@ -29742,6 +29789,7 @@ Nënshkrimi: _____________________`;
             }, `${enrolledEcts || (enrolledCourses.length * 6)} ECTS`),
             /* Video Mësimore Button in Header */
             /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("videos")) ? 'true' : undefined,
               type: "button",
               onClick: () => setView('videos'),
               className: "text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-500 flex items-center gap-1 cursor-pointer transition-colors"
@@ -29751,6 +29799,7 @@ Nënshkrimi: _____________________`;
             ),
             /* All Courses Button */
             /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("courses")) ? 'true' : undefined,
               type: "button",
               onClick: () => {
                 setCoursesSemesterId(null);
@@ -29775,6 +29824,7 @@ Nënshkrimi: _____________________`;
             const pPct = chCount > 0 ? Math.round((rCount / chCount) * 100) : 0;
 
             return /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
               key: c.id,
               type: "button",
               onClick: () => openCourse(c, true),
@@ -29808,6 +29858,7 @@ Nënshkrimi: _____________________`;
 
           /* 2. Video Mësimore · Psikologji Button */
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("videos")) ? 'true' : undefined,
             type: "button",
             onClick: () => setView('videos'),
             "aria-label": "Video mësimore · Psikologji",
@@ -29865,6 +29916,7 @@ Nënshkrimi: _____________________`;
           ),
           /* Video Pill */
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("videos")) ? 'true' : undefined,
             type: "button",
             onClick: () => setView('videos'),
             className: "text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-500 flex items-center gap-1 cursor-pointer transition-colors"
@@ -29874,6 +29926,7 @@ Nënshkrimi: _____________________`;
         /*#__PURE__*/React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5" },
           /* Enrol courses button */
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("courses")) ? 'true' : undefined,
             type: "button",
             onClick: () => { setCoursesSemesterId(null); setView('courses'); openEnrollmentEditor(); },
             className: "w-full p-2.5 sm:p-3 rounded-xl input-bg hover:border-brand-300 dark:hover:border-brand-700 border border-default transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 group text-left shadow-2xs"
@@ -29889,6 +29942,7 @@ Nënshkrimi: _____________________`;
           ),
           /* Video Mësimore Button */
           /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("videos")) ? 'true' : undefined,
             type: "button",
             onClick: () => setView('videos'),
             className: "w-full p-2.5 sm:p-3 rounded-xl input-bg hover:border-brand-300 dark:hover:border-brand-700 border border-default transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 group text-left shadow-2xs"
@@ -29930,6 +29984,7 @@ Nënshkrimi: _____________________`;
       }, `${housingListings.filter(item => item.gender === profileServiceGender).length} shpallje aktive`)), /*#__PURE__*/React.createElement("p", {
         className: "text-[11px] text-secondary mt-0.5"
       }, "Gjej cimerin ideal, liro nj\u00EB dhom\u00EB ose reklamo banes\u00EB me qira af\u00EBr Fakultetit."))), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("housing")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('housing'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -29961,6 +30016,7 @@ Nënshkrimi: _____________________`;
       }, "Dhuro falas, k\u00EBmbe ose gjej skripta me teste nga student\u00EBt e UP-s\u00EB."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("books")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsBookModalOpen(true);
@@ -29968,6 +30024,7 @@ Nënshkrimi: _____________________`;
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
       }, "+ Dhuro / Shit"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("books")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('books'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -29997,6 +30054,7 @@ Nënshkrimi: _____________________`;
       }, "Pragu UP: 9.00")), /*#__PURE__*/React.createElement("p", {
         className: "text-[11px] text-secondary mt-0.5"
       }, "Llogarit mesataren e ponderuar ECTS dhe simulo notat e provimeve p\u00EBr burs\u00EB."))), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("scholarship")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('scholarship'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30028,6 +30086,7 @@ Nënshkrimi: _____________________`;
       }, "M\u00EBsoni n\u00EB grup te Biblioteka Komb\u00EBtare ose online me student\u00EBt e vitit."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studygroups")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsCreateGroupModalOpen(true);
@@ -30035,6 +30094,7 @@ Nënshkrimi: _____________________`;
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-brand-400 text-xs font-bold text-primary transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
       }, "+ Krijo Grup"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studygroups")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('studygroups'),
         className: "px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30066,6 +30126,7 @@ Nënshkrimi: _____________________`;
       }, "Pyetje reale nga afatet e kaluara Janar, Qershor & Shtator me zgjidhje."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("pastexams")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsAddQuestionModalOpen(true);
@@ -30073,6 +30134,7 @@ Nënshkrimi: _____________________`;
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-amber-400 text-xs font-bold text-primary transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
       }, "+ Shto Pyetje"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("pastexams")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('pastexams'),
         className: "px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30104,6 +30166,7 @@ Nënshkrimi: _____________________`;
       }, "Sallat e leximit, Mensa, fotokopjet dhe pikat kryesore af\u00EBr fakultetit."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("campusguide")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsAddSpotModalOpen(true);
@@ -30111,6 +30174,7 @@ Nënshkrimi: _____________________`;
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-teal-400 text-xs font-bold text-primary transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
       }, "+ Sugjero Vend"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("campusguide")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('campusguide'),
         className: "px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30142,6 +30206,7 @@ Nënshkrimi: _____________________`;
       }, "Verifiko n\u00EBse ke data apo orare t\u00EB p\u00EBrplasura dhe planifiko afatin."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("examclash")) ? 'true' : undefined,
         type: "button",
         onClick: () => {
           setIsAddClashExamModalOpen(true);
@@ -30149,6 +30214,7 @@ Nënshkrimi: _____________________`;
         },
         className: "px-3 py-2 rounded-xl input-bg border border-default hover:border-rose-400 text-xs font-bold text-primary transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
       }, "+ Shto Provim"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("examclash")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('examclash'),
         className: "px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30180,6 +30246,7 @@ Nënshkrimi: _____________________`;
       }, "Linjat 4, 3, 1 p\u00EBr te fakultetet dhe udh\u00EBzuesi i abonimit studentor."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("urbantraffic")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('urbantraffic'),
         className: "px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30211,6 +30278,7 @@ Nënshkrimi: _____________________`;
       }, "Kurse para me indeks n\u00EB kinema, libra, kafene dhe palest\u00EBr."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentperks")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('studentperks'),
         className: "px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30242,6 +30310,7 @@ Nënshkrimi: _____________________`;
       }, "Sekretet e provimeve dhe p\u00EBrvoja nga student\u00EBt q\u00EB i kan\u00EB kaluar k\u00EBto l\u00EBnd\u00EB."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("seniortips")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('seniortips'),
         className: "px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -30273,6 +30342,7 @@ Nënshkrimi: _____________________`;
       }, "Zbuloni notat minimale q\u00EB ju duhen n\u00EB provimet e mbetura p\u00EBr t\u00EB fituar burs\u00EBn."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2 shrink-0"
       }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("scholarshiptarget")) ? 'true' : undefined,
         type: "button",
         onClick: () => setView('scholarshiptarget'),
         className: "px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
@@ -32315,7 +32385,8 @@ Nënshkrimi: _____________________`;
     sections.set('progress', homeCard('progress', appearanceText('Progresi', 'Progress'),
       chapterKeys.length ? appearanceText(`${readCount} nga ${chapterKeys.length} kapituj të lexuar.`, `${readCount} of ${chapterKeys.length} chapters read.`) : appearanceText('Progresi shfaqet kur lëndët kanë kapituj mësimorë.', 'Progress appears once your courses have learning chapters.'),
       appearanceText('Shiko lëndët', 'View courses'), () => setView('courses')));
-    const visibleSections = orderHomeSections(homePreferences.filter(item => item.visible && sections.has(item.id)));
+    const accessSection = { videos:'articles', schedule:'schedule', resources:'articles', 'student-services':'services', learning:'courses', exams:'exams', arena:'exams', progress:'courses' };
+    const visibleSections = orderHomeSections(homePreferences.filter(item => item.visible && sections.has(item.id) && (!window.FakultetiApprovals || (item.id === 'student-services' ? window.FakultetiApprovals.can('services') || window.FakultetiApprovals.can('rooms') : window.FakultetiApprovals.can(accessSection[item.id] || 'home')))));
         return h('div', { className: 'home-dashboard p-4 sm:p-6 lg:p-8 w-full max-w-6xl mx-auto anim-fade-up space-y-4 pb-24 lg:pb-8' },
       renderCleanVideoModal(),
       h(UnitInstallButton, { variant: 'banner', uiLanguage }),
@@ -32796,7 +32867,8 @@ Nënshkrimi: _____________________`;
             androidNativeReady && ce('div', { className: 'notification-demo-actions' },
               ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
               window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
-            ce('button', { type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4')))));
+            ce('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined, type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4')))));
     }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
@@ -32812,7 +32884,8 @@ Nënshkrimi: _____________________`;
         ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
           ce('div', { className: 'notification-list' }, group.items.map(row)))) : empty(notificationTab === 'unread')),
-        ce('footer', { className: 'notification-footer' }, ce('button', { type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
+        ce('footer', { className: 'notification-footer' }, ce('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined, type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
   };
 
   /* ── 12 · KARTELA DIGJITALE ── */
@@ -32973,7 +33046,8 @@ Nënshkrimi: _____________________`;
             ce("span", { className: "flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-300" }, unitUiIcon(UNIT_UI_ICONS.sun, "w-3.5 h-3.5"), "Rrite ndriçimin e ekranit për skanim"))),
         ce("div", { className: "w-full flex gap-2.5" },
           ce("button", { type: "button", onClick: () => printStudentCard(data), className: "flex-1 h-12 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.download, "w-[17px] h-[17px]"), "Ruaj si PDF"),
-          ce("button", { type: "button", onClick: () => { setStudentCardOpen(false); setView('settings'); openProfileEditor(); }, className: "flex-1 h-12 rounded-xl card-surface border border-default text-primary text-[15px] font-medium flex items-center justify-center gap-2 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.camera, "w-[17px] h-[17px]"), data.photo ? "Ndrysho foton" : "Shto foton")),
+          ce("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined, type: "button", onClick: () => { setStudentCardOpen(false); setView('settings'); openProfileEditor(); }, className: "flex-1 h-12 rounded-xl card-surface border border-default text-primary text-[15px] font-medium flex items-center justify-center gap-2 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.camera, "w-[17px] h-[17px]"), data.photo ? "Ndrysho foton" : "Shto foton")),
         ce("p", { className: "text-xs text-tertiary text-center leading-relaxed" }, `Vlen deri më ${data.validUntil} · Nuk zëvendëson kartelën zyrtare të universitetit.`)));
   };
   /* ══ LËNDËT · lista e re e lëndëve të semestrit ══ */
@@ -33037,6 +33111,7 @@ Nënshkrimi: _____________________`;
       const examText = exam ? `${exam.type === 'exam' ? 'Provimi' : (exam.title || 'Afati')} ${left === 0 ? 'sot' : left === 1 ? 'nesër' : `pas ${left} ditësh`}` : '';
       const pillCls = left !== null && left <= 7 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300';
       return ce("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
         key: item.id,
         type: "button",
         onClick: () => openCourse(item),
@@ -33218,6 +33293,7 @@ Nënshkrimi: _____________________`;
           ce("span", null, weekdayOf(exam.date)),
           ce("span", null, d === 0 ? ce("b", { className: "font-[650] text-primary" }, "Sot") : d === 1 ? ce("b", { className: "font-[650] text-primary" }, "Nesër") : [ce("b", { key: 'n', className: "font-[650] text-primary" }, `${d} ditë`), " mbeten"])),
         ce("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
           type: "button",
           disabled: !item,
           onClick: () => { if (item) openCourse(item); },
@@ -33985,14 +34061,15 @@ Nënshkrimi: _____________________`;
       { id:'scholarship', title:appearanceText('Simulatori i Bursës','Scholarship Calculator'), detail:appearanceText('Llogarit mundësitë për bursë','Explore scholarship eligibility'), icon:'M2 8l10-5 10 5-10 5-10-5zM6 10v7c4 3 8 3 12 0v-7M22 8v8' },
       { id:'studygroups', title:appearanceText('Grupet e Studimit','Study Groups'), detail:appearanceText('Mësoni bashkë, online ose në kampus','Study together, online or on campus'), icon:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0' },
       { id:'urbantraffic', title:appearanceText('Trafiku Urban','Urban Transit'), detail:appearanceText('Linjat, stacionet dhe oraret','Routes, stops and timetables'), icon:'M5 4h14v14H5zM5 10h14M9 4v6M15 4v6M7 18v3M17 18v3M8 14h.01M16 14h.01' }
-    ].filter(service => service.id !== 'freerooms' || facultyContext.hasFreeRooms);
+    ].filter(service => (service.id !== 'freerooms' || facultyContext.hasFreeRooms) && (!window.FakultetiApprovals || window.FakultetiApprovals.canView(service.id)));
     return h('section', { 'data-home-section':'student-services', className:'home-services-reference' },
       h('div', { className:'home-reference-heading' },
         h('div', { className:'home-services-heading-main' },
           h('span', { className:'home-services-heading-icon', 'aria-hidden':true }, unitUiIcon('M3 9l9-6 9 6H3zM5 11v7M10 11v7M14 11v7M19 11v7M3 21h18M3 18h18','w-6 h-6')),
           h('div', { className:'home-services-heading-copy' },
             h('h2', null, appearanceText('Shërbimet Studentore','Student Services')))),
-        h('button', { type:'button', onClick:()=>setView('studentservices'), className:'home-services-all' }, appearanceText('Të gjitha','View all'), h('span', { 'aria-hidden':true }, '→'))),
+        h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentservices")) ? 'true' : undefined, type:'button', onClick:()=>setView('studentservices'), className:'home-services-all' }, appearanceText('Të gjitha','View all'), h('span', { 'aria-hidden':true }, '→'))),
       h('div', { className:'home-services-grid-reference' }, services.map(service=>h('button', {
         key:service.id, type:'button', onClick:()=>setView(service.id), className:'home-service-reference',
         style:{ '--service-bg':'rgba(var(--brand-rgb), .1)', '--service-ink':'rgb(var(--brand-rgb))' }
@@ -34146,7 +34223,8 @@ Nënshkrimi: _____________________`;
           circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
       ce('div', { className: 'flex items-center justify-between gap-3 mt-2' },
         ce('span', { className: 'text-[11px] text-secondary truncate' }, facultyContext.faculty?.label || ''),
-        facultyContext.hasFreeRooms && ce('button', { type: 'button', onClick: () => setView('freerooms'), className: 'min-h-8 text-xs font-semibold text-brand-700 dark:text-brand-300 shrink-0' }, 'Sallat e lira →')),
+        facultyContext.hasFreeRooms && ce('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("freerooms")) ? 'true' : undefined, type: 'button', onClick: () => setView('freerooms'), className: 'min-h-8 text-xs font-semibold text-brand-700 dark:text-brand-300 shrink-0' }, 'Sallat e lira →')),
       ce('label', { className: 'block mt-1.5' },
         ce('span', { className: 'sr-only' }, 'Shfaq orarin'),
         ce('select', {
@@ -34490,7 +34568,8 @@ Nënshkrimi: _____________________`;
           selected.summary && h('p', { className: 'editorial-article-summary text-secondary mt-4 pb-5 border-b border-default' }, selected.summary),
           h('div', { className: 'editorial-article-copy mt-6 text-primary' }, selected.body.map((paragraph, index) => h('p', { key: index }, paragraph)))))
       : publishedArticles.length ? h('div', { className: 'space-y-4' }, publishedArticles.map(item => h('article', { key: item.id, className: 'card-surface rounded-2xl border border-default overflow-hidden' },
-        item.image && h('button', { type: 'button', className: 'block w-full', onClick: () => openCourseVideoFeed(courseVideoFeed.findIndex(story => story.articleId === item.id)), 'aria-label': `Shiko fotografinë: ${item.title}` }, h('img', { src: item.image, alt: item.title, loading: 'lazy', className: 'w-full max-h-64 object-cover' })),
+        item.image && h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("articles")) ? 'true' : undefined, type: 'button', className: 'block w-full', onClick: () => openCourseVideoFeed(courseVideoFeed.findIndex(story => story.articleId === item.id)), 'aria-label': `Shiko fotografinë: ${item.title}` }, h('img', { src: item.image, alt: item.title, loading: 'lazy', className: 'w-full max-h-64 object-cover' })),
         h('div', { className: 'p-5' }, h('p', { className: 'text-xs text-secondary mb-2' }, metadata(item)), h('h2', { className: 'editorial-article-list-title text-primary' }, item.title), item.summary && h('p', { className: 'text-sm text-secondary leading-6 mt-2' }, item.summary),
           h('button', { type: 'button', onClick: () => { setSelectedArticleId(item.id); window.scrollTo({ top: 0, behavior: 'instant' }); }, className: 'min-h-10 mt-3 text-sm font-semibold text-brand-700 dark:text-brand-300', 'aria-label': `Lexo artikullin: ${item.title}` }, 'Lexo artikullin →')))))
       : h('section', { className: 'card-surface rounded-3xl border border-default px-6 py-12 text-center' },
@@ -34685,6 +34764,7 @@ Nënshkrimi: _____________________`;
                     className: `shorts-action${isSaved ? ' is-saved' : ''}`
                   }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: isSaved ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: 'M6 3h12v18l-6-4-6 4z' }))), h('span', null, isSaved ? appearanceText('U ruajt', 'Saved') : appearanceText('Ruaj', 'Save'))),
                   video.kind === 'article' ? h('button', {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("articles")) ? 'true' : undefined,
                     type: 'button', className: 'shorts-action story-status-read', 'aria-label': appearanceText('Lexo artikullin →', 'Read article →'),
                     onClick: () => { setCourseVideoFeedOpen(false); setSelectedArticleId(video.articleId); setView('articles'); window.scrollTo({ top: 0, behavior: 'instant' }); }
                   }, h('span', { className: 'shorts-action-icon' }, h('svg', { width: 25, height: 25, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: 'M5 3h14v18H5zM8 8h8M8 12h8M8 16h5' }))), h('span', null, appearanceText('Lexo artikullin', 'Read article')))
@@ -34875,6 +34955,7 @@ Nënshkrimi: _____________________`;
             const likesCount = (video.likesBase || 95) + (isLiked ? 1 : 0);
 
             return /*#__PURE__*/React.createElement("article", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("articles")) ? 'true' : undefined,
               key: video.id || index,
               onClick: () => openCourseVideoFeed(safeFeedIndex >= 0 ? safeFeedIndex : index),
               className: "group cursor-pointer rounded-xl border border-default hover:border-brand-500/50 card-surface overflow-hidden transition-all duration-200 hover:-translate-y-0.5 shadow-2xs flex flex-col"
@@ -35233,6 +35314,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[9px] font-bold text-tertiary uppercase tracking-[0.14em] px-3 pb-1"
   }, "Navigimi"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
     onClick: () => {
       setView('home');
       setSidebarOpen(false);
@@ -35247,6 +35329,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("path", {
     d: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"
   })), "Kreu"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
     onClick: () => {
       setScheduleWeekOffset(0);
       setScheduleSelectedDayKey(null);
@@ -35271,6 +35354,7 @@ Nënshkrimi: _____________________`;
   })), "Orari", scopedSchedule.length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "ml-auto text-[9px] text-tertiary"
   }, scopedSchedule.length)), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("courses")) ? 'true' : undefined,
     onClick: () => {
       setCoursesSemesterId(`${yearId}:${activeSemesterId}`);
       setView('courses');
@@ -35288,6 +35372,7 @@ Nënshkrimi: _____________________`;
   })), "Lëndët", enrolledCourses.length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "ml-auto text-[9px] text-tertiary"
   }, enrolledCourses.length)), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
     onClick: () => {
       setStudentTab('exams');
       setView('student');
@@ -35311,6 +35396,7 @@ Nënshkrimi: _____________________`;
   })), "Provimet", reminderDeadlines.length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "ml-auto min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center"
   }, reminderDeadlines.length)),   /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("housing")) ? 'true' : undefined,
     onClick: () => {
       setView('housing');
       setSidebarOpen(false);
@@ -35329,6 +35415,7 @@ Nënshkrimi: _____________________`;
    }, housingListings.filter(item => item.gender === profileServiceGender).length)),
 
   /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("career")) ? 'true' : undefined,
     onClick: () => {
       setView('career');
       setSidebarOpen(false);
@@ -35354,6 +35441,7 @@ Nënshkrimi: _____________________`;
   }, "Reale")),
 
   /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentrights")) ? 'true' : undefined,
     onClick: () => {
       setView('studentrights');
       setSidebarOpen(false);
@@ -35372,6 +35460,7 @@ Nënshkrimi: _____________________`;
   }, "Ligjore")),
 
   /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("invisiblecurriculum")) ? 'true' : undefined,
     onClick: () => {
       setView('invisiblecurriculum');
       setSidebarOpen(false);
@@ -35390,6 +35479,7 @@ Nënshkrimi: _____________________`;
   }, "Jeta Reale")),
 
   role === 'instructor' && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("instructor")) ? 'true' : undefined,
     onClick: () => {
       setView('instructor');
       setSidebarOpen(false);
@@ -35408,6 +35498,7 @@ Nënshkrimi: _____________________`;
   }), /*#__PURE__*/React.createElement("polyline", {
     points: "2 17 12 22 22 17"
   })), "Kurrikula"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
     onClick: () => {
       setView('settings');
       setSidebarOpen(false);
@@ -35434,6 +35525,7 @@ Nënshkrimi: _____________________`;
   }, "Qasje e kufizuar"), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] text-secondary mt-1 leading-relaxed"
   }, "Si profesor, ke qasje vetëm në lëndën që ligjëron.")), instructorCourse && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("instructor")) ? 'true' : undefined,
     onClick: () => {
       setView('instructor');
       setSidebarOpen(false);
@@ -35531,6 +35623,7 @@ Nënshkrimi: _____________________`;
   }, "K\xEBrko l\xEBnd\xEB, kapitull ose koncept..."), /*#__PURE__*/React.createElement("kbd", {
     className: "text-[9px] px-1.5 py-0.5 rounded bg-white dark:bg-white/5 text-tertiary font-mono border border-default"
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     ref: notificationBellRef,
     onClick: () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
@@ -35552,6 +35645,7 @@ Nënshkrimi: _____________________`;
   })), notificationUnreadCount > 0 && /*#__PURE__*/React.createElement("span", {
     className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
   }, notificationUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     type: "button",
     onClick: () => { setNotificationPreviewOpen(false); setGroupMessagesOpen(true); },
     "aria-label": groupMessageUnreadCount === 1 ? "Mesazhet, 1 shkrim i palexuar" : groupMessageUnreadCount > 1 ? `Mesazhet, ${groupMessageUnreadCount} shkrime të palexuara` : "Mesazhet",
@@ -35587,6 +35681,7 @@ Nënshkrimi: _____________________`;
     title: isDark ? 'Aktivizo pamjen e çelët' : 'Aktivizo pamjen e errët',
     className: "app-theme-toggle flex p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors text-sm items-center justify-center"
   }, isDark ? '☀️' : '🌙'), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
     onClick: () => setView('settings'),
     title: "Cil\xEBsimet dhe Profili",
     "aria-label": "Hap profilin dhe cil\xEBsimet",
@@ -36102,6 +36197,7 @@ Nënshkrimi: _____________________`;
   }, "Nuk ka mungesa në këtë kategori."))))) ) : renderScheduleMinDay()))) : view === 'session' ? selectedScheduleItem && selectedSessionCourse ? /*#__PURE__*/React.createElement("div", {
     className: "p-4 sm:p-6 lg:p-8 w-full max-w-6xl mx-auto space-y-5 anim-zoom-in pb-24 lg:pb-12"
   }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
     onClick: () => goBackOr(() => openCourse(selectedSessionCourse, true)),
     className: "text-xs font-semibold text-secondary hover:text-brand-600 transition-colors"
   }, "\u2190 Kthehu"), /*#__PURE__*/React.createElement("section", {
@@ -36123,6 +36219,7 @@ Nënshkrimi: _____________________`;
   }, selectedSessionCourse.title), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-secondary mt-1"
   }, selectedScheduleItem.start, "\u2013", selectedScheduleItem.end, " \xB7 ", selectedScheduleItem.room, " \xB7 ", selectedScheduleItem.staffName)), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
     onClick: () => {
       editScheduleItem(selectedScheduleItem);
       setView('week');
@@ -36380,6 +36477,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold text-primary"
   }, "Sesioni nuk u gjet."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
     onClick: () => openCourse(course || nextCourse),
     className: "mt-3 text-xs text-brand-600 font-semibold"
   }, "Kthehu te Lëndët")) : (view === 'tutoring' || view === 'support-tutoring') ? renderTutoringView() : view.startsWith('support-') ? nativeCreateElement(window.UnitStudentSupport.SupportPage, {
@@ -36682,6 +36780,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-secondary"
     }, "Tema nuk u gjet."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
       onClick: () => setView('home'),
       className: "mt-3 text-xs font-bold text-brand-600"
     }, "Kthehu n\xEB kryefaqe"));
@@ -36847,6 +36946,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] text-secondary"
     }, "Videoja luhet dhe përkthehet në kohë reale (EN → SQ) brenda aplikacionit."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("articles")) ? 'true' : undefined,
       type: "button",
       onClick: () => {
         const feedIdx = courseVideoFeed.findIndex(v => v.id === selectedVideo.id || v.url === selectedVideo.url);
@@ -36939,6 +37039,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-secondary"
     }, "Ky provim nuk \xEBsht\xEB m\xEB n\xEB list\xEBn e afateve."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
       onClick: () => {
         setStudentTab('exams');
         setView('student');
@@ -36951,6 +37052,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col sm:flex-row sm:items-end justify-between gap-3"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
       onClick: () => goBackOr(() => {
         setStudentTab('exams');
         setView('student');
@@ -37078,6 +37180,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-secondary"
     }, "Nuk ka ende rezultate p\xEBr analiz\xEB."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
       onClick: () => {
         setStudentTab('exams');
         setView('student');
@@ -37089,6 +37192,7 @@ Nënshkrimi: _____________________`;
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col sm:flex-row sm:items-end justify-between gap-3"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
       onClick: () => goBackOr(() => {
         setStudentTab('exams');
         setView('student');
@@ -37425,6 +37529,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-secondary"
   }, "Testi nuk u gjet."), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
     onClick: () => setView('student'),
     className: "mt-3 text-xs font-bold text-brand-600"
   }, "Kthehu te provimet")) : view === 'exam' ? /*#__PURE__*/React.createElement("div", {
@@ -37470,6 +37575,7 @@ Nënshkrimi: _____________________`;
   }, examScore >= 60 ? yearId < finalProgramYearId ? `Ke zhbllokuar ${branchYears.find(y => y.id === yearId + 1)?.label || 'nivelin tjetër'}. Do të ridrejtohesh automatikisht...` : 'Urime! Ke diplomuar! Po gjenerojmë certifikatën...' : 'Duhet të arrish së paku 60% për të kaluar. Studio edhe pak dhe provo përsëri.'), examScore < 60 && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-3 justify-center pt-2"
   }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
     onClick: () => setView('home'),
     className: "px-5 py-2.5 rounded-xl input-bg text-sm font-semibold text-secondary hover:text-primary transition-all hover-surface"
   }, "Kthehu te l\xEBnd\xEBt"), /*#__PURE__*/React.createElement("button", {
@@ -37516,6 +37622,7 @@ Nënshkrimi: _____________________`;
     }, getCourseSyllabus(c).topics.length, " tema \xB7 ", sessionMaterials.filter(item => item.courseId === c.id).length, " materiale javore \xB7 ", c.chapters?.length || 0, " kapituj")), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2 shrink-0 self-start sm:self-auto"
   }, /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("courses")) ? 'true' : undefined,
     onClick: () => openCourse(c),
     className: "px-3 py-1.5 rounded-lg input-bg border border-default text-primary text-xs font-semibold hover:border-brand-500/40 transition-colors"
   }, "Hap lëndën"), /*#__PURE__*/React.createElement("button", {
@@ -37626,6 +37733,7 @@ Nënshkrimi: _____________________`;
   })(), /*#__PURE__*/React.createElement("div", {
     className: "text-center text-xs text-tertiary mt-4 max-w-md mx-auto"
   }, "")) : view === 'certificate' ? renderCertificateView() : view === 'studentservices' ? renderSettingsView(true) : view === 'academic-progress' ? renderAcademicProgress() : view === 'settings' ? renderSettingsView() : null), !isInstructorAccount && view === 'home' && /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     type: "button",
     className: `home-messages-floating ${isMobileNavHidden ? 'is-hidden' : ''}`,
     "aria-label": "Mesazhet",
@@ -37654,10 +37762,13 @@ Nënshkrimi: _____________________`;
     onClick: () => setPomoOpen(true)
   }, /*#__PURE__*/React.createElement("span", { className: "pomo-dot", "aria-hidden": "true" }), /*#__PURE__*/React.createElement("span", null, pomoFmt(pomoLeftSecs()))), pomoOpen && renderPomodoroSheet(), !isInstructorAccount && view !== 'course' && /*#__PURE__*/React.createElement("nav", {
     "aria-label": "Navigimi kryesor",
+    "data-access-nav": window.FakultetiApprovals ? 'true' : undefined,
+    style: window.FakultetiApprovals ? { '--access-nav-count': ['home','week','courses','student','settings'].filter(window.FakultetiApprovals.canView).length } : undefined,
     "aria-hidden": isMobileNavHidden ? true : undefined,
     inert: isMobileNavHidden ? "" : undefined,
     className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${isMobileNavHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
   }, /*#__PURE__*/React.createElement("span", { className: "mobile-nav-active active-surface", "aria-hidden": true }), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
     onClick: () => setView('home'),
     "aria-current": view === 'home' ? 'page' : undefined,
     className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'home' ? 'text-brand-600' : 'text-secondary'}`
@@ -37670,6 +37781,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("path", {
     d: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"
   })), "Kreu"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined,
     onClick: () => {
       setScheduleWeekOffset(0);
       setScheduleSelectedDayKey(null);
@@ -37692,6 +37804,7 @@ Nënshkrimi: _____________________`;
   }), /*#__PURE__*/React.createElement("path", {
     d: "M16 3v4M8 3v4M3 10h18M8 14h3M13 14h3"
   })), "Orari"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("courses")) ? 'true' : undefined,
     onClick: () => {
       setCoursesSemesterId(`${yearId}:${activeSemesterId}`);
       setView('courses');
@@ -37707,6 +37820,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("path", {
     d: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
   })), "L\xEBnd\xEBt"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("student")) ? 'true' : undefined,
     onClick: () => {
       setStudentTab('exams');
       setView('student');
@@ -37722,6 +37836,7 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("path", {
     d: "M8 3h8l1 3h3v15H4V6h3l1-3zM8 11h8M8 15h6"
   })), "Provimet"), /*#__PURE__*/React.createElement("button", {
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
     onClick: () => setView('settings'),
     "aria-label": "Profili dhe cilësimet",
     "aria-current": (['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-')) ? 'page' : undefined,
@@ -38195,12 +38310,14 @@ function App() {
     const s = unitStorage.getItem('u_semester');
     return s ? Number(s) : null;
   });
-  const [actualRole, setActualRole] = useState(() => unitStorage.getItem('u_role') || 'student');
+  const [actualRole, setActualRole] = useState(() => window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
   const [roomsAppExpanded, setRoomsAppExpanded] = useState(false);
   const [choosingAcademics, setChoosingAcademics] = useState(false);
   const selectedFacultyContext = getStudentFacultyContext(selectedBranch, unitStorage.getItem('u_faculty'));
   useEffect(() => { if (selectedFacultyContext.faculty) unitStorage.setItem('u_faculty', selectedFacultyContext.faculty.id); }, [selectedBranch]);
-  const roomsHomeAccount = prefersFreeRoomsHome(studentFullName || studentName) && selectedFacultyContext.hasFreeRooms;
+  const approvalPolicy = window.FakultetiApprovals?.policy;
+  const roomsOnlyAccess = approvalPolicy?.status === 'approved' && approvalPolicy.permissions.length === 1 && approvalPolicy.permissions[0] === 'rooms';
+  const roomsHomeAccount = (prefersFreeRoomsHome(studentFullName || studentName) || roomsOnlyAccess || approvalPolicy?.landing === 'freerooms') && selectedFacultyContext.hasFreeRooms && (!approvalPolicy || (window.FakultetiApprovals.can('rooms') && ['auto','freerooms'].includes(approvalPolicy.landing)));
   useEffect(() => {
     if (!roomsHomeAccount) return;
     const resume = () => { if (!document.hidden && (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)) setRoomsAppExpanded(false); };
@@ -38217,6 +38334,7 @@ function App() {
     setUiLanguage(safeLanguage);
   };
   const handleSelect = async (n, bId, yId, r, taughtArr, semId, gender, identity, facultyId) => {
+    if (window.FakultetiApprovals?.policy) r = window.FakultetiApprovals.policy.role;
     const selectedContext = getStudentFacultyContext(bId, facultyId);
     if (!facultyId || selectedContext.faculty?.id !== facultyId || !selectedContext.branch?.years.some(year => String(year.id) === String(yId))) return 'Zgjidh fakultetin, drejtimin dhe vitin përkatës.';
     const lookup = await validateAskStudentIdentity(identity?.firstName, identity?.lastName);
@@ -38287,7 +38405,7 @@ function App() {
     studentName, uiLanguage, onOpenApp: () => setRoomsAppExpanded(true)
   });
   return /*#__PURE__*/React.createElement(AcademyApp, {
-    initialView: roomsHomeAccount && roomsAppExpanded ? (actualRole === 'instructor' ? 'instructor' : 'home') : null,
+    initialView: window.FakultetiApprovals ? (roomsHomeAccount && roomsAppExpanded ? window.FakultetiApprovals.fallback(roomsOnlyAccess ? 'settings' : actualRole === 'instructor' ? 'instructor' : 'home') : window.FakultetiApprovals.landing(getInitialAcademyView(actualRole, studentFullName || studentName, selectedBranch))) : roomsHomeAccount && roomsAppExpanded ? (actualRole === 'instructor' ? 'instructor' : 'home') : null,
     onRoomsHome: roomsHomeAccount ? () => setRoomsAppExpanded(false) : undefined,
     studentName: studentName,
     studentFullName: studentFullName,
@@ -38301,7 +38419,7 @@ function App() {
     onLanguageChange: handleLanguageChange
   });
 }
-ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/React.createElement(window.FakultetiLocalAccounts.current() ? App : window.FakultetiLocalAuthView, null)));
+ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/(window.FakultetiLocalAccounts.current() ? React.createElement(window.FakultetiApprovalGate, null, React.createElement(App)) : React.createElement(window.FakultetiLocalAuthView))));
   
 
   </script>
