@@ -9567,6 +9567,46 @@ function bindVideoStoryChrome(root) {
   window.addEventListener('orientationchange', rotate);
   return () => { clear(); root.removeEventListener('click', click); root.removeEventListener('focusin', focus); window.removeEventListener('orientationchange', rotate); };
 }
+// Shorter travel on tall phones, while respecting a last-moment reversal.
+const unitStorySwipeCommit = (delta, velocity, extent) => {
+  if (Math.abs(delta) < 12 || (Math.sign(velocity) !== Math.sign(delta) && Math.abs(velocity) > .18)) return 0;
+  const distance = Math.min(120, Math.max(44, extent * .18));
+  return Math.abs(delta) >= distance || (Math.abs(delta) >= 24 && Math.abs(velocity) >= .4) ? (delta < 0 ? 1 : -1) : 0;
+};
+// Trackpad and mouse scrolling use the same finger-following pager, one post per gesture.
+function bindVideoStoryWheel(root, { enabled, start, move, end }) {
+  let session = null, totalX = 0, totalY = 0, lastAt = 0, startedAt = 0, fired = false, timer = null;
+  const clear = () => { if (timer !== null) clearTimeout(timer); timer = null; };
+  const finish = (cancelled = false, teardown = false) => {
+    clear();
+    if (!session) return;
+    const current = session; session = null; fired = true;
+    const delta = current.axis === 'vertical' ? totalY : totalX;
+    end(current, { delta, velocity: cancelled ? 0 : delta / Math.max(80, lastAt - startedAt), cancelled, teardown });
+  };
+  const wheel = event => {
+    if (event.ctrlKey || event.target?.closest?.('input,select,textarea,[contenteditable="true"],[data-swipe-ignore]')) return;
+    if (event.cancelable) event.preventDefault();
+    const now = Date.now();
+    if (now - lastAt > 180) { finish(); fired = false; totalX = totalY = 0; startedAt = now; }
+    lastAt = now;
+    if (fired || (!session && !enabled())) return;
+    const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? root.clientHeight : 1;
+    totalX -= event.deltaX * scale; totalY -= event.deltaY * scale;
+    if (!session) {
+      if (Math.max(Math.abs(totalX), Math.abs(totalY)) < 10) return;
+      session = start({ axis: Math.abs(totalY) >= Math.abs(totalX) ? 'vertical' : 'horizontal' });
+      if (!session) return;
+    }
+    move(session, { delta: session.axis === 'vertical' ? totalY : totalX });
+    clear(); timer = setTimeout(() => finish(), 110);
+  };
+  // Cancel unfinished trackpad motion before a new touch gesture takes over.
+  const interrupt = () => finish(true);
+  root.addEventListener('wheel', wheel, { capture: true, passive: false });
+  root.addEventListener('pointerdown', interrupt, true);
+  return () => { finish(true, true); clear(); root.removeEventListener('wheel', wheel, true); root.removeEventListener('pointerdown', interrupt, true); };
+}
 function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlaying = true, onPlayingChange, holdLabel = 'Në pauzë', postKey, children, ...props }) {
   const rootRef = useRef(null);
   const actionsRef = useRef(null);
@@ -9581,61 +9621,41 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
     if (!root) return;
     const removeHold = bindVideoStoryHold(root, { getPlaying: () => actionsRef.current.playing, onPlayingChange: playing => actionsRef.current.onPlayingChange?.(playing) });
     const feed = root.querySelector('#course-video-scroll-feed');
-    let wheelTotalX = 0, wheelTotalY = 0, lastWheelAt = 0, wheelFired = false, wheelLockedUntil = 0;
     let edgeAnimation = null;
-    const isControl = target => Boolean(target?.closest?.('input, select, textarea, [contenteditable="true"]'));
-    const removeSwipe = bindUnitSwipe(root, {
-      bothAxes: true,
-      enabled: () => Boolean(feed && !feed.dataset.settling),
-      onStart: ({ axis }) => {
-        edgeAnimation?.cancel();
-        const index = Number(feed.dataset.activeIndex || 0);
-        const session = { index, axis, previousSnap: feed.style.scrollSnapType, previousBehavior: feed.style.scrollBehavior };
-        feed.dataset.dragging = 'true'; feed.dataset.axis = axis;
-        feed.style.scrollSnapType = 'none'; feed.style.scrollBehavior = 'auto';
-        feed.scrollLeft = axis === 'horizontal' ? index * feed.clientWidth : 0;
-        feed.scrollTop = axis === 'vertical' ? index * feed.clientHeight : 0;
-        return session;
-      },
-      onMove: (session, { delta }) => {
-        const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
-        const count = feed.children.length;
-        session.fromIndex = Math.max(0,Math.min(count - 1, session.index - Math.max(-1,Math.min(1,delta / Math.max(1,extent)))));
-        feed.scrollLeft = session.axis === 'horizontal' ? session.fromIndex * extent : 0;
-        feed.scrollTop = session.axis === 'vertical' ? session.fromIndex * extent : 0;
-        const edge = (session.index === 0 && delta > 0) || (session.index === count - 1 && delta < 0);
-        feed.style.transform = edge ? `translate${session.axis === 'horizontal' ? 'X' : 'Y'}(${delta * .16 / (1 + Math.abs(delta) / extent)}px)` : '';
-      },
-      onEnd: (session, { delta, velocity, cancelled, teardown }) => {
-        const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
-        const transform = feed.style.transform; feed.style.transform = '';
-        if (transform && !teardown && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) edgeAnimation = feed.animate?.([{transform},{transform:'none'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
-        if (teardown) { delete feed.dataset.dragging; feed.style.scrollSnapType = session.previousSnap; feed.style.scrollBehavior = session.previousBehavior; return; }
-        const direction = cancelled ? 0 : unitSwipeCommit(delta,velocity,extent);
-        const target = Math.max(0,Math.min(feed.children.length - 1,session.index + direction));
-        const motion = { ...session, fromIndex: session.fromIndex ?? session.index, duration: Math.max(160,Math.min(340,280 - Math.abs(velocity) * 35)) };
-        (target > session.index ? actionsRef.current.next : target < session.index ? actionsRef.current.previous : actionsRef.current.settle)?.(session.axis,motion);
-      }
-    });
-    const onWheel = event => {
-      if (event.ctrlKey || isControl(event.target)) return;
-      if (event.cancelable) event.preventDefault();
-      const now = Date.now();
-      const idle = now - lastWheelAt;
-      lastWheelAt = now;
-      if (idle > 180) { wheelFired = false; wheelTotalX = 0; wheelTotalY = 0; }
-      if (wheelFired || now < wheelLockedUntil) return;
-      const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? root.clientHeight : 1;
-      wheelTotalX += event.deltaX * scale;
-      wheelTotalY += event.deltaY * scale;
-      const delta = Math.abs(wheelTotalX) > Math.abs(wheelTotalY) ? wheelTotalX : wheelTotalY;
-      if (Math.abs(delta) < 60) return;
-      wheelFired = true;
-      wheelLockedUntil = now + 450;
-      actionsRef.current[delta > 0 ? 'next' : 'previous']?.(Math.abs(wheelTotalY) >= Math.abs(wheelTotalX) ? 'vertical' : 'horizontal');
+    const enabled = () => Boolean(feed && !feed.dataset.settling && !feed.dataset.dragging);
+    const start = ({ axis }) => {
+      edgeAnimation?.cancel();
+      const index = Number(feed.dataset.activeIndex || 0);
+      const session = { index, axis, previousSnap: feed.style.scrollSnapType, previousBehavior: feed.style.scrollBehavior };
+      feed.dataset.dragging = 'true'; feed.dataset.axis = axis;
+      feed.style.scrollSnapType = 'none'; feed.style.scrollBehavior = 'auto';
+      feed.scrollLeft = axis === 'horizontal' ? index * feed.clientWidth : 0;
+      feed.scrollTop = axis === 'vertical' ? index * feed.clientHeight : 0;
+      return session;
     };
-    const active = { passive: false, capture: true };
-    root.addEventListener('wheel', onWheel, active);
+    const move = (session, { delta }) => {
+      const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
+      const count = feed.children.length;
+      session.fromIndex = Math.max(0,Math.min(count - 1, session.index - Math.max(-1,Math.min(1,delta / Math.max(1,extent)))));
+      feed.scrollLeft = session.axis === 'horizontal' ? session.fromIndex * extent : 0;
+      feed.scrollTop = session.axis === 'vertical' ? session.fromIndex * extent : 0;
+      const edge = (session.index === 0 && delta > 0) || (session.index === count - 1 && delta < 0);
+      feed.style.transform = edge ? `translate${session.axis === 'horizontal' ? 'X' : 'Y'}(${delta * .16 / (1 + Math.abs(delta) / extent)}px)` : '';
+    };
+    const end = (session, { delta, velocity, cancelled, teardown }) => {
+      const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
+      const transform = feed.style.transform; feed.style.transform = '';
+      if (transform && !teardown && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) edgeAnimation = feed.animate?.([{transform},{transform:'none'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+      if (teardown) { delete feed.dataset.dragging; feed.style.scrollSnapType = session.previousSnap; feed.style.scrollBehavior = session.previousBehavior; return; }
+      const direction = cancelled ? 0 : unitStorySwipeCommit(delta,velocity,extent);
+      const target = Math.max(0,Math.min(feed.children.length - 1,session.index + direction));
+      // Decelerate into the next post without a slow start after releasing the finger.
+      const remaining = Math.abs(target - (session.fromIndex ?? session.index)) * extent;
+      const motion = { ...session, fromIndex: session.fromIndex ?? session.index, duration: Math.max(140, Math.min(300, remaining / Math.max(1.2, Math.abs(velocity)))) };
+      (target > session.index ? actionsRef.current.next : target < session.index ? actionsRef.current.previous : actionsRef.current.settle)?.(session.axis,motion);
+    };
+    const removeWheel = bindVideoStoryWheel(root, { enabled, start, move, end });
+    const removeSwipe = bindUnitSwipe(root, { bothAxes: true, enabled, onStart: start, onMove: move, onEnd: end });
     const syncCaptionHeights = () => {
       if (feed) {
         root.style.setProperty('--story-stage-width', `${feed.clientWidth}px`);
@@ -9660,7 +9680,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
       removeSwipe();
       edgeAnimation?.cancel();
       resizeObserver?.disconnect();
-      root.removeEventListener('wheel', onWheel, true);
+      removeWheel();
     };
   }, []);
   return React.createElement('div', { ...props, ref: rootRef }, children,
@@ -19921,7 +19941,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }));
     setCourseVideoComposerOpen(true);
   };
-  const scrollToVideoFeedSlide = (targetIndex, axis = 'horizontal', motion = null) => {
+  const scrollToVideoFeedSlide = (targetIndex, axis = 'vertical', motion = null) => {
     const safeIndex = Math.max(0, Math.min(targetIndex, Math.max(0, courseVideoFeed.length - 1)));
     if ((!motion && safeIndex === courseVideoFeedIndex) || courseVideoFeedAnimationRef.current) return;
     const feed = document.getElementById('course-video-scroll-feed');
@@ -19959,8 +19979,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     let startedAt = null;
     const animate = now => {
       if (startedAt === null) startedAt = now;
-      const progress = Math.min(1, (now - startedAt) / (motion?.duration || 420));
-      const eased = progress * progress * (3 - 2 * progress);
+      const progress = Math.min(1, (now - startedAt) / (motion?.duration || 300));
+      const eased = 1 - Math.pow(1 - progress, 3);
       position(fromIndex + (safeIndex - fromIndex) * eased);
       if (progress < 1) animation.frame = requestAnimationFrame(animate);
       else { position(safeIndex); restore(); setCourseVideoFeedIndex(safeIndex); }
@@ -19975,7 +19995,11 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setCourseVideoFeedOpen(true);
     setTimeout(() => {
       const feed = document.getElementById('course-video-scroll-feed');
-      if (feed) feed.scrollLeft = safeIndex * (feed.clientWidth || 1);
+      if (feed && Number(feed.dataset.activeIndex) === safeIndex && !feed.dataset.dragging && !feed.dataset.settling) {
+        feed.dataset.axis = 'vertical';
+        feed.scrollLeft = 0;
+        feed.scrollTop = safeIndex * (feed.clientHeight || 1);
+      }
     }, 40);
   };
   const addCourseVideo = e => {
@@ -34667,7 +34691,7 @@ Nënshkrimi: _____________________`;
               }
             },
             onScroll: e => {
-              if (Date.now() < courseVideoFeedScrollLockRef.current || e.currentTarget.dataset.dragging === 'true') return;
+              if (Date.now() < courseVideoFeedScrollLockRef.current || e.currentTarget.dataset.dragging === 'true' || e.currentTarget.dataset.settling === 'true') return;
               const el = e.currentTarget;
               const idx = el.dataset.axis === 'vertical'
                 ? Math.round(el.scrollTop / (el.clientHeight || 1))
@@ -34703,7 +34727,7 @@ Nënshkrimi: _____________________`;
                     !video.fullBleedPortrait && video.portraitThumbnail && h('source', { media: '(max-aspect-ratio: 3/4)', srcSet: video.portraitThumbnail }),
                     h('img', {
                       src: video.fullBleedPortrait ? video.portraitThumbnail : video.thumbnail, alt: video.title,
-                      className: 'w-full h-full object-contain', draggable: false, loading: isActive ? 'eager' : 'lazy'
+                      className: 'w-full h-full object-contain', draggable: false, loading: Math.abs(idx - courseVideoFeedIndex) <= 1 ? 'eager' : 'lazy', decoding: 'async'
                     })),
                   h('button', { type: 'button', className: 'story-photo-surface absolute inset-0 w-full h-full bg-transparent', 'aria-label': appearanceText('Shfaq ose fsheh detajet e fotografisë', 'Show or hide photo details'), tabIndex: isActive ? 0 : -1 }))
                 : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
@@ -34736,7 +34760,7 @@ Nënshkrimi: _____________________`;
                         className: "w-full h-full flex items-center justify-center cursor-pointer",
                         "aria-label": video.title || 'Video'
                       },
-                        src?.thumbnail ? h('img', { src: src.thumbnail, alt: "", loading: "lazy", onError: e => { e.currentTarget.style.display = 'none'; }, className: "absolute inset-0 w-full h-full object-cover opacity-80" }) : null,
+                        (video.thumbnail || src?.thumbnail) ? h('img', { src: video.thumbnail || src.thumbnail, alt: "", loading: Math.abs(idx - courseVideoFeedIndex) <= 1 ? 'eager' : 'lazy', decoding: 'async', onError: e => { e.currentTarget.style.display = 'none'; }, className: "absolute inset-0 w-full h-full object-contain" }) : null,
                         h('span', { className: "relative w-[60px] h-[60px] rounded-full bg-white/20 flex items-center justify-center" },
                           h('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": true }, h('path', { d: "M8 5v14l11-7z" })))),
                   // Embedded players receive gestures on the picture; their bottom controls stay accessible.
