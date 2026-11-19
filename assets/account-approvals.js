@@ -49,7 +49,7 @@
     if (saved?.email === account?.email) return saved;
     const name = storage.getItem('u_real_name') || storage.getItem('u_name') || '';
     const result = { email:account?.email || '', name:name.trim().replace(/\s+/g,' '), role:storage.getItem('u_role') === 'instructor' ? 'instructor' : 'student' };
-    if (!result.name || !result.email) throw Error('PROFILE_REQUIRED');
+    if (result.name.split(/\s+/).length < 2 || !result.email) throw Error('PROFILE_REQUIRED');
     storage.setItem(KEYS.profile, JSON.stringify(result));
     return result;
   }
@@ -97,11 +97,12 @@
   const errorText = error => ({ ADMIN_ALREADY_LINKED:'Administrimi është lidhur në një pajisje tjetër.', POLICY_CHANGED:'Kërkesa ndryshoi. Rifresko listën dhe provo përsëri.', PROFILE_REQUIRED:'Plotëso emrin dhe mbiemrin për ta dërguar kërkesën.', RATE_LIMITED:'Ka shumë kërkesa. Provo përsëri pas pak.', ADMIN_REQUIRED:'Vetëm administratori i lidhur mund ta kryejë këtë veprim.', SIGNATURE_INVALID:'Kontrollo datën dhe orën e pajisjes dhe provo përsëri.' }[error?.message] || 'Lidhja me aprovimet nuk u krye. Provo përsëri me internet.');
   root.FakultetiApprovalGate = function ApprovalGate({children}) {
     const [policy,setPolicy] = useState(null), [error,setError] = useState(''), [busy,setBusy] = useState(true), [link,setLink] = useState(''), [managerOpen,setManagerOpen] = useState(false);
+    const [needsProfile,setNeedsProfile]=useState(false),[firstName,setFirstName]=useState(storage.getItem('u_real_first_name')||''),[lastName,setLastName]=useState(storage.getItem('u_real_last_name')||'');
     const alive = useRef(true);
     const refresh = async () => {
       setBusy(true); setError('');
       try { const result = await check(); if(alive.current) setPolicy(result); }
-      catch(error) { const local=cached(); if(alive.current) { if(local) setPolicy(changed(local)); else setError(errorText(error)); } }
+      catch(error) { const local=cached(); if(alive.current) { if(local) setPolicy(changed(local)); else {setNeedsProfile(error.message==='PROFILE_REQUIRED');setError(errorText(error));} } }
       finally { if(alive.current) setBusy(false); }
     };
     useEffect(() => {
@@ -115,14 +116,18 @@
     useEffect(()=>{if(policy&&policy.status!=='approved'){root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('focus-unlock');}},[policy?.status]);
     if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:policy.id+':'+policy.version}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
     const status=policy?.status || 'loading';
-    const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:busy?'Po kontrollohet qasja':'Kërkesa për aprovim'};
+    const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:needsProfile?'Plotëso profilin':busy?'Po kontrollohet qasja':'Kërkesa për aprovim'};
     return h('main',{className:'approval-wait-page'},h('section',{className:'approval-wait-card card-surface border border-default'},brand(),
       h('div',{className:'approval-status-icon'},icon(status==='pending'?'M12 8v4l3 2M22 12a10 10 0 11-20 0 10 10 0 0120 0':'M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM12 8v5M12 16h.01')),
-      h('h1',null,titles[status]),h('p',null,status==='pending'?'Kërkesa jote i është dërguar Grent Hoxhës. Mund ta përdorësh app-in pasi të aprovohet.':status==='rejected'?'Grent Hoxha nuk e ka aprovuar kërkesën tënde.':status==='suspended'?'Grent Hoxha e ka pezulluar përkohësisht qasjen tënde.':'Lidhu me internet për të kontrolluar aprovimin e llogarisë.'),
+      h('h1',null,titles[status]),h('p',null,status==='pending'?'Kërkesa jote i është dërguar Grent Hoxhës. Mund ta përdorësh app-in pasi të aprovohet.':status==='rejected'?'Grent Hoxha nuk e ka aprovuar kërkesën tënde.':status==='suspended'?'Grent Hoxha e ka pezulluar përkohësisht qasjen tënde.':needsProfile?'Plotëso emrin dhe mbiemrin që kërkesa jote t’i dërgohet Grent Hoxhës.':'Lidhu me internet për të kontrolluar aprovimin e llogarisë.'),
       h('div',{className:'approval-applicant'},h('strong',null,storage.getItem('u_real_name')||storage.getItem('u_name')),h('span',null,accounts.current()?.email)),
+      needsProfile&&h('form',{className:'approval-legacy-profile',onSubmit:async event=>{event.preventDefault();setBusy(true);setError('');try{const identity=root.FakultetiStudentIdentity;const result=await identity.validate(firstName,lastName);if(!result.ok){setError(result.error);return;}const first=identity.normalize(firstName),last=identity.normalize(lastName);storage.setItem('u_real_first_name',first);storage.setItem('u_real_last_name',last);storage.setItem('u_real_name',first+' '+last);if(!storage.getItem('u_nickname'))storage.setItem('u_name',first+' '+last);setNeedsProfile(false);await refresh();}catch(e){setError(errorText(e));}finally{setBusy(false);}}},
+        h('label',null,'Emri',h('input',{value:firstName,onChange:e=>setFirstName(e.target.value),required:true,autoComplete:'given-name',maxLength:80,disabled:busy})),
+        h('label',null,'Mbiemri',h('input',{value:lastName,onChange:e=>setLastName(e.target.value),required:true,autoComplete:'family-name',maxLength:80,disabled:busy})),
+        h('button',{type:'submit',className:'approval-primary',disabled:busy},'Dërgo kërkesën për aprovim')),
       error&&h('p',{className:'approval-error',role:'alert'},error),
-      h('button',{type:'button',className:'approval-primary',disabled:busy,onClick:refresh},busy?'Po kontrollohet…':'Kontrollo aprovimin'),
-      accounts.current()?.email===ADMIN_EMAIL&&!policy?.isAdmin&&h('div',{className:'approval-owner-link'},
+      !needsProfile&&h('button',{type:'button',className:'approval-primary',disabled:busy,onClick:refresh},busy?'Po kontrollohet…':'Kontrollo aprovimin'),
+      accounts.current()?.email===ADMIN_EMAIL&&!needsProfile&&!policy?.isAdmin&&h('div',{className:'approval-owner-link'},
         h('button',{type:'button',className:'approval-secondary',disabled:busy,onClick:async()=>{setBusy(true);setError('');try{const result=await api.adminLink();setLink(result.url);}catch(e){setError(errorText(e));}finally{setBusy(false);}}},'Lidh administrimin'),
         link&&h('a',{href:link,target:'_blank',rel:'noopener noreferrer',className:'approval-primary'},'Autorizo pajisjen administruese')),
       h('button',{type:'button',className:'approval-text-button',onClick:()=>{accounts.signOut();root.location.reload();}},'Dil nga llogaria')));
