@@ -15,6 +15,10 @@ const policy = row => ({ id: row.id, email: row.email, name: row.name, status: r
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 const signedText = (request, body) => [request.method, new URL(request.url).pathname,
   request.headers.get('X-Fakulteti-Time'), request.headers.get('X-Fakulteti-Nonce'), body].join('\n');
+async function isLinkedAdmin(db, id) {
+  // Keep the original desktop binding valid while allowing owner-authorized phones.
+  return Boolean(await db.prepare("SELECT value FROM approval_settings WHERE (key = 'admin_id' AND value = ?) OR key = ?").bind(id, 'admin_device:' + id).first());
+}
 async function verify(request, body, jwk, id, db, now) {
   const time = Number(request.headers.get('X-Fakulteti-Time'));
   const nonce = request.headers.get('X-Fakulteti-Nonce') || '';
@@ -50,7 +54,7 @@ async function linkAdmin(request, db, now, ownerEmail) {
   if (request.method === 'GET') {
     const csrf = random();
     await db.prepare('UPDATE approval_admin_links SET csrf_hash = ?, csrf_owner = ? WHERE token_hash = ?').bind(await hash(csrf), userId, await hash(token)).run();
-    return accessPage(`<h1>Lidh administrimin</h1><p>Po lidh llogarinë <strong>${escape(row.email)}</strong> të ${escape(row.name)} me pajisjen që krijoi këtë kërkesë.</p><form method="post" action="${escape(url.pathname + url.search)}"><input type="hidden" name="csrf" value="${csrf}"><button type="submit">Lidh këtë pajisje si administrator</button></form><p><small>Vetëm kjo pajisje do të mund të aprovojë përdoruesit. Fjalëkalimet dhe të dhënat e mësimit qëndrojnë lokalisht.</small></p>`);
+    return accessPage(`<h1>Lidh administrimin</h1><p>Po lidh llogarinë <strong>${escape(row.email)}</strong> të ${escape(row.name)} me pajisjen që krijoi këtë kërkesë.</p><form method="post" action="${escape(url.pathname + url.search)}"><input type="hidden" name="csrf" value="${csrf}"><button type="submit">Lidh këtë pajisje si administrator</button></form><p><small>Kjo pajisje do të shtohet për administrim. Pajisjet e lidhura më parë mbeten aktive. Materialet e mësimit qëndrojnë lokalisht.</small></p>`);
   }
   // Privacy-preserving browser contexts can send Origin:null on same-site form
   // submissions. Require the one-use form proof and verified owner in both cases.
@@ -64,11 +68,10 @@ async function linkAdmin(request, db, now, ownerEmail) {
   if (!consumed || consumed.request_id !== id) fail('CONFIRMATION_EXPIRED', 403);
   await db.batch([
     db.prepare("INSERT OR IGNORE INTO approval_settings (key, value) VALUES ('admin_id', ?)").bind(id),
-    db.prepare("UPDATE approval_requests SET status = 'approved', role = 'admin', permissions = ?, landing = 'auto', version = version + 1, updated_at = ? WHERE id = ? AND id = (SELECT value FROM approval_settings WHERE key = 'admin_id')").bind(JSON.stringify(SECTIONS), now, id)
+    db.prepare('INSERT OR IGNORE INTO approval_settings (key, value) VALUES (?, ?)').bind('admin_device:' + id, String(now)),
+    db.prepare("UPDATE approval_requests SET status = 'approved', role = 'admin', permissions = ?, landing = 'auto', version = version + 1, updated_at = ? WHERE id = ?").bind(JSON.stringify(SECTIONS), now, id)
   ]);
-  const admin = await db.prepare("SELECT value FROM approval_settings WHERE key = 'admin_id'").first();
-  if (admin.value !== id) return accessPage('<h1>Administrimi është i lidhur</h1><p>Përdor pajisjen e lidhur më parë për të menaxhuar kërkesat.</p>');
-  return accessPage('<h1>Administrimi u lidh</h1><p>Kthehu te app-i Fakulteti. Kërkesat për aprovim dhe lejet e përdoruesve tani mund t’i menaxhosh aty.</p><a href="https://grenthoxha.github.io/fakulteti-online/">Kthehu te Fakulteti</a>');
+  return accessPage('<h1>Administrimi u lidh</h1><p>Kthehu te app-i nga ku e nise kërkesën, në telefon ose kompjuter. Aty tani mund të menaxhosh kërkesat dhe lejet. Pajisjet e tjera mbeten të lidhura.</p><a href="https://grenthoxha.github.io/fakulteti-online/">Hap Fakulteti në browser</a>');
 }
 export async function handleApprovalRequest(request, env, now = Date.now()) {
   const url = new URL(request.url), origin = request.headers.get('Origin');
@@ -108,12 +111,10 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
     const caller = await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(id).first();
     if (!caller) fail('REQUEST_NOT_FOUND', 404);
     await verify(request, body, JSON.parse(caller.public_key), id, db, now);
-    const admin = await db.prepare("SELECT value FROM approval_settings WHERE key = 'admin_id'").first();
-    const isAdmin = admin?.value === id && caller.email === ADMIN_EMAIL && caller.status === 'approved';
+    const isAdmin = caller.email === ADMIN_EMAIL && caller.status === 'approved' && caller.role === 'admin' && await isLinkedAdmin(db, id);
     if (url.pathname === '/api/me' && request.method === 'GET') return finish(json({ ...policy(caller), isAdmin }));
     if (url.pathname === '/api/admin-link' && request.method === 'POST') {
       if (caller.email !== ADMIN_EMAIL) fail('ADMIN_REQUIRED', 403);
-      if (admin && admin.value !== id) fail('ADMIN_ALREADY_LINKED', 409);
       const token = random();
       await db.prepare('DELETE FROM approval_admin_links WHERE request_id = ? OR expires_at < ?').bind(id, now).run();
       await db.prepare('INSERT INTO approval_admin_links (token_hash,request_id,expires_at) VALUES (?,?,?)').bind(await hash(token),id,now + 600000).run();
@@ -121,12 +122,12 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
     }
     if (!isAdmin) fail('ADMIN_REQUIRED', 403);
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') {
-      const rows = await db.prepare('SELECT * FROM approval_requests ORDER BY created_at DESC LIMIT 1000').all();
+      const rows = await db.prepare("SELECT * FROM approval_requests WHERE role <> 'admin' OR id = ? ORDER BY created_at DESC LIMIT 1000").bind(id).all();
       return finish(json({ requests:rows.results.map(policy) }));
     }
     const target = /^\/api\/admin\/requests\/([a-f0-9]{64})$/.exec(url.pathname);
     if (target && request.method === 'PATCH') {
-      if (target[1] === id) fail('ADMIN_SELF_CHANGE_DENIED', 403);
+      if (await isLinkedAdmin(db, target[1])) fail('ADMIN_SELF_CHANGE_DENIED', 403);
       if (!['approved','rejected','suspended','pending'].includes(input.status) || !['student','instructor'].includes(input.role) || !Array.isArray(input.permissions) || input.permissions.some(p => !SECTIONS.includes(p)) || !LANDINGS.includes(input.landing) || !Number.isInteger(input.version)) fail('POLICY_INVALID');
       const routeSections = {home:'home',week:'schedule',courses:'courses',student:'exams',studentservices:'services',freerooms:'rooms',articles:'articles'};
       if (input.status === 'approved' && input.landing !== 'auto' && input.landing !== 'settings' && !input.permissions.includes(routeSections[input.landing])) fail('LANDING_DENIED');

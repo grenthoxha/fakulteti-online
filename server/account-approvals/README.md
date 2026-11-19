@@ -10,6 +10,9 @@ and one-use nonces prevent replay. Public enrolment cannot assign privileges.
 The local email `grent@gmail.com` gains approval rights only after the verified
 Site owner links that device using Sites' server-provided ChatGPT identity.
 Knowing or registering the email alone cannot grant administrative access.
+The owner can link more than one device for `grent@gmail.com`, including a phone,
+without replacing the existing desktop binding. Each device must be authorized
+separately. The original single-device binding stays valid for compatibility.
 All list/update operations verify the linked administrator server-side.
 The administrator confirmation form uses a one-use proof bound to the verified
 owner and link. This also supports privacy-preserving browser forms that send

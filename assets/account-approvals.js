@@ -95,8 +95,16 @@
   const icon = path => h('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true},h('path',{d:path}));
   const brand = () => h('div',{className:'approval-brand'},h('img',{src:root.document.documentElement.classList.contains('dark')?'./assets/fakulteti-online-logo-dark.png':'./assets/fakulteti-online-logo.png',alt:'',width:36,height:36}),h('strong',null,'Fakulteti'));
   const errorText = error => ({ ADMIN_ALREADY_LINKED:'Administrimi është lidhur në një pajisje tjetër.', POLICY_CHANGED:'Kërkesa ndryshoi. Rifresko listën dhe provo përsëri.', PROFILE_REQUIRED:'Plotëso emrin dhe mbiemrin për ta dërguar kërkesën.', RATE_LIMITED:'Ka shumë kërkesa. Provo përsëri pas pak.', ADMIN_REQUIRED:'Vetëm administratori i lidhur mund ta kryejë këtë veprim.', SIGNATURE_INVALID:'Kontrollo datën dhe orën e pajisjes dhe provo përsëri.' }[error?.message] || 'Lidhja me aprovimet nuk u krye. Provo përsëri me internet.');
+  function AdminDeviceLink() {
+    const [busy,setBusy]=useState(false),[link,setLink]=useState(''),[error,setError]=useState('');
+    return h('div',{className:'approval-owner-link'},
+      h('button',{type:'button',className:'approval-secondary',disabled:busy,onClick:async()=>{setBusy(true);setError('');setLink('');try{const result=await api.adminLink();setLink(result.url);}catch(e){setError(errorText(e));}finally{setBusy(false);}}},busy?'Po përgatitet lidhja…':'Lidh administrimin në këtë pajisje'),
+      h('p',{className:'approval-device-note'},'Mund ta lidhësh edhe telefonin. Pajisjet e tjera mbeten të lidhura.'),
+      link&&h('a',{href:link,target:'_blank',rel:'noopener noreferrer',className:'approval-primary'},'Autorizo pajisjen administruese'),
+      error&&h('p',{className:'approval-error',role:'alert'},error));
+  }
   root.FakultetiApprovalGate = function ApprovalGate({children}) {
-    const [policy,setPolicy] = useState(null), [error,setError] = useState(''), [busy,setBusy] = useState(true), [link,setLink] = useState(''), [managerOpen,setManagerOpen] = useState(false);
+    const [policy,setPolicy] = useState(null), [error,setError] = useState(''), [busy,setBusy] = useState(true), [managerOpen,setManagerOpen] = useState(false);
     const [needsProfile,setNeedsProfile]=useState(false),[firstName,setFirstName]=useState(storage.getItem('u_real_first_name')||''),[lastName,setLastName]=useState(storage.getItem('u_real_last_name')||'');
     const alive = useRef(true);
     const refresh = async () => {
@@ -127,9 +135,7 @@
         h('button',{type:'submit',className:'approval-primary',disabled:busy},'Dërgo kërkesën për aprovim')),
       error&&h('p',{className:'approval-error',role:'alert'},error),
       !needsProfile&&h('button',{type:'button',className:'approval-primary',disabled:busy,onClick:refresh},busy?'Po kontrollohet…':'Kontrollo aprovimin'),
-      accounts.current()?.email===ADMIN_EMAIL&&!needsProfile&&!policy?.isAdmin&&h('div',{className:'approval-owner-link'},
-        h('button',{type:'button',className:'approval-secondary',disabled:busy,onClick:async()=>{setBusy(true);setError('');try{const result=await api.adminLink();setLink(result.url);}catch(e){setError(errorText(e));}finally{setBusy(false);}}},'Lidh administrimin'),
-        link&&h('a',{href:link,target:'_blank',rel:'noopener noreferrer',className:'approval-primary'},'Autorizo pajisjen administruese')),
+      accounts.current()?.email===ADMIN_EMAIL&&!needsProfile&&policy&&!policy.isAdmin&&h(AdminDeviceLink),
       h('button',{type:'button',className:'approval-text-button',onClick:()=>{accounts.signOut();root.location.reload();}},'Dil nga llogaria')));
   };
   root.FakultetiAccessManager = function AccessManager({onClose}) {
@@ -140,7 +146,7 @@
     const choose=row=>{setSelected(row);setDraft({...row,permissions:row.status==='pending'?Object.keys(SECTIONS):row.permissions,role:row.requestedRole==='instructor'&&row.status==='pending'?'instructor':row.role});setError('');setNotice('');};
     const save=async status=>{setBusy(true);setError('');try{const result=await api.update(selected.id,{status,role:draft.role,permissions:draft.permissions,landing:draft.landing,version:selected.version});setRows(rows=>rows.map(row=>row.id===result.id?result:row));setSelected(result);setDraft(result);setNotice(status==='approved'?'Qasja u ruajt.':status==='rejected'?'Kërkesa u refuzua.':'Qasja u pezullua.');}catch(e){setError(errorText(e));}finally{setBusy(false);}};
     if(!api.isAdmin()) return null;
-    const visible=rows.filter(row=>row.id!==currentPolicy.id).filter(row=>tab==='all'||(tab==='active'?row.status==='approved':row.status==='pending')).filter(row=>(row.name+' '+row.email).toLocaleLowerCase('sq').includes(query.toLocaleLowerCase('sq')));
+    const visible=rows.filter(row=>row.id!==currentPolicy.id&&row.role!=='admin').filter(row=>tab==='all'||(tab==='active'?row.status==='approved':row.status==='pending')).filter(row=>(row.name+' '+row.email).toLocaleLowerCase('sq').includes(query.toLocaleLowerCase('sq')));
     return h('div',{className:'approval-manager-overlay',role:'dialog','aria-modal':true,'aria-label':'Aprovimet dhe qasja'},h('section',{className:'approval-manager card-surface'},
       h('header',{className:'approval-manager-header'},h('div',null,h('h2',null,'Aprovimet dhe qasja'),h('p',null,'Menaxho kush hyn dhe çfarë i shfaqet.')),h('button',{type:'button','aria-label':'Mbyll administrimin',className:'approval-icon-button',onClick:onClose},icon('M6 6l12 12M18 6L6 18'))),
       h('div',{className:'approval-manager-body'},h('aside',{className:'approval-requests'},
@@ -160,7 +166,7 @@
   root.FakultetiManageAccountsButton = function ManageAccountsButton() {
     const [pendingCount,setPendingCount]=useState(0);
     useEffect(()=>{if(!api.isAdmin())return;let alive=true;const refresh=async()=>{if(root.document.hidden)return;try{const data=await api.list();if(alive)setPendingCount(data.requests.filter(row=>row.status==='pending').length);}catch{}};refresh();const timer=setInterval(refresh,30000);return()=>{alive=false;clearInterval(timer);};},[]);
-    if(!api.isAdmin())return null;
+    if(!api.isAdmin())return accounts.current()?.email===ADMIN_EMAIL?h(AdminDeviceLink):null;
     return h('button',{type:'button',className:'approval-manage-button',onClick:()=>root.dispatchEvent(new CustomEvent('fakulteti:manage-accounts'))},icon('M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM8 12l3 3 5-6'),'Aprovimet dhe qasja',pendingCount>0&&h('span',{className:'approval-pending-count'},pendingCount));
   };
 })(window);

@@ -89,6 +89,28 @@ test('admin form accepts opaque origins only with the owner-bound one-use confir
   const replay=await send(current);assert.match(await replay.text(),/Lidhja ka skaduar/);
   await linkOwner(db,admin,SERVICE); // Standard browser Origin remains supported too.
 });
+test('the owner can add a phone while the original desktop remains an administrator',async()=>{
+  const db=database(),desktop=await device('grent@gmail.com','Grent Hoxha'),phone=await device('grent@gmail.com','Grent Hoxha'),unlinked=await device('grent@gmail.com','Grent Hoxha'),student=await device();
+  const env={DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'};
+  for(const d of [desktop,phone,unlinked,student])await d.enroll(db);
+  await linkOwner(db,desktop);
+  // Simulate the already-deployed single-device binding, without a new-style entry.
+  await db.prepare('DELETE FROM approval_settings WHERE key = ?').bind('admin_device:'+desktop.id).run();
+  const me=async d=>(await result(await handleApprovalRequest(await d.request('/api/me'),env,NOW))).body;
+  assert.equal((await me(desktop)).isAdmin,true);assert.equal((await me(phone)).isAdmin,false);
+  await linkOwner(db,phone,'null');
+  assert.equal((await me(phone)).isAdmin,true);assert.equal((await me(desktop)).isAdmin,true);assert.equal((await me(unlinked)).isAdmin,false);
+  assert.equal((await db.prepare("SELECT value FROM approval_settings WHERE key = 'admin_id'").first()).value,desktop.id);
+  const requests=await result(await handleApprovalRequest(await desktop.request('/api/admin/requests'),env,NOW));
+  assert(!requests.body.requests.some(row=>row.id===phone.id));
+  const policy={status:'approved',role:'student',permissions:['rooms'],landing:'freerooms',version:1};
+  const approved=await handleApprovalRequest(await phone.request('/api/admin/requests/'+student.id,'PATCH',policy),env,NOW);assert.equal(approved.status,200);
+  assert.equal((await me(student)).status,'approved');
+  const updated=await handleApprovalRequest(await desktop.request('/api/admin/requests/'+student.id,'PATCH',{...policy,permissions:['courses'],landing:'courses',version:2}),env,NOW);assert.equal(updated.status,200);
+  assert.deepEqual((await me(student)).permissions,['courses']);
+  const adminChange=await handleApprovalRequest(await desktop.request('/api/admin/requests/'+phone.id,'PATCH',{...policy,version:(await me(phone)).version}),env,NOW);assert.equal(adminChange.status,403);
+  assert.equal((await handleApprovalRequest(await unlinked.request('/api/admin/requests'),env,NOW)).status,403);
+});
 test('signature integrity, replay prevention, clock bounds and origins reject unauthorized requests',async()=>{
   const db=database(),a=await device();await a.enroll(db);
   const nonce='0'.repeat(32),first=await a.request('/api/me','GET',undefined,{nonce});
