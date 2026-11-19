@@ -10124,12 +10124,15 @@ function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofiku
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
 
-function getFilozofikuReplacements(data, query = '') {
+function getFilozofikuReplacements(data, query = '', now = new Date()) {
   if (typeof FilozofikuBookings === 'undefined') return [];
+  const today = FilozofikuBookings.localDate(now);
+  const clock = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Tirane', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
   const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const words = normalize(query).split(/\s+/).filter(Boolean);
   return FilozofikuBookings.allEvents(data)
     .filter(event => /z[ea]vendes/.test(normalize(event.a)))
+    .filter(event => event.date > today || (event.date === today && data.times[event.e] > clock))
     .filter(event => words.every(word => normalize([event.date, event.t, event.room, event.p, event.g].join(' ')).includes(word)))
     .sort((a, b) => a.date.localeCompare(b.date) || a.s - b.s || a.room.localeCompare(b.room, 'sq') || a.t.localeCompare(b.t, 'sq'));
 }
@@ -10424,8 +10427,8 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     });
   }, [data, useLiveClock, startIdx, endIdx, liveInfo]);
 
-  const allReplacements = useMemo(() => getFilozofikuReplacements(data), [data]);
-  const filteredReplacements = useMemo(() => getFilozofikuReplacements(data, searchQuery), [data, searchQuery]);
+  const allReplacements = useMemo(() => getFilozofikuReplacements(data, '', nowDate), [data, nowDate]);
+  const filteredReplacements = useMemo(() => getFilozofikuReplacements(data, searchQuery, nowDate), [data, searchQuery, nowDate]);
   const freeCount = roomsEvaluated.filter(r => r.isFree).length;
   const occupiedCount = roomsEvaluated.length - freeCount;
   const totalFreeSeats = roomsEvaluated.filter(r => r.isFree).reduce((acc, r) => acc + (Number(r.seats) || 0), 0);
