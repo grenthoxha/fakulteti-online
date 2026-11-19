@@ -31,9 +31,9 @@ async function verify(request, body, jwk, id, db, now) {
   const saved = await db.prepare('INSERT OR IGNORE INTO approval_nonces (key, expires_at) VALUES (?, ?)').bind(id + ':' + nonce, now + 600000).run();
   if (!saved.meta?.changes) fail('REQUEST_REPLAYED', 409);
 }
-function accessPage(content) {
+function accessPage(content, status = 200) {
   return new Response(`<!doctype html><html lang="sq"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><title>Fakulteti · Administrimi</title><style>body{margin:0;min-height:100svh;display:grid;place-items:center;background:#0b1020;color:#e8eef7;font:16px/1.6 system-ui}main{width:min(420px,calc(100% - 64px));padding:26px;border:1px solid #283247;background:#141d2d;border-radius:24px}h1{font-size:24px;line-height:1.25}p{color:#adb9cd}a,button{display:block;box-sizing:border-box;width:100%;padding:13px 18px;border:0;border-radius:12px;background:#1557b0;color:white;text-align:center;text-decoration:none;font:600 16px system-ui;cursor:pointer}small{color:#adb9cd}</style><main><strong>Fakulteti</strong>${content}</main></html>`, {
-    headers: { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store', 'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'", 'Referrer-Policy':'no-referrer' }
+    status, headers: { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store', 'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'", 'Referrer-Policy':'no-referrer' }
   });
 }
 async function linkAdmin(request, db, now, ownerEmail) {
@@ -47,12 +47,24 @@ async function linkAdmin(request, db, now, ownerEmail) {
   const link = await db.prepare('SELECT * FROM approval_admin_links WHERE token_hash = ? AND request_id = ? AND expires_at > ?').bind(await hash(token), id, now).first();
   const row = await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(id).first();
   if (!link || row?.email !== ADMIN_EMAIL) return accessPage('<h1>Lidhja ka skaduar</h1><p>Krijo një lidhje të re nga app-i dhe provo sërish.</p>');
-  if (request.method === 'GET') return accessPage(`<h1>Lidh administrimin</h1><p>Po lidh llogarinë <strong>${escape(row.email)}</strong> të ${escape(row.name)} në pajisjen nga e cila e hape këtë kërkesë.</p><form method="post" action="${escape(url.pathname + url.search)}"><button type="submit">Lidh këtë pajisje si administrator</button></form><p><small>Vetëm kjo pajisje do të mund të aprovojë përdoruesit. Fjalëkalimet dhe të dhënat e mësimit qëndrojnë lokalisht.</small></p>`);
-  if (request.method !== 'POST' || request.headers.get('Origin') !== url.origin) fail('ORIGIN_DENIED', 403);
+  if (request.method === 'GET') {
+    const csrf = random();
+    await db.prepare('UPDATE approval_admin_links SET csrf_hash = ?, csrf_owner = ? WHERE token_hash = ?').bind(await hash(csrf), userId, await hash(token)).run();
+    return accessPage(`<h1>Lidh administrimin</h1><p>Po lidh llogarinë <strong>${escape(row.email)}</strong> të ${escape(row.name)} me pajisjen që krijoi këtë kërkesë.</p><form method="post" action="${escape(url.pathname + url.search)}"><input type="hidden" name="csrf" value="${csrf}"><button type="submit">Lidh këtë pajisje si administrator</button></form><p><small>Vetëm kjo pajisje do të mund të aprovojë përdoruesit. Fjalëkalimet dhe të dhënat e mësimit qëndrojnë lokalisht.</small></p>`);
+  }
+  // Privacy-preserving browser contexts can send Origin:null on same-site form
+  // submissions. Require the one-use form proof and verified owner in both cases.
+  if (request.method !== 'POST' || ![url.origin, 'null'].includes(request.headers.get('Origin'))) fail('ORIGIN_DENIED', 403);
+  if (Number(request.headers.get('Content-Length') || 0) > 1024) fail('REQUEST_TOO_LARGE', 413);
+  const formBody = await request.text();
+  if (utf8.encode(formBody).length > 1024) fail('REQUEST_TOO_LARGE', 413);
+  const csrf = new URLSearchParams(formBody).get('csrf') || '';
+  if (!/^[a-f0-9]{48}$/.test(csrf) || link.csrf_owner !== userId || !link.csrf_hash || await hash(csrf) !== link.csrf_hash) fail('CONFIRMATION_EXPIRED', 403);
+  const consumed = await db.prepare('DELETE FROM approval_admin_links WHERE token_hash = ? AND csrf_hash = ? AND csrf_owner = ? AND expires_at > ? RETURNING request_id').bind(await hash(token), link.csrf_hash, userId, now).first();
+  if (!consumed || consumed.request_id !== id) fail('CONFIRMATION_EXPIRED', 403);
   await db.batch([
     db.prepare("INSERT OR IGNORE INTO approval_settings (key, value) VALUES ('admin_id', ?)").bind(id),
-    db.prepare("UPDATE approval_requests SET status = 'approved', role = 'admin', permissions = ?, landing = 'auto', version = version + 1, updated_at = ? WHERE id = ? AND id = (SELECT value FROM approval_settings WHERE key = 'admin_id')").bind(JSON.stringify(SECTIONS), now, id),
-    db.prepare('DELETE FROM approval_admin_links WHERE token_hash = ?').bind(await hash(token))
+    db.prepare("UPDATE approval_requests SET status = 'approved', role = 'admin', permissions = ?, landing = 'auto', version = version + 1, updated_at = ? WHERE id = ? AND id = (SELECT value FROM approval_settings WHERE key = 'admin_id')").bind(JSON.stringify(SECTIONS), now, id)
   ]);
   const admin = await db.prepare("SELECT value FROM approval_settings WHERE key = 'admin_id'").first();
   if (admin.value !== id) return accessPage('<h1>Administrimi është i lidhur</h1><p>Përdor pajisjen e lidhur më parë për të menaxhuar kërkesat.</p>');
@@ -123,5 +135,8 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       return finish(json(policy(await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(target[1]).first())));
     }
     fail('NOT_FOUND', 404);
-  } catch (error) { return finish(json({ error:error.code || 'SERVICE_UNAVAILABLE' }, error.status || 503)); }
+  } catch (error) {
+    if (url.pathname === '/link-admin') return finish(accessPage(`<h1>Konfirmimi nuk u përfundua</h1><p>Rihape konfirmimin dhe provo përsëri. Nëse lidhja ka skaduar, krijo një lidhje të re nga app-i. Të dhënat e llogarisë ruhen.</p><a href="${escape(url.pathname + url.search)}">Rihap konfirmimin</a>`, error.status || 503));
+    return finish(json({ error:error.code || 'SERVICE_UNAVAILABLE' }, error.status || 503));
+  }
 }

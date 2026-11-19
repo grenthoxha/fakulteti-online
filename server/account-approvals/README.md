@@ -11,6 +11,9 @@ The local email `grent@gmail.com` gains approval rights only after the verified
 Site owner links that device using Sites' server-provided ChatGPT identity.
 Knowing or registering the email alone cannot grant administrative access.
 All list/update operations verify the linked administrator server-side.
+The administrator confirmation form uses a one-use proof bound to the verified
+owner and link. This also supports privacy-preserving browser forms that send
+`Origin: null`, without accepting missing proofs or cross-site submissions.
 `APPROVAL_OWNER_EMAIL` is a server-only Sites environment value. The verified
 owner identity is not embedded in the public frontend or source mirror.
 

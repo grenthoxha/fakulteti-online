@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -10,7 +10,7 @@ const NOW = Date.parse('2026-11-19T20:00:00Z');
 const SERVICE = 'https://approval.test';
 function database() {
   const sql = new DatabaseSync(':memory:');
-  sql.exec(readFileSync(new URL('../drizzle/0000_daily_chameleon.sql', import.meta.url), 'utf8'));
+  for (const name of readdirSync(new URL('../drizzle/', import.meta.url)).filter(name=>name.endsWith('.sql')).sort()) sql.exec(readFileSync(new URL('../drizzle/'+name, import.meta.url), 'utf8'));
   const db = { prepare(query) {
     const result = { args:[], bind(...args) { result.args=args;return result; },
       async first() { return sql.prepare(query).get(...result.args) || null; },
@@ -35,11 +35,14 @@ async function device(email='applicant@example.test',name='Arta Hoxha') {
   }, async enroll(db,role='student') {return handleApprovalRequest(await this.request('/api/requests','POST',{email,name,publicKey,role}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);} };
 }
 const result = async response => ({status:response.status,body:await response.json()});
-async function linkOwner(db, owner) {
+async function linkOwner(db, owner, origin = 'null') {
   const response=await result(await handleApprovalRequest(await owner.request('/api/admin-link','POST',{}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW));
   assert.equal(response.status,200);
   const link=response.body.url;
-  const linked=await handleApprovalRequest(new Request(link,{method:'POST',headers:{Origin:SERVICE,'oai-authenticated-user-id':'verified-site-owner','oai-authenticated-user-email':'owner@example.test'}}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);
+  const identity={'oai-authenticated-user-id':'verified-site-owner','oai-authenticated-user-email':'owner@example.test'};
+  const page=await handleApprovalRequest(new Request(link,{headers:identity}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);
+  const csrf=(await page.text()).match(/name="csrf" value="([a-f0-9]+)"/)[1];
+  const linked=await handleApprovalRequest(new Request(link,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded',...identity},body:new URLSearchParams({csrf})}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);
   assert.equal(linked.status,200);assert.match(await linked.text(),/Administrimi u lidh/);
 }
 test('new devices remain pending; knowing the administrator email grants no privileges',async()=>{
@@ -68,6 +71,23 @@ test('only a verified owner can link Grent; approvals and individual visibility 
   const suspend=await handleApprovalRequest(await admin.request('/api/admin/requests/'+student.id,'PATCH',{...policy,status:'suspended',version:2}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);assert.equal(suspend.status,200);
   assert.equal((await result(await handleApprovalRequest(await student.request('/api/me'),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW))).body.status,'suspended');
   const self=await handleApprovalRequest(await admin.request('/api/admin/requests/'+admin.id,'PATCH',policy),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);assert.equal(self.status,403);
+});
+test('admin form accepts opaque origins only with the owner-bound one-use confirmation',async()=>{
+  const db=database(),admin=await device('grent@gmail.com','Grent Hoxha');await admin.enroll(db);
+  const env={DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'};
+  const identity={'oai-authenticated-user-id':'verified-site-owner','oai-authenticated-user-email':'owner@example.test'};
+  const link=(await result(await handleApprovalRequest(await admin.request('/api/admin-link','POST',{}),env,NOW))).body.url;
+  const get=async headers=>{const page=await handleApprovalRequest(new Request(link,{headers}),env,NOW);return (await page.text()).match(/name="csrf" value="([a-f0-9]+)"/)[1];};
+  const send=(csrf,origin='null',user=identity)=>handleApprovalRequest(new Request(link,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded',...user},body:new URLSearchParams({csrf})}),env,NOW);
+  const old=await get(identity),current=await get(identity);
+  assert.equal((await send('')).status,403);
+  assert.equal((await send(old)).status,403);
+  assert.equal((await send(current,'https://evil.test')).status,403);
+  assert.equal((await send(current,'null',{...identity,'oai-authenticated-user-id':'different-session-owner'})).status,403);
+  assert.equal((await result(await handleApprovalRequest(await admin.request('/api/me'),env,NOW))).body.isAdmin,false);
+  const valid=await send(current);assert.equal(valid.status,200);assert.match(await valid.text(),/Administrimi u lidh/);
+  const replay=await send(current);assert.match(await replay.text(),/Lidhja ka skaduar/);
+  await linkOwner(db,admin,SERVICE); // Standard browser Origin remains supported too.
 });
 test('signature integrity, replay prevention, clock bounds and origins reject unauthorized requests',async()=>{
   const db=database(),a=await device();await a.enroll(db);

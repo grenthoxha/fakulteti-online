@@ -11,6 +11,7 @@ export const requests = sqliteTable('approval_requests', {
 export const settings = sqliteTable('approval_settings', { key: text('key').primaryKey(), value: text('value').notNull() });
 export const nonces = sqliteTable('approval_nonces', { key: text('key').primaryKey(), expiresAt: integer('expires_at').notNull() });
 export const links = sqliteTable('approval_admin_links', {
-  tokenHash: text('token_hash').primaryKey(), requestId: text('request_id').notNull(), expiresAt: integer('expires_at').notNull()
+  tokenHash: text('token_hash').primaryKey(), requestId: text('request_id').notNull(), expiresAt: integer('expires_at').notNull(),
+  csrfHash: text('csrf_hash'), csrfOwner: text('csrf_owner')
 });
 export const limits = sqliteTable('approval_limits', { key: text('key').primaryKey(), count: integer('count').notNull() });
