@@ -10881,7 +10881,7 @@ const removeLegacyRoomChanges = () => {
 };
 
 // A personal landing preference, based on the real name rather than a nickname.
-const prefersFreeRoomsHome = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'bujar hoti';
+const prefersFreeRoomsHome = fullName => ['bujar hoti', 'agron miftari'].includes(String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq'));
 const prefersSocialWorkSchedule = fullName => String(fullName || '').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sq') === 'grent hoxha';
 const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty = false) => {
   if (branchId && !getStudentFacultyContext(branchId).hasFreeRooms) return 'personal';
