@@ -7,7 +7,7 @@ const h=(type,props,...children)=>({type,props:props||{},children:children.flat(
 const c=vm.createContext({URL,React:{createElement:h},useRef:value=>refs[cursor++]??(refs[cursor-1]={current:value}),useState:()=>[playing,v=>playing=v],useMemo:fn=>fn(),useEffect:fn=>effects.push(fn),window:{addEventListener:(t,fn)=>listeners[t]=fn,removeEventListener:t=>delete listeners[t]},setTimeout:()=>0});
 vm.runInContext(html.slice(start,end)+'this.Player=UnitYouTubeReelPlayer;',c);
 const nodes=t=>typeof t==='object'&&t?[t,...t.children.flatMap(nodes)]:[];
-function render(){cursor=0;return nodes(c.Player({embedSrc:'https://www.youtube.com/embed/vo4pMVb0R6M?controls=1',title:'Video'}));}
+function render(extra={}){cursor=0;return nodes(c.Player({embedSrc:'https://www.youtube.com/embed/vo4pMVb0R6M?controls=1',title:'Video',...extra}));}
 const tree=render(),frame=tree.find(n=>n.type==='iframe');
 const url=new URL(frame.props.src);
 ok(url.searchParams.get('controls')==='1','native YouTube controls restored');
@@ -17,6 +17,16 @@ ok(frame.props.style?.pointerEvents!=='none'&&frame.props.tabIndex!==-1,'iframe 
 ok(frame.props.allowFullScreen===true,'YouTube fullscreen remains available');
 ok(!tree.some(n=>n.props.className?.includes('story-youtube-surface')),'no app surface intercepts the player');
 ok(tree.filter(n=>n.type==='button').length===0,'no duplicate playback or caption buttons');
+const navigation=[];
+const navigable=render({onPrevious:()=>navigation.push('previous'),onNext:()=>navigation.push('next')});
+const backgroundButtons=navigable.filter(n=>n.type==='button');
+ok(backgroundButtons.length===2,'two optional navigation actions outside the video');
+backgroundButtons[0].props.onClick();backgroundButtons[1].props.onClick();
+ok(navigation.join(',')==='previous,next','background taps navigate in both directions');
+ok(backgroundButtons.every(n=>n.props.style.zIndex===0&&n.props.className.includes('bg-transparent')),'navigation is invisible and behind the video window');
+ok(navigable.find(n=>n.type==='iframe').props.style?.pointerEvents!=='none','native player remains interactive');
+const css=fs.readFileSync(path.resolve(__dirname,'../assets/video-viewer.css'),'utf8');
+ok(/#course-video-scroll-feed \.course-video-frame \{[^}]*z-index:1/.test(css),'video window stacks above the background navigation');
 const frameWindow={postMessage:(data)=>sent.push(JSON.parse(data))};refs[0].current={contentWindow:frameWindow};refs[1].current={addEventListener:(t,fn)=>playerListeners[t]=fn,removeEventListener:t=>delete playerListeners[t]};
 const cleanups=effects.splice(0).map(fn=>fn());
 playerListeners['unit-story-playback']({detail:{playing:false,holding:true}});ok(sent.at(-1).func==='pauseVideo'&&!playing,'hold pauses');playerListeners['unit-story-playback']({detail:{playing:true,holding:false}});ok(sent.at(-1).func==='playVideo'&&playing,'release resumes');

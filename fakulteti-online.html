@@ -9727,7 +9727,7 @@ function getYouTubeAlbanianCaptionTrack(captions) {
     || translatable.find(track => track.is_default) || translatable[0];
   return fallback ? { ...fallback, translationLanguage: { ...albanian } } : null;
 }
-function UnitYouTubeReelPlayer({ embedSrc, title }) {
+function UnitYouTubeReelPlayer({ embedSrc, title, onPrevious, onNext }) {
   const frameRef = useRef(null);
   const playerRef = useRef(null);
   const holdingRef = useRef(false);
@@ -9793,7 +9793,19 @@ function UnitYouTubeReelPlayer({ embedSrc, title }) {
   return h('div', {
     ref: playerRef, 'data-story-player': 'youtube', 'data-playing': String(playing),
     'data-native-ui': 'true', className: 'course-video-player'
-  }, h('div', { className: 'story-video-window course-video-frame' },
+  },
+    // These invisible controls sit behind the video window, covering only its empty surroundings.
+    onPrevious && h('button', {
+      type: 'button', onClick: onPrevious, 'aria-label': 'Postimi paraprak',
+      className: 'story-youtube-background-nav absolute inset-y-0 left-0 w-[35%] bg-transparent border-0 p-0',
+      style: { zIndex: 0 }
+    }),
+    onNext && h('button', {
+      type: 'button', onClick: onNext, 'aria-label': 'Postimi tjetër',
+      className: 'story-youtube-background-nav absolute inset-y-0 right-0 w-[65%] bg-transparent border-0 p-0',
+      style: { zIndex: 0 }
+    }),
+    h('div', { className: 'story-video-window course-video-frame' },
     h('iframe', {
       ref: frameRef,
       src: playerUrl,
@@ -34758,6 +34770,8 @@ Nënshkrimi: _____________________`;
                 ? h(UnitYouTubeReelPlayer, {
                     key: `yt_${video.id || idx}`,
                     title: video.title,
+                    onPrevious: () => scrollToVideoFeedSlide(idx - 1, 'horizontal'),
+                    onNext: () => scrollToVideoFeedSlide(idx + 1, 'horizontal'),
                     embedSrc: `${src.directEmbedSrc}&autoplay=1&iv_load_policy=3&fs=1${/^https?:$/.test(window.location.protocol) ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`
                   })
                 : h('div', { 'data-story-player': src?.provider || 'native', 'data-playing': String(videoLivePlaying), className: "course-video-player course-video-frame relative w-full bg-black overflow-hidden" },
