@@ -79,7 +79,12 @@
     return {...policy, offline:true};
   }
   function can(section) { return Boolean(currentPolicy?.status === 'approved' && (currentPolicy.isAdmin || currentPolicy.permissions?.includes(section))); }
-  function canView(view) { return view === 'settings' || view === 'account-access' ? currentPolicy?.status === 'approved' : view === 'instructor' ? can('courses') && ['instructor','admin'].includes(currentPolicy.role) : can(ROUTES[view] || (String(view).startsWith('support-') ? 'services' : 'courses')); }
+  function canView(view) {
+    if (['settings','account-access','profile-edit','profile-settings','profile-account','profile-resources'].includes(view)) return currentPolicy?.status === 'approved';
+    if (view === 'profile-notes') return can('courses');
+    if (view === 'profile-saved') return can('courses') || can('articles');
+    return view === 'instructor' ? can('courses') && ['instructor','admin'].includes(currentPolicy.role) : can(ROUTES[view] || (String(view).startsWith('support-') ? 'services' : 'courses'));
+  }
   function landing(preferred = 'home', configured = true) {
     const choice = configured && currentPolicy?.landing;
     if (choice && choice !== 'auto' && canView(choice)) return choice;
