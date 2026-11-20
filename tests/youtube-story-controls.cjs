@@ -1,0 +1,24 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const html=fs.readFileSync(path.resolve(__dirname,'../fakulteti-online.html'),'utf8');
+const start=html.indexOf('function getYouTubeAlbanianCaptionTrack('),end=html.indexOf('const FILOZOFIKU_ROOMS_FALLBACK',start);
+let checks=0,cursor=0,playing=true;const ok=(v,m)=>{assert(v,m);checks++};
+const refs=[],effects=[],listeners={},playerListeners={},sent=[];
+const h=(type,props,...children)=>({type,props:props||{},children:children.flat(Infinity).filter(v=>v!==false&&v!=null)});
+const c=vm.createContext({URL,React:{createElement:h},useRef:value=>refs[cursor++]??(refs[cursor-1]={current:value}),useState:()=>[playing,v=>playing=v],useMemo:fn=>fn(),useEffect:fn=>effects.push(fn),window:{addEventListener:(t,fn)=>listeners[t]=fn,removeEventListener:t=>delete listeners[t]},setTimeout:()=>0});
+vm.runInContext(html.slice(start,end)+'this.Player=UnitYouTubeReelPlayer;',c);
+const nodes=t=>typeof t==='object'&&t?[t,...t.children.flatMap(nodes)]:[];
+function render(){cursor=0;return nodes(c.Player({embedSrc:'https://www.youtube.com/embed/vo4pMVb0R6M?controls=1',title:'Video'}));}
+let tree=render(),frame=tree.find(n=>n.type==='iframe'),surface=tree.find(n=>n.props.className?.includes('story-youtube-surface'));
+const url=new URL(frame.props.src);
+ok(url.searchParams.get('controls')==='0','YouTube controls disabled');ok(url.searchParams.get('disablekb')==='1');ok(url.searchParams.get('enablejsapi')==='1');ok(url.searchParams.get('playsinline')==='1');
+ok(url.searchParams.get('cc_load_policy')==='1'&&url.searchParams.get('cc_lang_pref')==='en','caption preference preserved');
+ok(frame.props.style.pointerEvents==='none'&&frame.props.tabIndex===-1,'iframe cannot consume app gestures');ok(surface?.type==='button'&&surface.props.style.touchAction==='none','surface supports swipe and hold');ok(surface.props['aria-label']==='Ndal videon');ok(tree.filter(n=>n.type==='button').length===1,'single playback action, no extra CC or settings');
+const frameWindow={postMessage:(data)=>sent.push(JSON.parse(data))};refs[0].current={contentWindow:frameWindow};refs[1].current={addEventListener:(t,fn)=>playerListeners[t]=fn,removeEventListener:t=>delete playerListeners[t]};
+const cleanups=effects.splice(0).map(fn=>fn());
+surface.props.onClick();ok(sent.at(-1).func==='pauseVideo'&&!playing,'tap pauses');
+tree=render();surface=tree.find(n=>n.props.className?.includes('story-youtube-surface'));ok(surface.props['aria-label']==='Luaj videon'&&surface.children.length===1,'paused state has a play indicator');surface.props.onClick();ok(sent.at(-1).func==='playVideo'&&playing,'second tap resumes');
+playerListeners['unit-story-playback']({detail:{playing:false,holding:true}});ok(sent.at(-1).func==='pauseVideo'&&!playing,'hold pauses');playerListeners['unit-story-playback']({detail:{playing:true,holding:false}});ok(sent.at(-1).func==='playVideo'&&playing,'release resumes');
+listeners.message({source:{},data:JSON.stringify({event:'onStateChange',info:2})});ok(playing,'unrelated frame messages ignored');listeners.message({source:frameWindow,data:JSON.stringify({event:'onStateChange',info:2})});ok(!playing,'real player state synchronized');
+frame.props.onLoad();listeners.message({source:frameWindow,data:JSON.stringify({event:'apiInfoDelivery',info:{captions:{options:['track'],tracklist:[{languageCode:'en',is_translateable:true}],translationLanguages:[{languageCode:'sq'}]}}})});ok(sent.some(m=>m.func==='setOption'&&m.args[2]?.translationLanguage?.languageCode==='sq'),'auto-translation still requested');
+cleanups.forEach(fn=>fn?.());ok(!listeners.message&&!playerListeners['unit-story-playback'],'listeners removed on close');
+console.log(`PASS: ${checks} clean YouTube controls, swipe surface, tap/hold playback and captions checks.`);
