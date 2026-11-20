@@ -9553,6 +9553,7 @@ function bindVideoStoryChrome(root) {
   const click = event => {
     if (event.defaultPrevented || root.dataset.holding === 'true') return;
     const target = event.target;
+    if (root.dataset.storyKind === 'article' && target?.closest?.('[data-story-navigation]')) return;
     if (target?.closest?.('.story-play-surface,.story-photo-surface') || (target?.closest?.('.course-video-frame') && !target?.closest?.('button,input,select,a,video,iframe'))) {
       show(root.dataset.controlsVisible !== 'true');
       if (root.dataset.controlsVisible === 'true') arm(); else clear();
@@ -9567,6 +9568,12 @@ function bindVideoStoryChrome(root) {
   window.addEventListener('orientationchange', rotate);
   return () => { clear(); root.removeEventListener('click', click); root.removeEventListener('focusin', focus); window.removeEventListener('orientationchange', rotate); };
 }
+// Photo stories move sideways; video navigation keeps its existing direction.
+const getVideoStoryAxis = (kind, axis = 'vertical') => kind === 'article' ? 'horizontal' : axis;
+const getPhotoStoryTapDirection = event => {
+  const rect = event.currentTarget.getBoundingClientRect();
+  return event.detail !== 0 && event.clientX < rect.left + rect.width * .35 ? -1 : 1;
+};
 // Shorter travel on tall phones, while respecting a last-moment reversal.
 const unitStorySwipeCommit = (delta, velocity, extent) => {
   if (Math.abs(delta) < 12 || (Math.sign(velocity) !== Math.sign(delta) && Math.abs(velocity) > .18)) return 0;
@@ -9581,7 +9588,7 @@ function bindVideoStoryWheel(root, { enabled, start, move, end }) {
     clear();
     if (!session) return;
     const current = session; session = null; fired = true;
-    const delta = current.axis === 'vertical' ? totalY : totalX;
+    const delta = (current.inputAxis || current.axis) === 'vertical' ? totalY : totalX;
     end(current, { delta, velocity: cancelled ? 0 : delta / Math.max(80, lastAt - startedAt), cancelled, teardown });
   };
   const wheel = event => {
@@ -9598,7 +9605,7 @@ function bindVideoStoryWheel(root, { enabled, start, move, end }) {
       session = start({ axis: Math.abs(totalY) >= Math.abs(totalX) ? 'vertical' : 'horizontal' });
       if (!session) return;
     }
-    move(session, { delta: session.axis === 'vertical' ? totalY : totalX });
+    move(session, { delta: (session.inputAxis || session.axis) === 'vertical' ? totalY : totalX });
     clear(); timer = setTimeout(() => finish(), 110);
   };
   // Cancel unfinished trackpad motion before a new touch gesture takes over.
@@ -9623,10 +9630,11 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
     const feed = root.querySelector('#course-video-scroll-feed');
     let edgeAnimation = null;
     const enabled = () => Boolean(feed && !feed.dataset.settling && !feed.dataset.dragging);
-    const start = ({ axis }) => {
+    const start = ({ axis: inputAxis }) => {
+      const axis = getVideoStoryAxis(root.dataset.storyKind, inputAxis);
       edgeAnimation?.cancel();
       const index = Number(feed.dataset.activeIndex || 0);
-      const session = { index, axis, previousSnap: feed.style.scrollSnapType, previousBehavior: feed.style.scrollBehavior };
+      const session = { index, axis, inputAxis, previousSnap: feed.style.scrollSnapType, previousBehavior: feed.style.scrollBehavior };
       feed.dataset.dragging = 'true'; feed.dataset.axis = axis;
       feed.style.scrollSnapType = 'none'; feed.style.scrollBehavior = 'auto';
       feed.scrollLeft = axis === 'horizontal' ? index * feed.clientWidth : 0;
@@ -9634,6 +9642,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
       return session;
     };
     const move = (session, { delta }) => {
+      if (session.ignored) return;
       const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
       const count = feed.children.length;
       session.fromIndex = Math.max(0,Math.min(count - 1, session.index - Math.max(-1,Math.min(1,delta / Math.max(1,extent)))));
@@ -9643,6 +9652,7 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
       feed.style.transform = edge ? `translate${session.axis === 'horizontal' ? 'X' : 'Y'}(${delta * .16 / (1 + Math.abs(delta) / extent)}px)` : '';
     };
     const end = (session, { delta, velocity, cancelled, teardown }) => {
+      if (session.ignored) return;
       const extent = session.axis === 'horizontal' ? feed.clientWidth : feed.clientHeight;
       const transform = feed.style.transform; feed.style.transform = '';
       if (transform && !teardown && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) edgeAnimation = feed.animate?.([{transform},{transform:'none'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
@@ -9655,7 +9665,11 @@ function UnitVideoStoryGestures({ onNext, onPrevious, onSettle, onClose, isPlayi
       (target > session.index ? actionsRef.current.next : target < session.index ? actionsRef.current.previous : actionsRef.current.settle)?.(session.axis,motion);
     };
     const removeWheel = bindVideoStoryWheel(root, { enabled, start, move, end });
-    const removeSwipe = bindUnitSwipe(root, { bothAxes: true, enabled, onStart: start, onMove: move, onEnd: end });
+    const removeSwipe = bindUnitSwipe(root, {
+      bothAxes: true, enabled,
+      onStart: gesture => root.dataset.storyKind === 'article' && gesture.axis === 'vertical' ? { ignored: true } : start(gesture),
+      onMove: move, onEnd: end
+    });
     const syncCaptionHeights = () => {
       if (feed) {
         root.style.setProperty('--story-stage-width', `${feed.clientWidth}px`);
@@ -19962,6 +19976,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setCourseVideoComposerOpen(true);
   };
   const scrollToVideoFeedSlide = (targetIndex, axis = 'vertical', motion = null) => {
+    axis = getVideoStoryAxis(courseVideoFeed[courseVideoFeedIndex]?.kind, axis);
     const safeIndex = Math.max(0, Math.min(targetIndex, Math.max(0, courseVideoFeed.length - 1)));
     if ((!motion && safeIndex === courseVideoFeedIndex) || courseVideoFeedAnimationRef.current) return;
     const feed = document.getElementById('course-video-scroll-feed');
@@ -20016,9 +20031,10 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setTimeout(() => {
       const feed = document.getElementById('course-video-scroll-feed');
       if (feed && Number(feed.dataset.activeIndex) === safeIndex && !feed.dataset.dragging && !feed.dataset.settling) {
-        feed.dataset.axis = 'vertical';
-        feed.scrollLeft = 0;
-        feed.scrollTop = safeIndex * (feed.clientHeight || 1);
+        const axis = getVideoStoryAxis(courseVideoFeed[safeIndex]?.kind);
+        feed.dataset.axis = axis;
+        feed.scrollLeft = axis === 'horizontal' ? safeIndex * (feed.clientWidth || 1) : 0;
+        feed.scrollTop = axis === 'vertical' ? safeIndex * (feed.clientHeight || 1) : 0;
       }
     }, 40);
   };
@@ -34638,7 +34654,7 @@ Nënshkrimi: _____________________`;
     const h = React.createElement;
 
     return h(ModalPortal, null,
-      /* Stories: një postim për ekran; scroll-i poshtë kalon vertikalisht si Reels. */
+      /* Photo stories page sideways; video gestures keep their current behavior. */
       h(UnitVideoStoryGestures, {
         className: "course-video-stories tiktok-viewer fixed inset-0 z-[99999] bg-black text-white select-none",
         'data-fit': !isYouTube && (fixedPhotoFit || storyFit === 'cover') ? 'cover' : 'contain',
@@ -34706,8 +34722,9 @@ Nënshkrimi: _____________________`;
             ref: el => {
               if (el && !el.dataset.ready) {
                 el.dataset.ready = '1';
-                el.dataset.axis = 'vertical';
-                el.scrollTop = courseVideoFeedIndex * (el.clientHeight || 1);
+                el.dataset.axis = isPhoto ? 'horizontal' : 'vertical';
+                el.scrollLeft = isPhoto ? courseVideoFeedIndex * (el.clientWidth || 1) : 0;
+                el.scrollTop = isPhoto ? 0 : courseVideoFeedIndex * (el.clientHeight || 1);
               }
             },
             onScroll: e => {
@@ -34749,7 +34766,14 @@ Nënshkrimi: _____________________`;
                       src: video.fullBleedPortrait ? video.portraitThumbnail : video.thumbnail, alt: video.title,
                       className: 'w-full h-full object-contain', draggable: false, loading: Math.abs(idx - courseVideoFeedIndex) <= 1 ? 'eager' : 'lazy', decoding: 'async'
                     })),
-                  h('button', { type: 'button', className: 'story-photo-surface absolute inset-0 w-full h-full bg-transparent', 'aria-label': appearanceText('Shfaq ose fsheh detajet e fotografisë', 'Show or hide photo details'), tabIndex: isActive ? 0 : -1 }))
+                  h('button', {
+                    type: 'button', className: 'story-photo-surface absolute inset-0 w-full h-full bg-transparent',
+                    'data-story-navigation': 'true',
+                    'aria-label': appearanceText('Postimi tjetër', 'Next story'), tabIndex: isActive ? 0 : -1,
+                    onClick: event => {
+                      scrollToVideoFeedSlide(idx + getPhotoStoryTapDirection(event), 'horizontal');
+                    }
+                  }))
                 : (isActive && src?.provider === 'YouTube' && src.directEmbedSrc)
                 ? h(UnitYouTubeReelPlayer, {
                     key: `yt_${video.id || idx}`,

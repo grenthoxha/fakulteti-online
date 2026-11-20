@@ -5,13 +5,13 @@ const html=fs.readFileSync(path.join(root,'fakulteti-online.html'),'utf8').repla
 const slice=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 let checks=0;const ok=(v,message)=>{assert(v,message);checks++};
 for(const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(!/\bsrc\s*=/.test(script[1]))new vm.Script(script[2]);
-function fixture(index=1,reduced=false){
+function fixture(index=1,reduced=false,kind='video'){
  let now=1000,serial=0;const listeners={},frames=new Map(),timers=new Map(),changes=[],cleanups=[];
  const feed={clientWidth:400,clientHeight:700,style:{transform:'',scrollSnapType:'',scrollBehavior:''},dataset:{axis:'vertical',activeIndex:String(index)},children:[0,1,2,3],scrollLeft:0,scrollTop:index*700,animate:()=>({cancel(){}})};
- const root={clientHeight:700,style:{setProperty(){}},dataset:{},querySelector:()=>feed,addEventListener:(t,f)=>(listeners[t]??=[]).push(f),removeEventListener:(t,f)=>listeners[t]=listeners[t].filter(x=>x!==f),setPointerCapture(){},hasPointerCapture:()=>false};
+ const root={clientHeight:700,style:{setProperty(){}},dataset:{storyKind:kind},querySelector:()=>feed,addEventListener:(t,f)=>(listeners[t]??=[]).push(f),removeEventListener:(t,f)=>listeners[t]=listeners[t].filter(x=>x!==f),setPointerCapture(){},hasPointerCapture:()=>false};
  const target={tagName:'DIV',closest:()=>null,parentElement:root,scrollWidth:0,clientWidth:400};
  const FakeDate=class extends Date{static now(){return now;}};
- const c=vm.createContext({Date:FakeDate,document:{documentElement:{classList:{add(){},remove(){}}},getElementById:()=>feed},window:{matchMedia:()=>({matches:reduced}),addEventListener(){},removeEventListener(){}},React:{createElement:()=>null},useRef:()=>({current:root}),useEffect:f=>cleanups.push(f()),ResizeObserver:class{observe(){}disconnect(){}},setTimeout:(fn,delay)=>{timers.set(++serial,{fn,due:now+delay});return serial},clearTimeout:id=>timers.delete(id),requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial},cancelAnimationFrame:id=>frames.delete(id),courseVideoFeed:[0,1,2,3],courseVideoFeedIndex:index,courseVideoFeedAnimationRef:{current:null},courseVideoFeedScrollLockRef:{current:0},setCourseVideoFeedIndex:i=>{changes.push(i);c.courseVideoFeedIndex=i;feed.dataset.activeIndex=String(i);}});
+ const c=vm.createContext({Date:FakeDate,document:{documentElement:{classList:{add(){},remove(){}}},getElementById:()=>feed},window:{matchMedia:()=>({matches:reduced}),addEventListener(){},removeEventListener(){}},React:{createElement:()=>null},useRef:()=>({current:root}),useEffect:f=>cleanups.push(f()),ResizeObserver:class{observe(){}disconnect(){}},setTimeout:(fn,delay)=>{timers.set(++serial,{fn,due:now+delay});return serial},clearTimeout:id=>timers.delete(id),requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial},cancelAnimationFrame:id=>frames.delete(id),courseVideoFeed:[0,1,2,3].map(id=>({id,kind})),courseVideoFeedIndex:index,courseVideoFeedAnimationRef:{current:null},courseVideoFeedScrollLockRef:{current:0},setCourseVideoFeedIndex:i=>{changes.push(i);c.courseVideoFeedIndex=i;feed.dataset.activeIndex=String(i);}});
  vm.runInContext(slice('const unitSwipeCommit =','function UnitYouTubeReelPlayer(')+'\nbindVideoStoryHold=()=>()=>{};bindVideoStoryChrome=()=>()=>{};this.mount=UnitVideoStoryGestures;',c);
  vm.runInContext(slice('  const scrollToVideoFeedSlide =','  const openCourseVideoFeed =')+'this.navigate=scrollToVideoFeedSlide;',c);
  c.mount({onNext:(axis,motion)=>c.navigate(c.courseVideoFeedIndex+1,axis,motion),onPrevious:(axis,motion)=>c.navigate(c.courseVideoFeedIndex-1,axis,motion),onSettle:(axis,motion)=>c.navigate(c.courseVideoFeedIndex,axis,motion)});
@@ -41,6 +41,23 @@ f=fixture();f.emit('wheel',{deltaY:5});f.advance(110);ok(!f.changes.length&&!f.f
 f=fixture();ok(!f.emit('wheel',{ctrlKey:true,deltaY:100}).prevented,'browser zoom untouched');f.target.closest=()=>({});ok(!f.emit('wheel',{deltaY:100}).prevented,'form controls keep native scrolling');
 f=fixture();f.emit('wheel',{deltaY:100});f.cleanup();ok(!f.frames.size&&!f.timers.size&&!f.feed.dataset.dragging,'unmount clears pending movement');ok(Object.values(f.listeners).every(v=>!v.length));
 f=fixture();f.swipe(0,-200);f.emit('wheel',{deltaY:500});f.advance(110);f.settle();ok(f.changes.length===1&&f.changes[0]===2,'wheel cannot queue jumps while touch settles');
+// Photo stories only page sideways; the video cases above keep both directions.
+f=fixture(1,false,'article');f.swipe(-130,0);f.settle();ok(f.changes[0]===2&&f.feed.dataset.axis==='horizontal'&&f.feed.scrollLeft===800,'photo swipe left moves to next story');
+f=fixture(1,false,'article');f.swipe(130,0);f.settle();ok(f.changes[0]===0&&f.feed.scrollLeft===0,'photo swipe right returns');
+f=fixture(1,false,'article');f.swipe(0,-200);ok(!f.changes.length&&!f.frames.size&&!f.feed.dataset.dragging,'photo swipe up cannot navigate like a reel');ok(f.emit('click').prevented,'vertical drag cannot become an accidental photo tap');
+f=fixture(1,false,'article');f.swipe(0,200);ok(!f.changes.length&&!f.frames.size,'photo swipe down cannot change posts');
+f=fixture(1,false,'article');f.c.navigate(2,'vertical');f.settle();ok(f.feed.dataset.axis==='horizontal'&&f.feed.scrollLeft===800,'photo button navigation remains horizontal');
+f=fixture(1,false,'article');f.emit('wheel',{deltaY:100});ok(f.feed.dataset.axis==='horizontal'&&f.feed.scrollLeft===500,'mouse wheel moves photo sideways');f.advance(110);f.settle();ok(f.changes[0]===2&&f.feed.scrollTop===0,'photo wheel settles horizontally');
+f=fixture(1,false,'article');f.emit('wheel',{deltaX:-100});f.advance(110);f.settle();ok(f.changes[0]===0,'photo trackpad returns horizontally');
+f=fixture(1,true,'article');f.swipe(-130,0);ok(f.changes[0]===2&&!f.frames.size,'photo reduced motion preserved');
+f=fixture(1,false,'article');vm.runInContext('this.tapDirection=getPhotoStoryTapDirection;',f.c);
+const photoTarget={getBoundingClientRect:()=>({left:50,width:400})};
+ok(f.c.tapDirection({currentTarget:photoTarget,clientX:100,detail:1})===-1,'tap left works in an offset viewer');
+ok(f.c.tapDirection({currentTarget:photoTarget,clientX:350,detail:1})===1,'tap right advances');
+ok(f.c.tapDirection({currentTarget:photoTarget,clientX:0,detail:0})===1,'keyboard activation advances rather than going backwards');
+f=fixture(1,false,'article');Object.assign(f.c,{view:'videos',setView(){},setCourseVideoFeedOpen(){}});
+vm.runInContext(slice('  const openCourseVideoFeed =','  const addCourseVideo =')+'this.open=openCourseVideoFeed;',f.c);
+f.c.open(2);f.feed.dataset.activeIndex='2';f.advance(40);ok(f.feed.scrollLeft===800&&f.feed.scrollTop===0,'opening a later photo initializes horizontal position');
 // Opening a later thumbnail must use its vertical slot, including rapid reopens.
 f=fixture();Object.assign(f.c,{view:'videos',setView(){},setCourseVideoFeedOpen(){}});
 vm.runInContext(slice('  const openCourseVideoFeed =','  const addCourseVideo =')+'this.open=openCourseVideoFeed;',f.c);
