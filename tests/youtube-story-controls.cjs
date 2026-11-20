@@ -8,17 +8,19 @@ const c=vm.createContext({URL,React:{createElement:h},useRef:value=>refs[cursor+
 vm.runInContext(html.slice(start,end)+'this.Player=UnitYouTubeReelPlayer;',c);
 const nodes=t=>typeof t==='object'&&t?[t,...t.children.flatMap(nodes)]:[];
 function render(){cursor=0;return nodes(c.Player({embedSrc:'https://www.youtube.com/embed/vo4pMVb0R6M?controls=1',title:'Video'}));}
-let tree=render(),frame=tree.find(n=>n.type==='iframe'),surface=tree.find(n=>n.props.className?.includes('story-youtube-surface'));
+const tree=render(),frame=tree.find(n=>n.type==='iframe');
 const url=new URL(frame.props.src);
-ok(url.searchParams.get('controls')==='0','YouTube controls disabled');ok(url.searchParams.get('disablekb')==='1');ok(url.searchParams.get('enablejsapi')==='1');ok(url.searchParams.get('playsinline')==='1');
+ok(url.searchParams.get('controls')==='1','native YouTube controls restored');
+ok(url.searchParams.get('disablekb')!=='1','YouTube keyboard controls remain available');
 ok(url.searchParams.get('cc_load_policy')==='1'&&url.searchParams.get('cc_lang_pref')==='en','caption preference preserved');
-ok(frame.props.style.pointerEvents==='none'&&frame.props.tabIndex===-1,'iframe cannot consume app gestures');ok(surface?.type==='button'&&surface.props.style.touchAction==='none','surface supports swipe and hold');ok(surface.props['aria-label']==='Ndal videon');ok(tree.filter(n=>n.type==='button').length===1,'single playback action, no extra CC or settings');
+ok(frame.props.style?.pointerEvents!=='none'&&frame.props.tabIndex!==-1,'iframe accepts taps, seeking and settings');
+ok(frame.props.allowFullScreen===true,'YouTube fullscreen remains available');
+ok(!tree.some(n=>n.props.className?.includes('story-youtube-surface')),'no app surface intercepts the player');
+ok(tree.filter(n=>n.type==='button').length===0,'no duplicate playback or caption buttons');
 const frameWindow={postMessage:(data)=>sent.push(JSON.parse(data))};refs[0].current={contentWindow:frameWindow};refs[1].current={addEventListener:(t,fn)=>playerListeners[t]=fn,removeEventListener:t=>delete playerListeners[t]};
 const cleanups=effects.splice(0).map(fn=>fn());
-surface.props.onClick();ok(sent.at(-1).func==='pauseVideo'&&!playing,'tap pauses');
-tree=render();surface=tree.find(n=>n.props.className?.includes('story-youtube-surface'));ok(surface.props['aria-label']==='Luaj videon'&&surface.children.length===1,'paused state has a play indicator');surface.props.onClick();ok(sent.at(-1).func==='playVideo'&&playing,'second tap resumes');
 playerListeners['unit-story-playback']({detail:{playing:false,holding:true}});ok(sent.at(-1).func==='pauseVideo'&&!playing,'hold pauses');playerListeners['unit-story-playback']({detail:{playing:true,holding:false}});ok(sent.at(-1).func==='playVideo'&&playing,'release resumes');
 listeners.message({source:{},data:JSON.stringify({event:'onStateChange',info:2})});ok(playing,'unrelated frame messages ignored');listeners.message({source:frameWindow,data:JSON.stringify({event:'onStateChange',info:2})});ok(!playing,'real player state synchronized');
 frame.props.onLoad();listeners.message({source:frameWindow,data:JSON.stringify({event:'apiInfoDelivery',info:{captions:{options:['track'],tracklist:[{languageCode:'en',is_translateable:true}],translationLanguages:[{languageCode:'sq'}]}}})});ok(sent.some(m=>m.func==='setOption'&&m.args[2]?.translationLanguage?.languageCode==='sq'),'auto-translation still requested');
 cleanups.forEach(fn=>fn?.());ok(!listeners.message&&!playerListeners['unit-story-playback'],'listeners removed on close');
-console.log(`PASS: ${checks} clean YouTube controls, swipe surface, tap/hold playback and captions checks.`);
+console.log(`PASS: ${checks} native YouTube controls, direct interaction, fullscreen, playback and captions checks.`);

@@ -9735,10 +9735,7 @@ function UnitYouTubeReelPlayer({ embedSrc, title }) {
   const [playing, setPlaying] = useState(true);
   const playerUrl = useMemo(() => {
     const url = new URL(embedSrc);
-    url.searchParams.set('controls', '0');
-    url.searchParams.set('disablekb', '1');
-    url.searchParams.set('enablejsapi', '1');
-    url.searchParams.set('playsinline', '1');
+    url.searchParams.set('controls', '1');
     url.searchParams.set('hl', 'en');
     url.searchParams.set('cc_load_policy', '1');
     url.searchParams.set('cc_lang_pref', 'en');
@@ -9806,25 +9803,8 @@ function UnitYouTubeReelPlayer({ embedSrc, title }) {
       scrolling: 'no',
       referrerPolicy: 'strict-origin-when-cross-origin',
       allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
-      tabIndex: -1,
-      style: { pointerEvents: 'none' },
       className: 'w-full h-full border-0 bg-black'
-    }),
-    // The app receives swipes and holds over the picture instead of the cross-origin iframe.
-    h('button', {
-      type: 'button',
-      className: 'story-youtube-surface absolute inset-0 w-full h-full flex items-center justify-center bg-transparent',
-      style: { zIndex: 2, touchAction: 'none' },
-      'aria-label': playing ? 'Ndal videon' : 'Luaj videon',
-      onClick: () => {
-        const shouldPlay = !playing;
-        send(shouldPlay ? 'playVideo' : 'pauseVideo');
-        setPlaying(shouldPlay);
-      }
-    }, !playing && h('span', {
-      className: 'w-12 h-12 rounded-full bg-black/40 flex items-center justify-center',
-      'aria-hidden': true
-    }, h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'white' }, h('path', { d: 'M8 5v14l11-7z' }))))
+    })
   ));
 }
 
