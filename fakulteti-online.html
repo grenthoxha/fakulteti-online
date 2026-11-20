@@ -24,7 +24,7 @@
     .profile-refined .profile-overview {gap:12px;padding:2px 0 6px;}
     .profile-refined .profile-overview-avatar {width:54px;height:54px;background:rgba(var(--brand-rgb),.08);color:rgb(var(--brand-rgb));border:1px solid rgba(var(--brand-rgb),.12);box-shadow:0 0 0 4px rgba(var(--brand-rgb),.025);}
     .profile-refined .profile-overview-name {font-size:20px;line-height:1.3;letter-spacing:-.03em;}
-    .profile-refined .profile-overview-edit {flex-shrink:0;padding:7px 10px;min-height:34px;border:1px solid rgba(var(--brand-rgb),.13);border-radius:10px;background:rgba(var(--brand-rgb),.045);font-size:12px;}
+    .profile-refined .profile-overview-edit {flex-shrink:0;display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;min-height:36px;border:1px solid rgba(var(--brand-rgb),.13);border-radius:10px;background:rgba(var(--brand-rgb),.045);font-size:12px;}
     .profile-refined .profile-student-card {min-height:88px;padding:16px;gap:12px;border-radius:20px;background:linear-gradient(115deg,var(--surface),rgba(var(--brand-rgb),.045));border-color:rgba(var(--brand-rgb),.14);box-shadow:0 6px 16px -14px rgba(15,23,42,.35);}
     .profile-refined .profile-card-preview {box-shadow:0 3px 7px -5px rgba(15,23,42,.4);}
     .profile-refined .profile-card-qr {width:36px;height:36px;border-radius:11px;}
@@ -43,6 +43,19 @@
     .profile-refined .profile-menu-row > span.flex-1 {padding-block:10px;}
     .profile-refined :is(.profile-student-card,.profile-quick-link,.profile-overview-edit,.profile-menu-row) {transition:background-color .18s ease,border-color .18s ease;}
     .profile-refined :is(.profile-student-card,.profile-quick-link,.profile-menu-row):focus-visible {outline:2px solid rgba(var(--brand-rgb),.65);outline-offset:3px;}
+    .profile-refined .profile-overview-name {white-space:normal;overflow-wrap:anywhere;}
+    .profile-refined #profile-edit {scroll-margin-top:76px;}
+    .profile-refined .profile-fold > summary {list-style:none;cursor:pointer;}
+    .profile-refined .profile-fold > summary::-webkit-details-marker {display:none;}
+    .profile-refined .profile-fold > summary > svg:last-child {transition:transform .18s ease;}
+    .profile-refined .profile-fold[open] > summary > svg:last-child {transform:rotate(90deg);}
+    .profile-refined .profile-fold-content {border-top:1px solid var(--line);padding:0 0 2px;max-height:340px;overflow-y:auto;overscroll-behavior:contain;}
+    .profile-refined .profile-fold-item {display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 4px;border:0;background:transparent;}
+    .profile-refined .profile-fold-item + .profile-fold-item {border-top:1px solid var(--line);}
+    .profile-refined .profile-item-description {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.5;}
+    .profile-refined .profile-row-count {min-width:22px;text-align:right;}
+    .profile-refined .profile-fold-item:focus-visible,.profile-refined summary:focus-visible {outline:2px solid rgba(var(--brand-rgb),.65);outline-offset:-2px;border-radius:10px;}
+    .profile-refined .approval-manage-button {margin-top:10px;}
     .dark .profile-refined .profile-overview-edit {color:#9fc5f2;background:rgba(109,164,229,.08);border-color:rgba(159,197,242,.16);}
     .dark .profile-refined .profile-overview-avatar {background:rgba(var(--brand-rgb),.16);color:#9fc5f2;border-color:rgba(159,197,242,.18);}
     .dark .profile-refined .profile-student-card {background:linear-gradient(115deg,#151f30,#17253b);border-color:rgba(159,197,242,.16);}
@@ -14662,16 +14675,45 @@ function AcademyApp({
       ]}
     ].map(group => ({ ...group, items: group.items.filter(item => (item.view !== 'freerooms' || facultyContext.hasFreeRooms) && (!window.FakultetiApprovals || window.FakultetiApprovals.canView(item.view))) })).filter(group => group.items.length);
     const completedProfileExams = enrolledCourses.filter(course => done.includes(course.id));
+    const gradedProfileExams = completedProfileExams.map(course => Number((studentGrades || {})[course.id])).filter(grade => Number.isInteger(grade) && grade >= 6 && grade <= 10);
+    const profileAverage = gradedProfileExams.length ? (gradedProfileExams.reduce((sum, grade) => sum + grade, 0) / gradedProfileExams.length).toFixed(2) : '—';
+    const canView = target => !window.FakultetiApprovals || window.FakultetiApprovals.canView(target);
+    const studyResources = groups.find(group => group.id === 'study');
+    const otherServices = groups.filter(group => group.id !== 'study');
+    const profileNotes = courseNotes || {};
+    const noteCourses = enrolledCourses.filter(course => typeof profileNotes[course.id] === 'string' && profileNotes[course.id].trim());
+    const savedItems = [];
+    if (canView('videos')) courseVideoFeed.forEach((item, index) => {
+      if (likedVideoIds.includes(item.id)) savedItems.push({ key: `story_${item.id}`, title: item.title, sub: item.kind === 'article' ? t('Fotografi · Artikull', 'Photo · Article') : t('Video e ruajtur', 'Saved video'), action: () => openCourseVideoFeed(index) });
+    });
+    if (canView('courses')) {
+      const bookmarks = unitReadJson(UNIT_BOOK_BM);
+      enrolledCourses.forEach(course => {
+        const book = (courseBooks || {})[course.id];
+        if (!book || !Array.isArray(bookmarks[course.id])) return;
+        [...new Set(bookmarks[course.id])].filter(page => Number.isInteger(page) && page > 0 && (!book.pages || page <= book.pages)).forEach(page => savedItems.push({
+          key: `page_${course.id}_${page}`, title: book.name || course.title, sub: `${t('Faqja', 'Page')} ${page} · ${course.title}`,
+          action: () => { const positions = unitReadJson(UNIT_BOOK_POS); positions[course.id] = { ...positions[course.id], page }; unitReadSave(UNIT_BOOK_POS, positions); openCourseSection(course, 'read'); }
+        }));
+      });
+    }
+    const count = value => h('span', { className: 'profile-row-count text-xs text-secondary tabular-nums' }, value);
+    const fold = (title, path, content, value, className = '') => h('details', { key: title, className: 'profile-fold ' + className },
+      h('summary', { className: rowCls }, icon(path), h('span', { className: 'flex-1' }, title), value !== undefined && count(value), chevron()), content);
+    const itemButton = (title, subtitle, action, key) => h('button', { key, type: 'button', onClick: action, className: 'profile-fold-item w-full text-left text-primary' },
+      h('span', { className: 'min-w-0 flex-1' }, h('span', { className: 'block text-sm font-medium' }, title), subtitle && h('span', { className: 'profile-item-description block text-xs text-secondary mt-1' }, subtitle)), chevron());
+    const empty = text => h('p', { className: 'text-xs text-secondary px-3 py-4 leading-5' }, text);
+
     return h('div', { className: 'profile-minimal profile-refined w-full max-w-xl mx-auto px-5 pt-7 pb-28 lg:pb-10 anim-fade-up space-y-6' },
-      window.FakultetiManageAccountsButton && h(window.FakultetiManageAccountsButton),
       h('section', { className: 'profile-overview flex items-center gap-3.5' },
         h('div', { className: 'profile-overview-avatar w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-lg font-semibold flex items-center justify-center overflow-hidden flex-shrink-0' },
           profilePhoto ? h('img', { src: profilePhoto, alt: t('Fotografia e profilit', 'Profile photo'), className: 'w-full h-full object-cover' }) : profileInitials),
         h('div', { className: 'flex-1 min-w-0' },
-          h('div', { className: 'profile-overview-name text-[19px] font-bold tracking-tight text-primary truncate' }, studentName || 'Student'),
-          studentFullName && studentName !== studentFullName && h('div', { className: 'text-xs text-secondary mt-0.5 truncate' }, studentFullName),
+          h('div', { className: 'profile-overview-name text-[19px] font-bold tracking-tight text-primary truncate' }, studentFullName || studentName || 'Student'),
+          studentFullName && studentName !== studentFullName && h('div', { className: 'text-xs text-secondary mt-0.5 truncate' }, studentName),
           h('button', { type: 'button', onClick: onAcademicChange, 'aria-label': t('Ndrysho fakultetin dhe drejtimin', 'Change faculty and programme'), className: 'text-sm text-secondary mt-0.5 text-left' }, h('span', { className: 'block text-xs mb-0.5' }, facultyContext.faculty?.label || ''), branchObj.label + ' · ' + yearLabel + ' ›')),
-        h('button', { type: 'button', onClick: () => { profileNameRequestRef.current++; setProfileNameChecking(false); if (isEditingName && !profileNeedsRealName) setIsEditingName(false); else openProfileEditor(); }, 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', className: 'profile-overview-edit text-sm font-semibold text-brand-600 dark:text-brand-400 py-2.5 px-1 cursor-pointer bg-transparent' }, isEditingName && !profileNeedsRealName ? t('Mbyll', 'Close') : t('Ndrysho', 'Edit'))),
+        h('button', { type: 'button', onClick: () => { profileNameRequestRef.current++; setProfileNameChecking(false); if (isEditingName && !profileNeedsRealName) setIsEditingName(false); else openProfileEditor(); }, 'aria-expanded': isEditingName || profileNeedsRealName, 'aria-controls': 'profile-edit', 'aria-label': isEditingName && !profileNeedsRealName ? t('Mbyll ndryshimet', 'Close editor') : t('Ndrysho profilin', 'Edit profile'), className: 'profile-overview-edit text-sm font-semibold text-brand-600 dark:text-brand-400 cursor-pointer bg-transparent' },
+          h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: isEditingName && !profileNeedsRealName ? 'M6 6l12 12M6 18L18 6' : 'M16 4l4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5z' })))),
       (isEditingName || profileNeedsRealName) && h('form', {
         id: 'profile-edit',
         'aria-label': t('Ndrysho profilin', 'Edit profile'),
@@ -14716,31 +14758,50 @@ function AcademyApp({
       h('button', {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("academic-progress")) ? 'true' : undefined, type: 'button', onClick: () => setView('academic-progress'), className: 'profile-quick-link profile-progress-link w-full min-h-[58px] rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M4 20V10M10 20V4M16 20v-7M22 20H2'),
-        h('span', { className: 'flex-1 text-left' }, t('Progresi dhe notat', 'Progress and grades')),
-        h('span', { className: 'text-xs text-secondary tabular-nums' }, `${Number(pct) || 0}% · ${completedProfileExams.length} ${t('provime', 'exams')}`), chevron()),
+        h('span', { className: 'flex-1 text-left flex items-center justify-between gap-2' }, h('span', null, t('Progresi dhe notat', 'Progress and grades')), h('span', { className: 'text-xs text-secondary tabular-nums font-normal' }, `${Math.min(100, Math.max(0, Number(pct) || 0))}%`)),
+        h('span', { className: 'text-xs text-secondary tabular-nums' }, `${completedProfileExams.length} ${t('provime', 'exams')} · ${t('Mesatarja', 'Average')} ${profileAverage}`), chevron()),
+      (canView('courses') || canView('videos') || studyResources) && h('section', { className: 'profile-menu-group profile-study-group' },
+        label(t('Studimi im', 'My studies')),
+        h('div', { className: cardCls },
+          canView('courses') && h('button', { type: 'button', onClick: () => setView('courses'), className: rowCls },
+            icon('M4 4h6a3 3 0 0 1 2 2v14a3 3 0 0 0-3-2H4zM20 4h-6a3 3 0 0 0-2 2v14a3 3 0 0 1 3-2h5z'), h('span', { className: 'flex-1' }, t('Lëndët e mia', 'My courses')), count(enrolledCourses.length), chevron()),
+          canView('courses') && fold(t('Shënimet e mia', 'My notes'), 'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5',
+            h('div', { className: 'profile-fold-content' }, noteCourses.length ? noteCourses.map(course => itemButton(course.title, profileNotes[course.id].replace(/\s+/g, ' ').slice(0, 120), () => openCourseSection(course, 'notes'), course.id)) : empty(t('Shënimet që shkruan te lëndët shfaqen këtu.', 'Notes you write in your courses appear here.'))), noteCourses.length, 'border-t border-default'),
+          (canView('courses') || canView('videos')) && fold(t('Materialet e ruajtura', 'Saved materials'), 'M6 3h12v18l-6-4-6 4z',
+            h('div', { className: 'profile-fold-content' }, savedItems.length ? savedItems.map(item => itemButton(item.title, item.sub, item.action, item.key)) : empty(t('Fotot, videot dhe faqeshënuesit e ruajtur shfaqen këtu.', 'Saved photos, videos and book pages appear here.'))), savedItems.length, 'border-t border-default'),
+          studyResources && fold(t('Burime dhe mbështetje', 'Resources and support'), 'M12 3l9 5-9 5-9-5zM7 11v5c3 2 7 2 10 0v-5',
+            h('div', { className: 'profile-fold-content' }, studyResources.items.map(item => itemButton(item.label, '', () => setView(item.view), item.view))), undefined, 'border-t border-default'))),
+      (canView('studentservices') || otherServices.length > 0) && h('section', { className: 'profile-menu-group profile-services-group' },
+        label(t('Shërbimet studentore', 'Student services')),
       h('button', {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentservices")) ? 'true' : undefined, type: 'button', onClick: () => setView('studentservices'), className: 'profile-quick-link w-full h-12 rounded-xl card-surface border border-default flex items-center gap-3 px-4 text-[15px] text-primary cursor-pointer' },
         icon('M3 5h18v14H3zM8 10a2 2 0 1 1 0 .01M6 15c.5-1.2 1.4-2 2-2s1.5.8 2 2M14 10h4M14 14h3'),
         h('span', { className: 'flex-1 text-left' }, t('Shërbimet studentore', 'Student services')),
         chevron()),
-      groups.map(g => h('section', { key: g.name, className: 'profile-menu-group' },
-        label(g.name),
-        h('div', { className: cardCls },
-          g.items.map((it, i) => h('button', { key: it.view, type: 'button', onClick: () => setView(it.view), className: rowCls + (i ? divider : '') },
-            icon(it.icon), h('span', { className: 'flex-1' }, it.label), chevron()))))),
+        otherServices.length > 0 && h('div', { className: cardCls + ' mt-2' }, otherServices.map((group, index) => fold(group.name, index ? 'M3 7h18v13H3zM8 7V4h8v3' : 'M3 11l9-8 9 8M5 10v10h14V10',
+          h('div', { className: 'profile-fold-content' }, group.items.map(item => itemButton(item.label, '', () => setView(item.view), item.view))), undefined, index ? 'border-t border-default' : '')))),
       h('section', { className: 'profile-menu-group' },
         label(t('Cilësimet', 'Settings')),
         h('div', { className: cardCls },
           h('button', { type: 'button', role: 'switch', 'aria-checked': !!isDark, onClick: () => setIsDark(!isDark), className: rowCls },
-            h('span', { className: 'flex-1' }, t('Tema e errët', 'Dark theme')),
+            icon('M20 14a8 8 0 0 1-10-10 9 9 0 1 0 10 10z'), h('span', { className: 'flex-1' }, t('Tema e errët', 'Dark theme')),
             h('span', { className: 'relative w-[42px] h-6 rounded-full transition-colors flex-shrink-0 ' + (isDark ? 'bg-brand-600' : 'bg-slate-200 dark:bg-slate-700') },
               h('span', { className: 'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ' + (isDark ? 'left-[20px]' : 'left-0.5') }))),
+          (!window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) && h('button', { type: 'button', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); }, className: rowCls + divider },
+            icon('M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4'), h('span', { className: 'flex-1' }, t('Njoftimet', 'Notifications')), chevron()),
           h('button', { type: 'button', onClick: () => onLanguageChange(en ? 'sq' : 'en'), className: rowCls + divider },
-            h('span', { className: 'flex-1' }, t('Gjuha', 'Language')),
+            icon('M3 12h18M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3c-4 5-4 13 0 18M12 3c4 5 4 13 0 18'), h('span', { className: 'flex-1' }, t('Gjuha', 'Language')),
             h('span', { className: 'text-sm text-secondary' }, en ? 'English' : 'Shqip')),
+          fold(t('Llogaria dhe të dhënat', 'Account and data'), 'M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM9 12l2 2 4-4',
+            h('div', { className: 'profile-fold-content' },
+              itemButton(t('Ndrysho të dhënat', 'Edit account details'), '', () => { profileNameRequestRef.current++; setProfileNameChecking(false); openProfileEditor(); requestAnimationFrame(() => document.getElementById('profile-edit')?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' })); }, 'edit'),
+              itemButton(t('Eksporto kopjen rezervë', 'Export backup'), '', exportBackup, 'export'),
+              itemButton(t('Importo kopjen rezervë', 'Import backup'), '', () => document.getElementById('profile-backup-import')?.click(), 'import'),
+              h('input', { id: 'profile-backup-import', type: 'file', accept: 'application/json,.json', onChange: importBackup, hidden: true })), undefined, 'border-t border-default'),
           h(UnitInstallButton, { className: rowCls + divider, uiLanguage }),
           h('button', { type: 'button', onClick: onLogout, className: rowCls + divider + ' !text-red-700 dark:!text-red-400' },
-            h('span', { className: 'flex-1' }, t('Dil nga llogaria', 'Sign out'))))));
+            icon('M10 3H4v18h6M10 12h11M17 8l4 4-4 4'), h('span', { className: 'flex-1' }, t('Dil nga llogaria', 'Sign out')))),
+        window.FakultetiManageAccountsButton && h(window.FakultetiManageAccountsButton)));
   };
 
   const renderAcademicProgress = () => {
