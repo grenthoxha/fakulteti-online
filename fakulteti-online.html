@@ -10978,7 +10978,7 @@ const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty =
 const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
-const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.5', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.5-android-preview/Fakulteti-Online.apk' });
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.6', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.6-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -19685,7 +19685,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   }, [courseVideoFeedOpen, view, topicExplainTab, videoLivePlaying, videoLiveDuration]);
 
   const renderRealtimeTranslationPanel = (video, compact = false) => {
-    if (!video) return null;
+    if (!video || getTopicVideoSource(video.url)?.provider === 'YouTube') return null;
     const segments = getVideoRealtimeSubtitles(video);
     const activeSeg = segments.find(seg => videoLiveTime >= seg.start && videoLiveTime < seg.end) || segments[segments.length - 1] || segments[0];
     const maxEnd = segments.length ? segments[segments.length - 1].end : 600;

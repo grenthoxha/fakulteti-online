@@ -23,4 +23,11 @@ playerListeners['unit-story-playback']({detail:{playing:false,holding:true}});ok
 listeners.message({source:{},data:JSON.stringify({event:'onStateChange',info:2})});ok(playing,'unrelated frame messages ignored');listeners.message({source:frameWindow,data:JSON.stringify({event:'onStateChange',info:2})});ok(!playing,'real player state synchronized');
 frame.props.onLoad();listeners.message({source:frameWindow,data:JSON.stringify({event:'apiInfoDelivery',info:{captions:{options:['track'],tracklist:[{languageCode:'en',is_translateable:true}],translationLanguages:[{languageCode:'sq'}]}}})});ok(sent.some(m=>m.func==='setOption'&&m.args[2]?.translationLanguage?.languageCode==='sq'),'auto-translation still requested');
 cleanups.forEach(fn=>fn?.());ok(!listeners.message&&!playerListeners['unit-story-playback'],'listeners removed on close');
+const panelStart=html.indexOf('  const renderRealtimeTranslationPanel =');
+const panelEnd=html.indexOf('  const getTopicVideoSource =',panelStart);
+const panelContext=vm.createContext({getTopicVideoSource:url=>({provider:url==='youtube'?'YouTube':'Video Direkte'}),getVideoRealtimeSubtitles:()=>{throw Error('native-panel-path')}});
+vm.runInContext(html.slice(panelStart,panelEnd)+'this.panel=renderRealtimeTranslationPanel;',panelContext);
+ok(panelContext.panel({url:'youtube'})===null,'lesson YouTube has no duplicate app controls');
+ok(panelContext.panel(null)===null,'missing video has no panel');
+let nativePanel=false;try{panelContext.panel({url:'native'})}catch(e){nativePanel=e.message==='native-panel-path'}ok(nativePanel,'other video providers keep their existing panel');
 console.log(`PASS: ${checks} native YouTube controls, direct interaction, fullscreen, playback and captions checks.`);
