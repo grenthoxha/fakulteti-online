@@ -17,7 +17,7 @@ $resourceDir = Join-Path $workDir 'res'
 $iconDir = Join-Path $resourceDir 'mipmap-xxxhdpi'
 $signingDir = Join-Path $PSScriptRoot '.signing'
 New-Item -ItemType Directory -Path $classDir, $iconDir, $signingDir -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'res/values'), (Join-Path $PSScriptRoot 'res/drawable') -Destination $resourceDir -Recurse
+Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'res') -Directory | Copy-Item -Destination $resourceDir -Recurse
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../assets/fakulteti-online-logo-192.png') -Destination (Join-Path $iconDir 'ic_launcher.png')
 
 $compiledResources = Join-Path $workDir 'resources.zip'

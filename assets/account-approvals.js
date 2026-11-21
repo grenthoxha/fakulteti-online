@@ -126,7 +126,7 @@
       root.addEventListener('online',resume);root.addEventListener('pageshow',resume);root.document.addEventListener('visibilitychange',resume);
       return()=>{alive.current=false;clearInterval(timer);root.removeEventListener('fakulteti:manage-accounts',openManager);root.removeEventListener('online',resume);root.removeEventListener('pageshow',resume);root.document.removeEventListener('visibilitychange',resume);};
     },[]);
-    useEffect(()=>{if(policy&&policy.status!=='approved'){root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('focus-unlock');}},[policy?.status]);
+    useEffect(()=>{if(policy&&policy.status!=='approved'){root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');root.fakultetiAndroid?.send('focus-unlock');}},[policy?.status]);
     if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:policy.id+':'+policy.version}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
     const status=policy?.status || 'loading';
     const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:needsProfile?'Plotëso profilin':busy?'Po kontrollohet qasja':'Kërkesa për aprovim'};

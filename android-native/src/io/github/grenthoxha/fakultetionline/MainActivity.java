@@ -8,6 +8,11 @@ import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import org.json.JSONObject;
+import org.json.JSONException;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -35,8 +40,8 @@ import android.window.OnBackInvokedDispatcher;
 public final class MainActivity extends Activity {
     private static final Uri APP_ORIGIN = Uri.parse("https://grenthoxha.github.io");
     private static final String APP_PATH = "/fakulteti-online/";
-    private static final int WEB_REVISION = 7;
-    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.6";
+    private static final int WEB_REVISION = 8;
+    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.7";
     private static final int FILE_PICKER = 1;
     private static final int NOTIFICATION_PERMISSION = 2;
     private static final int REPEAT_NOTIFICATION_PERMISSION = 3;
@@ -66,6 +71,10 @@ public final class MainActivity extends Activity {
               } else if (event.data === 'demo-repeat-on' || event.data === 'demo-repeat-off') {
                 demoRepeating = event.data === 'demo-repeat-on';
                 window.dispatchEvent(new Event('fakulteti:demo-repeat-state'));
+              } else if (event.data === 'widget-sync') {
+                window.dispatchEvent(new Event('fakulteti:widget-sync'));
+              } else if (typeof event.data === 'string' && event.data.startsWith('widget-command:')) {
+                try { window.dispatchEvent(new CustomEvent('fakulteti:widget-command', { detail: JSON.parse(event.data.slice(15)) })); } catch {}
               } else if (typeof event.data === 'string' && event.data.startsWith('notification-open:')) {
                 window.dispatchEvent(new CustomEvent('fakulteti:notification-open', { detail: event.data.slice(18) }));
               }
@@ -75,6 +84,7 @@ public final class MainActivity extends Activity {
               get demoRepeating() { return demoRepeating; },
               demoRepeatSupported: true,
               notificationFeedSupported: true,
+              widgetsSupported: true,
               send(command) {
                 port.postMessage(command);
                 if (command === 'focus-lock') focusLocked = true;
@@ -107,6 +117,12 @@ public final class MainActivity extends Activity {
     private boolean focusLocked;
     private boolean awaitingAlarmSettings;
     private boolean notificationFeedReady;
+    private boolean widgetFeedReady;
+    private String pendingWidgetTarget, pendingWidgetScope;
+    private boolean pendingWidgetRefresh;
+    private final BroadcastReceiver widgetChanges = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) { sendWidgetCommands(); }
+    };
     private String pendingNotificationId;
     private String pendingNotificationScope;
     private int pageRevision;
@@ -116,6 +132,9 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         readNotificationIntent(getIntent());
+        readWidgetIntent(getIntent());
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(widgetChanges, new IntentFilter(FacultyWidgets.CHANGED), Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(widgetChanges, new IntentFilter(FacultyWidgets.CHANGED));
         if (state != null && pendingNotificationId == null) {
             pendingNotificationId = state.getString(DemoNotifications.OPEN_ITEM);
             pendingNotificationScope = state.getString(DemoNotifications.OPEN_SCOPE);
@@ -226,6 +245,7 @@ public final class MainActivity extends Activity {
                 pageRevision++;
                 connectingPage = false;
                 notificationFeedReady = false;
+                widgetFeedReady = false;
                 closePagePort();
             }
 
@@ -311,6 +331,10 @@ public final class MainActivity extends Activity {
     }
 
     private void handlePageMessage(String message) {
+        if (message.startsWith("widget-state:")) { FacultyWidgets.sync(this, message.substring(13)); return; }
+        if (message.equals("widget-clear")) { FacultyWidgets.clear(this); pendingWidgetTarget=null; return; }
+        if (message.equals("widget-ready")) { widgetFeedReady=true; sendWidgetCommands(); return; }
+        if (message.equals("widget-picker")) { if (!focusLocked && hasWindowFocus()) showWidgetPicker(); return; }
         if (message.startsWith("notification-state:")) {
             DemoNotifications.sync(this, message.substring(19));
             notificationFeedReady = true;
@@ -352,7 +376,42 @@ public final class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         readNotificationIntent(intent);
+        readWidgetIntent(intent);
         openPendingNotification();
+        sendWidgetCommands();
+    }
+
+    private void readWidgetIntent(Intent intent) {
+        pendingWidgetTarget=intent.getStringExtra(FacultyWidgets.OPEN);
+        pendingWidgetScope=intent.getStringExtra(FacultyWidgets.SCOPE);
+        pendingWidgetRefresh=intent.getBooleanExtra(FacultyWidgets.REFRESH,false);
+        intent.removeExtra(FacultyWidgets.OPEN);intent.removeExtra(FacultyWidgets.SCOPE);intent.removeExtra(FacultyWidgets.REFRESH);
+    }
+
+    private void sendWidgetCommands() {
+        if (!widgetFeedReady || pagePort==null || focusLocked) return;
+        String command=FacultyWidgets.pending(this);
+        if (!command.isEmpty()) pagePort.postMessage(new WebMessage("widget-command:"+command));
+        if (pendingWidgetTarget!=null) {
+            if (FacultyWidgets.scope(this).equals(pendingWidgetScope)) {
+                hideFullscreenVideo();
+                try {
+                    JSONObject value=new JSONObject().put("kind","open").put("scope",pendingWidgetScope)
+                            .put("target",pendingWidgetTarget).put("refresh",pendingWidgetRefresh);
+                    pagePort.postMessage(new WebMessage("widget-command:"+value));
+                } catch (JSONException ignored) { }
+            }
+            pendingWidgetTarget=null;pendingWidgetScope=null;
+        }
+        pagePort.postMessage(new WebMessage("widget-sync"));
+    }
+
+    private void showWidgetPicker() {
+        String[] names={"Ligjërata e radhës","Sallat e lira","Pomodoro"};String[] kinds={"schedule","rooms","pomodoro"};
+        if (!getSystemService(android.appwidget.AppWidgetManager.class).isRequestPinAppWidgetSupported()) {
+            new AlertDialog.Builder(this).setTitle("Widget-et e Fakultetit").setMessage("Mbaje të shtypur një hapësirë në ekranin kryesor, zgjidh Widget-et dhe pastaj Fakulteti.").setPositiveButton("Në rregull",null).show();return;
+        }
+        new AlertDialog.Builder(this).setTitle("Shto në ekranin kryesor").setItems(names,(dialog,index)->FacultyWidgets.pin(this,kinds[index])).setNegativeButton("Anulo",null).show();
     }
 
     private void openPendingNotification() {
@@ -460,6 +519,8 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        sendWidgetCommands();
+        FacultyWidgets.updateAll(this);
         if (awaitingAlarmSettings) {
             awaitingAlarmSettings = false;
             if (DemoNotifications.canSchedule(this)) sendDemoNotification(true);
@@ -500,6 +561,7 @@ public final class MainActivity extends Activity {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         updateSystemAppearance();
         openPendingNotification();
+        sendWidgetCommands();
         if (getSystemService(ActivityManager.class).getLockTaskModeState() == ActivityManager.LOCK_TASK_MODE_PINNED) {
             try {
                 stopLockTask();
@@ -582,6 +644,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        unregisterReceiver(widgetChanges);
         hideFullscreenVideo();
         closePagePort();
         finishFilePicker(null);

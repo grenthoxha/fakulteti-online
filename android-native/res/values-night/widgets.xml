@@ -1,0 +1,5 @@
+<resources>
+ <color name="widget_surface">#ED142238</color><color name="widget_line">#455F789C</color>
+ <color name="widget_ink">#F5F8FF</color><color name="widget_muted">#B8C9E0</color>
+ <color name="widget_blue">#A0C9FF</color><color name="widget_badge">#263F83D4</color>
+</resources>

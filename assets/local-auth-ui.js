@@ -37,7 +37,7 @@
     useEffect(() => {
       const releaseSignedOutSession = () => {
         if (accounts.current()) return;
-        root.fakultetiAndroid?.send('notification-clear');
+        root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
         root.fakultetiAndroid?.send('focus-unlock');
       };
       root.addEventListener('fakulteti:android-ready', releaseSignedOutSession);

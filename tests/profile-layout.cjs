@@ -7,7 +7,7 @@ const text=t=>t&&typeof t==='object'?t.children.map(text).join(''):String(t??'')
 let checks=0;const ok=(value,message)=>{assert(value,message);checks++};
 function fixture(extra={}){
  const actions=[],writes=[];const all={bookmarks:{c1:[2,2,-1,999,3.3],other:[1]},positions:{c1:{page:1,at:123}}};
- const c=vm.createContext({React:{createElement:h,Fragment:'Fragment'},view:'settings',uiLanguage:'sq',BRANCHES:[{id:'psych',label:'Psikologji'}],branchId:'psych',yr:{label:'Viti II'},yearId:2,
+ const c=vm.createContext({React:{createElement:h,Fragment:'Fragment'},androidNativeReady:false,view:'settings',uiLanguage:'sq',BRANCHES:[{id:'psych',label:'Psikologji'}],branchId:'psych',yr:{label:'Viti II'},yearId:2,
  facultyContext:{hasFreeRooms:true,faculty:{label:'Fakulteti Filozofik'}},window:{FakultetiManageAccountsButton:'AdminButton',matchMedia:()=>({matches:false})},
  enrolledCourses:[{id:'c1',title:'Psikologji sociale'},{id:'c2',title:'Metodat e hulumtimit'},{id:'c3',title:'Psikologji zhvillimore'}],done:['c1','c2'],studentGrades:{c1:8,c2:10,c3:9},pct:50,
  courseNotes:{c1:'Një shënim i ruajtur për ligjëratën.',other:'Shënim nga një lëndë tjetër'},courseBooks:{c1:{name:'Libri i psikologjisë',pages:10}},courseVideoFeed:[{id:'v1',title:'Video e ruajtur',url:'youtube'},{id:'p1',title:'Artikulli i ruajtur',kind:'article'}],likedVideoIds:['v1','p1','missing'],
@@ -61,6 +61,7 @@ button(tree,'GjuhaShqip').props.onClick();ok(JSON.stringify(f.actions.at(-1))===
 button(tree,'Llogaria dhe të dhënat').props.onClick();ok(f.actions.at(-1)==='profile-account');
 button(tree,'Dil nga llogaria').props.onClick();ok(f.actions.at(-1)==='logout');
 ok(nodes(tree).some(n=>n.type==='AdminButton'),'admin management preserved');ok(nodes(tree).some(n=>n.type==='InstallButton'),'APK/install preserved');
+f=fixture({view:'profile-settings',androidNativeReady:true,window:{fakultetiAndroid:{widgetsSupported:true,send:command=>f.actions.push(command)}}});tree=f.render();button(tree,'Widget-et e telefonit').props.onClick();ok(f.actions.at(-1)==='widget-picker','native widget placement entry works');
 f=fixture({view:'profile-account'});tree=f.render();
 button(tree,'Të dhënat personale').props.onClick();ok(f.actions.at(-1)==='editor');
 button(tree,'Fakulteti dhe drejtimi').props.onClick();ok(f.actions.at(-1)==='faculty');

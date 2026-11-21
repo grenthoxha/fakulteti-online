@@ -146,12 +146,12 @@
     });
   }
   function signOut() {
-    root.fakultetiAndroid?.send('notification-clear');
+    root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
     raw.removeItem(SESSION);
   }
   root.addEventListener('storage', event => {
     if ((event.key === SESSION || event.key === null || event.key === USERS) && raw.getItem(SESSION) !== startupSession) {
-      root.fakultetiAndroid?.send('notification-clear');
+      root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
       root.location.reload();
     } else if (event.key === USERS && startupAccount && !current()) {
       signOut(); root.location.reload();

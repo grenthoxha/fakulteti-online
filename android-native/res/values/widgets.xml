@@ -1,0 +1,11 @@
+<resources>
+ <string name="widget_schedule_name">Fakulteti · Ligjërata e radhës</string>
+ <string name="widget_rooms_name">Fakulteti · Sallat e lira</string>
+ <string name="widget_pomodoro_name">Fakulteti · Pomodoro</string>
+ <string name="widget_schedule_description">Ligjërata e ardhshme nga orari yt. Prek për ta hapur.</string>
+ <string name="widget_rooms_description">Sallat sipas orarit të fundit të marrë. Rifreskimi hap aplikacionin.</string>
+ <string name="widget_pomodoro_description">Koha e fokusit, me pauzë dhe vazhdim direkt nga ekrani kryesor.</string>
+ <color name="widget_surface">#F2F5F8FE</color><color name="widget_line">#30245E9E</color>
+ <color name="widget_ink">#11243B</color><color name="widget_muted">#536780</color>
+ <color name="widget_blue">#1859AE</color><color name="widget_badge">#192C71C8</color>
+</resources>

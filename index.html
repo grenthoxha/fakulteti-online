@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=4">
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
-  <script src="./assets/local-accounts.js?v=3"></script>
+  <script src="./assets/local-accounts.js?v=4"></script>
   <script>var unitStorage = window.FakultetiLocalAccounts.storage;</script>
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
   <link rel="stylesheet" href="./assets/account-approvals.css?v=2">
@@ -1554,8 +1554,9 @@
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
-  <script src="./assets/local-auth-ui.js?v=9"></script>
-  <script src="./assets/account-approvals.js?v=3"></script>
+  <script src="./assets/local-auth-ui.js?v=10"></script>
+  <script src="./assets/account-approvals.js?v=4"></script>
+  <script src="./assets/android-widgets.js?v=1"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -11017,7 +11018,7 @@ const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty =
 const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
-const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.6', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.6-android-preview/Fakulteti-Online.apk' });
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.7', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.7-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -13476,6 +13477,8 @@ function AcademyApp({
   }, [pomoOpen, pomoLocked]);
   const [pomoNow, setPomoNow] = useState(() => Date.now());
   const pomoDoneRef = useRef(0);
+  const [androidWidgetsHydrated, setAndroidWidgetsHydrated] = useState(() => !window.fakultetiAndroid?.widgetsSupported && !/(?:^|[?&])app=1\.0\.7(?:&|$)/.test(window.location.search));
+  useEffect(() => { if (androidWidgetsHydrated) return; const id = setTimeout(() => setAndroidWidgetsHydrated(true), 8000); return () => clearTimeout(id); }, [androidWidgetsHydrated]);
   useEffect(() => { try { unitStorage.setItem('u_pomo_settings', JSON.stringify(pomoSettings)); } catch (e) {} }, [pomoSettings]);
   useEffect(() => { try { unitStorage.setItem('u_pomo_history', JSON.stringify(pomoHistory)); } catch (e) {} }, [pomoHistory]);
   useEffect(() => { try { unitStorage.setItem('u_pomo_state', JSON.stringify(pomo)); } catch (e) {} }, [pomo]);
@@ -13486,11 +13489,12 @@ function AcademyApp({
     return () => clearInterval(id);
   }, [pomo.endsAt, pomoOpen]);
   useEffect(() => {
+    if (!androidWidgetsHydrated) return;
     if (pomo.endsAt && pomoNow >= pomo.endsAt && pomoDoneRef.current !== pomo.endsAt) {
       pomoDoneRef.current = pomo.endsAt;
       pomoFinishPhase();
     }
-  }, [pomoNow, pomo.endsAt]);
+  }, [pomoNow, pomo.endsAt, androidWidgetsHydrated]);
   useEffect(() => {
     if (!pomo.endsAt) return undefined;
     const secs = Math.max(0, Math.ceil((pomo.endsAt - pomoNow) / 1000));
@@ -14777,6 +14781,7 @@ function AcademyApp({
           icon('M20 14a8 8 0 0 1-10-10 9 9 0 1 0 10 10z'), h('span', { className: 'flex-1' }, t('Tema e errët', 'Dark theme')),
           h('span', { className: 'relative w-[42px] h-6 rounded-full transition-colors flex-shrink-0 ' + (isDark ? 'bg-brand-600' : 'bg-slate-200 dark:bg-slate-700') }, h('span', { className: 'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ' + (isDark ? 'left-[20px]' : 'left-0.5') }))),
         row(t('Gjuha', 'Language'), 'M3 12h18M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3c-4 5-4 13 0 18M12 3c4 5 4 13 0 18', () => onLanguageChange(en ? 'sq' : 'en'), en ? 'English' : 'Shqip', 'language') ])),
+      androidNativeReady && window.fakultetiAndroid?.widgetsSupported && menu(row(t('Widget-et e telefonit', 'Home screen widgets'), 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', () => window.fakultetiAndroid.send('widget-picker'), undefined, 'widgets')),
       menu(h(UnitInstallButton, { className: rowCls, uiLanguage })),
       h('button', { type: 'button', onClick: onLogout, className: 'profile-native-logout text-red-700 dark:text-red-400' }, icon('M10 3H4v18h6M10 12h11M17 8l4 4-4 4'), t('Dil nga llogaria', 'Sign out')),
       window.FakultetiManageAccountsButton && h(window.FakultetiManageAccountsButton)));
@@ -34322,6 +34327,23 @@ Nënshkrimi: _____________________`;
     .filter((item, idx, arr) => arr.findIndex(t => t.id === item.id || (t.courseId === item.courseId && t.start === item.start && t.type === item.type)) === idx)
     .sort((a, b) => a.start.localeCompare(b.start));
   const scheduleMinToMinutes = hm => { const [h, m] = String(hm || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  // Native launcher widgets reuse the same selected programme, room source and focus state.
+  const widgetCan = section => window.FakultetiApprovals?.can(section) === true;
+  window.FakultetiWidgets.useBridge({
+    scope: window.FakultetiLocalAccounts.current() ? window.FakultetiLocalAccounts.databaseName('widgets') : '',
+    allow: { schedule: widgetCan('schedule'), rooms: facultyContext.hasFreeRooms && widgetCan('rooms'), pomodoro: widgetCan('home') },
+    revision: JSON.stringify([branchId, yearId, scopedSchedule]),
+    getSessions: (dayId, dayKey) => {
+      const program = socialWorkScheduleUser ? 'social-work' : facultyScheduleProgram;
+      return program ? getFilozofikuProgramSessions(FilozofikuDailyStore.getData(), program, dayId, dayKey).map(event => ({ title: event.t, room: event.room, start: event.start, end: event.end }))
+        : scheduleMinDaySessions(dayId).map(item => ({ title: item.title || allCourses.find(course => course.id === item.courseId)?.title || '', room: item.room, start: item.start, end: item.end }));
+    },
+    store: FilozofikuDailyStore, getRoomEvents: getFilozofikuRoomEvents,
+    onHydrated: () => setAndroidWidgetsHydrated(true),
+    pomo, task: dailyRoutines.find(item => item.id === pomo.taskId)?.title || '',
+    onPomo: p => { setPomoNow(Date.now()); setPomo(previous => ({ ...previous, phase: p.phase, total: p.total, left: p.left, endsAt: p.endsAt || null, cycle: p.cycle, taskId: p.taskId, done: !!p.done })); },
+    onOpen: target => { setCourseVideoFeedOpen(false); setSearchOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(false); if (target === 'schedule') setView('week'); else if (target === 'rooms') setView('freerooms'); else if (target === 'pomodoro') { setPomoOpen(true); setPomoSetOpen(false); } }
+  });
   const getScheduleMinSelectedDay = () => {
     const inWeek = academicWeekDays.find(day => day.key === scheduleSelectedDayKey);
     if (inWeek) return inWeek;
@@ -38417,6 +38439,12 @@ function BujarRoomsApp({ studentName, onOpenApp, uiLanguage }) {
   const [roomsHomeRevision, setRoomsHomeRevision] = useState(0);
   const openRoomsHome = () => { setRoomsHomeRevision(value => value + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   useEffect(() => bindBujarRoomsResume(document, window, options => FilozofikuDailyStore.refresh(options)), []);
+  window.FakultetiWidgets.useBridge({
+    scope: window.FakultetiLocalAccounts.current() ? window.FakultetiLocalAccounts.databaseName('widgets') : '',
+    allow: { schedule: false, rooms: window.FakultetiApprovals?.can('rooms') === true, pomodoro: false },
+    store: FilozofikuDailyStore, getRoomEvents: getFilozofikuRoomEvents, getSessions: () => [],
+    onOpen: target => { if (target === 'rooms') openRoomsHome(); }
+  });
   const toggleTheme = () => {
     const next = !isDark; setIsDark(next);
     document.documentElement.classList.toggle('dark', next);
