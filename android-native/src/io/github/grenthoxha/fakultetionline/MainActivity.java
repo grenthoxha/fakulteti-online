@@ -40,11 +40,12 @@ import android.window.OnBackInvokedDispatcher;
 public final class MainActivity extends Activity {
     private static final Uri APP_ORIGIN = Uri.parse("https://grenthoxha.github.io");
     private static final String APP_PATH = "/fakulteti-online/";
-    private static final int WEB_REVISION = 8;
-    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.7";
+    private static final int WEB_REVISION = 9;
+    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.8";
     private static final int FILE_PICKER = 1;
     private static final int NOTIFICATION_PERMISSION = 2;
     private static final int REPEAT_NOTIFICATION_PERMISSION = 3;
+    private static final int POMODORO_PERMISSION = 4;
     private static final String FOCUS_LOCKED = "focus_locked";
     private static final String AWAITING_ALARM_SETTINGS = "awaiting_alarm_settings";
     private static final int DARK_SURFACE = 0xff111827;
@@ -71,6 +72,8 @@ public final class MainActivity extends Activity {
               } else if (event.data === 'demo-repeat-on' || event.data === 'demo-repeat-off') {
                 demoRepeating = event.data === 'demo-repeat-on';
                 window.dispatchEvent(new Event('fakulteti:demo-repeat-state'));
+              } else if (event.data === 'pomo-notifications-on' || event.data === 'pomo-notifications-off') {
+                window.dispatchEvent(new CustomEvent('fakulteti:pomo-permission', { detail: event.data === 'pomo-notifications-on' }));
               } else if (event.data === 'widget-sync') {
                 window.dispatchEvent(new Event('fakulteti:widget-sync'));
               } else if (typeof event.data === 'string' && event.data.startsWith('widget-command:')) {
@@ -85,6 +88,7 @@ public final class MainActivity extends Activity {
               demoRepeatSupported: true,
               notificationFeedSupported: true,
               widgetsSupported: true,
+              pomoNotificationsSupported: true,
               send(command) {
                 port.postMessage(command);
                 if (command === 'focus-lock') focusLocked = true;
@@ -121,7 +125,11 @@ public final class MainActivity extends Activity {
     private String pendingWidgetTarget, pendingWidgetScope;
     private boolean pendingWidgetRefresh;
     private final BroadcastReceiver widgetChanges = new BroadcastReceiver() {
-        @Override public void onReceive(Context context, Intent intent) { sendWidgetCommands(); }
+        @Override public void onReceive(Context context, Intent intent) {
+            JSONObject p=FacultyWidgets.state(MainActivity.this).optJSONObject("pomo");
+            if(p!=null&&p.optBoolean("done")&&focusLocked)unlockFocus();
+            sendWidgetCommands();
+        }
     };
     private String pendingNotificationId;
     private String pendingNotificationScope;
@@ -331,6 +339,8 @@ public final class MainActivity extends Activity {
     }
 
     private void handlePageMessage(String message) {
+        if (message.equals("pomo-notifications")) { if (!focusLocked && hasWindowFocus()) requestPomodoroNotifications(); return; }
+        if (message.startsWith("pomo-finished:")) { FacultyWidgets.finishActive(this,message.substring(14)); return; }
         if (message.startsWith("widget-state:")) { FacultyWidgets.sync(this, message.substring(13)); return; }
         if (message.equals("widget-clear")) { FacultyWidgets.clear(this); pendingWidgetTarget=null; return; }
         if (message.equals("widget-ready")) { widgetFeedReady=true; sendWidgetCommands(); return; }
@@ -364,6 +374,23 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void requestPomodoroNotifications() {
+        if (Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) {
+            if (!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) && getPreferences(MODE_PRIVATE).getBoolean("asked_pomo_notifications",false)) { showNotificationSettings(); return; }
+            getPreferences(MODE_PRIVATE).edit().putBoolean("asked_pomo_notifications",true).apply();
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},POMODORO_PERMISSION);return;
+        }
+        finishPomodoroPermission();
+    }
+    private void finishPomodoroPermission() {
+        boolean enabled=PomodoroNotifications.enabled(this);
+        if(pagePort!=null)pagePort.postMessage(new WebMessage(enabled?"pomo-notifications-on":"pomo-notifications-off"));
+        if(enabled&&!DemoNotifications.canSchedule(this))new AlertDialog.Builder(this).setTitle("Koha e saktë e Pomodoro-s")
+            .setMessage("Lejo Alarmet dhe kujtesat që njoftimi të vijë në kohën e caktuar edhe kur telefoni është i kyçur.")
+            .setPositiveButton("Hap cilësimet",(dialog,button)->{try{startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));}catch(ActivityNotFoundException ignored){}})
+            .setNegativeButton("Më vonë",null).show();
+    }
+
     private void readNotificationIntent(Intent intent) {
         pendingNotificationId = intent.getStringExtra(DemoNotifications.OPEN_ITEM);
         pendingNotificationScope = intent.getStringExtra(DemoNotifications.OPEN_SCOPE);
@@ -389,10 +416,10 @@ public final class MainActivity extends Activity {
     }
 
     private void sendWidgetCommands() {
-        if (!widgetFeedReady || pagePort==null || focusLocked) return;
+        if (!widgetFeedReady || pagePort==null) return;
         String command=FacultyWidgets.pending(this);
         if (!command.isEmpty()) pagePort.postMessage(new WebMessage("widget-command:"+command));
-        if (pendingWidgetTarget!=null) {
+        if (pendingWidgetTarget!=null && !focusLocked) {
             if (FacultyWidgets.scope(this).equals(pendingWidgetScope)) {
                 hideFullscreenVideo();
                 try {
@@ -453,6 +480,7 @@ public final class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(request, permissions, grants);
+        if (request==POMODORO_PERMISSION) { finishPomodoroPermission(); return; }
         if ((request == NOTIFICATION_PERMISSION || request == REPEAT_NOTIFICATION_PERMISSION) && grants.length > 0
                 && grants[0] == PackageManager.PERMISSION_GRANTED) {
             sendDemoNotification(request == REPEAT_NOTIFICATION_PERMISSION);

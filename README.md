@@ -2,7 +2,7 @@
 
 ## Instalo në Android
 
-### [⬇️ Shkarko Fakulteti — APK 1.0.7](https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.7-android-preview/Fakulteti-Online.apk)
+### [⬇️ Shkarko Fakulteti — APK 1.0.8](https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.8-android-preview/Fakulteti-Online.apk)
 
 Lidhja më sipër shkarkon direkt APK-në, pa kërkuar te dosjet e projektit.
 
@@ -10,7 +10,7 @@ Lidhja më sipër shkarkon direkt APK-në, pa kërkuar te dosjet e projektit.
 2. Nëse e ke app-in, instaloje si **përditësim**, pa e çinstaluar. Të dhënat lokale ruhen.
 3. Për widget-et: **Profili → ⚙️ Cilësimet → Widget-et e telefonit**.
 
-[Hape app-in në shfletues](https://grenthoxha.github.io/fakulteti-online/) · [Detajet e APK-së dhe versionit](https://github.com/grenthoxha/fakulteti-online/releases/tag/v1.0.7-android-preview)
+[Hape app-in në shfletues](https://grenthoxha.github.io/fakulteti-online/) · [Detajet e APK-së dhe versionit](https://github.com/grenthoxha/fakulteti-online/releases/tag/v1.0.8-android-preview)
 
 ---
 

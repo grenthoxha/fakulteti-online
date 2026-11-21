@@ -12,9 +12,10 @@ def method(signature):
   elif source[i]=='}':depth-=1
   i+=1
  return source[a:i]
-methods=[method(s) for s in ['private static SharedPreferences prefs(', 'private static JSONObject json(', 'static JSONObject state(', 'static String scope(', 'static boolean allowed(', 'static boolean fresh(', 'static synchronized void clear(', 'static synchronized void sync(', 'private static boolean validPomo(', 'static String pending(', 'static synchronized void toggle(', 'private static String time(', 'static RemoteViews render(']]
+methods=[method(s) for s in ['private static SharedPreferences prefs(', 'private static JSONObject json(', 'static JSONObject state(', 'static String scope(', 'static boolean allowed(', 'static boolean fresh(', 'static synchronized void clear(', 'static synchronized void sync(', 'private static boolean validPomo(', 'static String pending(', 'static synchronized boolean advance(', 'static synchronized void toggle(', 'private static String time(', 'static RemoteViews render(', 'static RemoteViews sized(', 'static RemoteViews responsive(']]
 harness=r'''
-import org.json.*;import java.util.*;import java.time.*;import java.time.format.*;
+package io.github.grenthoxha.fakultetionline;
+import org.json.*;import java.util.*;import java.time.*;import java.time.format.*;import java.nio.file.*;
 public class WidgetTest {
  static final long HOUR=3600000L;static final String CHANGED="changed",TOGGLE="toggle";static final ZoneId ZONE=ZoneId.of("Europe/Tirane");static final DateTimeFormatter CLOCK=DateTimeFormatter.ofPattern("HH:mm").withZone(ZONE);
  static int checks;static void check(boolean value){if(!value)throw new AssertionError("check "+checks);checks++;}
@@ -23,14 +24,20 @@ public class WidgetTest {
  static class Intent{Intent(String action){}Intent(Context c,Class<?> cl){}Intent setPackage(String p){return this;}Intent setAction(String a){return this;}}
  static class PendingIntent{static final int FLAG_IMMUTABLE=1,FLAG_UPDATE_CURRENT=2;static Object getBroadcast(Context c,int id,Intent i,int flags){return new Object();}}
  static class PomodoroWidget{}
+ static class PomodoroNotifications{static int posts;static void post(Context c,JSONObject value,String previous){posts++;}static void clear(Context c){}}
+ static class Build{static class VERSION{static int SDK_INT=35;}}
+ record SizeF(float width,float height){}
+ static class TypedValue{static final int COMPLEX_UNIT_SP=2;}
+ static class AppWidgetManager{static final String OPTION_APPWIDGET_MIN_WIDTH="w",OPTION_APPWIDGET_MIN_HEIGHT="h";}
+ static class Bundle{int getInt(String key,int fallback){return key.equals("w")?160:104;}}
  static class SystemClock{static long elapsedRealtime(){return 100000;}}
  static class View{static final int GONE=8,VISIBLE=0;}
  static class R{
   static class layout{static int widget_rooms=1,widget_pomodoro=2,widget_schedule=3;}
-  static class id{static int widget_root=1,widget_label=2,widget_action=3,widget_clock=4,widget_title=5,widget_progress=6,widget_detail=7,widget_badge=8;}
+  static class id{static int widget_root=1,widget_label=2,widget_action=3,widget_clock=4,widget_title=5,widget_progress=6,widget_detail=7,widget_badge=8,widget_header=9;}
   static class drawable{static int ic_widget_pause=11,ic_widget_play=12;}
  }
- static class RemoteViews{Map<Integer,Object> text=new HashMap<>(),visibility=new HashMap<>(),images=new HashMap<>(),actions=new HashMap<>();boolean running,countDown;long base;int progress;RemoteViews(String p,int layout){}void setOnClickPendingIntent(int id,Object intent){actions.put(id,intent);}void setTextViewText(int id,String value){text.put(id,value);}void setViewVisibility(int id,int value){visibility.put(id,value);}void setChronometerCountDown(int id,boolean v){countDown=v;}void setChronometer(int id,long b,String f,boolean r){base=b;running=r;}void setProgressBar(int id,int max,int v,boolean indeterminate){progress=v;}void setImageViewResource(int id,int res){images.put(id,res);}void setContentDescription(int id,String text){} }
+ static class RemoteViews{Map<Integer,Object> text=new HashMap<>(),visibility=new HashMap<>(),images=new HashMap<>(),actions=new HashMap<>(),sizes=new HashMap<>();Map<SizeF,RemoteViews> layouts;boolean running,countDown;long base;int progress,padding;RemoteViews(String p,int layout){}RemoteViews(Map<SizeF,RemoteViews> map){layouts=map;}void setOnClickPendingIntent(int id,Object intent){actions.put(id,intent);}void setTextViewText(int id,String value){text.put(id,value);}void setViewVisibility(int id,int value){visibility.put(id,value);}void setChronometerCountDown(int id,boolean v){countDown=v;}void setChronometer(int id,long b,String f,boolean r){base=b;running=r;}void setProgressBar(int id,int max,int v,boolean indeterminate){progress=v;}void setImageViewResource(int id,int res){images.put(id,res);}void setContentDescription(int id,String text){}void setTextViewTextSize(int id,int unit,float size){sizes.put(id,size);}void setViewPadding(int id,int l,int t,int r,int b){padding=l;}void setInt(int id,String name,int value){} }
  static Object open(Context c,String kind,boolean refresh){return kind+(refresh?":refresh":"");}static void updateAll(Context c){}
  __METHODS__
  static JSONObject sample(long now,String account)throws Exception{
@@ -58,15 +65,22 @@ public class WidgetTest {
   JSONObject ended=sample(now,"b");ended.getJSONObject("pomo").put("endsAt",now-1000);sync(c,ended.toString());view=render(c,"pomodoro");check(!view.running&&view.text.get(R.id.widget_badge).equals("Përfundoi"));check(view.actions.get(R.id.widget_action).equals("pomodoro"));toggle(c);check(pending(c).isEmpty());
   JSONObject denied=sample(now,"b");denied.getJSONObject("allow").put("pomodoro",false);sync(c,denied.toString());toggle(c);check(pending(c).isEmpty());view=render(c,"pomodoro");check(view.visibility.get(R.id.widget_action).equals(View.GONE));
   clear(c);check(scope(c).isEmpty()&&pending(c).isEmpty());view=render(c,"rooms");check(view.text.get(R.id.widget_title).equals("Hap Fakultetin"));
-  System.out.println("PASS: "+checks+" native widget state, background pause, account switch, stale data and rendered action checks.");
+  sync(c,sample(now,"a").toString());view=responsive(c,"pomodoro",new Bundle());check(view.layouts.size()==3);RemoteViews small=view.layouts.get(new SizeF(150,104));check(small.padding==10&&small.visibility.get(R.id.widget_header).equals(View.GONE));check(small.sizes.get(R.id.widget_clock).equals(24f));
+  Build.VERSION.SDK_INT=29;view=responsive(c,"pomodoro",new Bundle());check(view.layouts==null&&view.padding==10);Build.VERSION.SDK_INT=35;
+  view=sized(c,"rooms",150,56);check(view.visibility.get(R.id.widget_label).equals(View.GONE));check(view.text.get(R.id.widget_detail).toString().startsWith("Deri në "));
+  JSONObject end=sample(now,"a");end.getJSONObject("pomo").put("endsAt",now-1000).put("cycle",3);end.put("settings",new JSONObject().put("every",4).put("goal",4).put("autoBreak",true));sync(c,end.toString());check(advance(c));check(state(c).getJSONObject("pomo").getString("phase").equals("long"));check(json(pending(c)).getJSONArray("completions").length()==1);check(!advance(c));
+  toggle(c);check(json(pending(c)).getJSONArray("completions").length()==1);check(state(c).getJSONObject("pomo").getLong("endsAt")==0);
+  JSONArray vectors=new JSONArray(Files.readString(Path.of(args[0])));
+  for(int i=0;i<vectors.length();i++){JSONObject test=vectors.getJSONObject(i),actual=PomodoroClock.finish(test.getJSONObject("input"),test.getJSONObject("settings"),test.getLong("now")),expected=test.getJSONObject("expected"),a=actual.getJSONObject("state"),e=expected.getJSONObject("state");for(String key:new String[]{"phase","total","left","cycle","done"})check(a.get(key).toString().equals(e.get(key).toString()));check(a.optLong("endsAt")==e.optLong("endsAt"));if(expected.optJSONObject("completion")!=null)check(actual.getJSONObject("completion").getString("id").equals(expected.getJSONObject("completion").getString("id")));}
+  System.out.println("PASS: "+checks+" native state, responsive layouts, background phase changes and Java/JavaScript timer parity checks.");
  }
 }
 '''.replace('__METHODS__','\n'.join(methods))
 folder=root/'.build/widget-tests';folder.mkdir(parents=True,exist_ok=True)
 file=folder/'WidgetTest.java';file.write_text(harness,encoding='utf8')
 jdk=Path(os.environ['JAVA_HOME']);jar=Path(os.environ['WIDGET_JSON_JAR'])
-subprocess.run([str(jdk/'bin/javac.exe'),'--release','17','-encoding','UTF-8','-cp',str(jar),str(file)],check=True)
-subprocess.run([str(jdk/'bin/java.exe'),'-cp',str(folder)+os.pathsep+str(jar),'WidgetTest'],check=True)
+subprocess.run([str(jdk/'bin/javac.exe'),'--release','17','-encoding','UTF-8','-cp',str(jar),'-d',str(folder),str(file),str(root/'android-native/src/io/github/grenthoxha/fakultetionline/PomodoroClock.java')],check=True)
+subprocess.run([str(jdk/'bin/java.exe'),'-cp',str(folder)+os.pathsep+str(jar),'io.github.grenthoxha.fakultetionline.WidgetTest',str(folder/'pomodoro-vectors.json')],check=True)
 ns={'a':'http://schemas.android.com/apk/res/android'}
 manifest=ET.parse(root/'android-native/AndroidManifest.xml').getroot()
 receivers=manifest.findall('application/receiver');widgets=[r for r in receivers if 'FacultyWidgets$' in r.attrib.get('{'+ns['a']+'}name','')]

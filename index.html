@@ -1556,7 +1556,8 @@
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=10"></script>
   <script src="./assets/account-approvals.js?v=4"></script>
-  <script src="./assets/android-widgets.js?v=1"></script>
+  <script src="./assets/pomodoro-core.js?v=1"></script>
+  <script src="./assets/android-widgets.js?v=2"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -11018,7 +11019,7 @@ const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty =
 const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
-const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.7', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.7-android-preview/Fakulteti-Online.apk' });
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.8', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.8-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -13411,20 +13412,17 @@ function AcademyApp({
   const [expandedAllTasks, setExpandedAllTasks] = useState(false);
   const [todayQuickTask, setTodayQuickTask] = useState({ open: false, title: '', time: '', minutes: 25, priority: 'p4' });
   /* Pomodoro · Detyrat e sotme */
-  const POMO_DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, goal: 4, autoBreak: true, autoFocus: true, sound: true, vibrate: true, notify: false, awake: true, style: 'eklipsi' };
+  const POMO_DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, goal: 4, autoBreak: true, autoFocus: false, sound: true, vibrate: true, notify: false, awake: true, style: 'eklipsi' };
   const [pomoSettings, setPomoSettings] = useState(() => {
     try {
       const saved = JSON.parse(unitStorage.getItem('u_pomo_settings') || '{}');
-      return { ...POMO_DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
+      return { ...POMO_DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}), ...window.FakultetiPomodoro.settings(saved) };
     } catch (e) { return { ...POMO_DEFAULTS }; }
   });
   const [pomo, setPomo] = useState(() => {
     try {
       const p = JSON.parse(unitStorage.getItem('u_pomo_state') || 'null');
-      if (p && ['focus', 'short', 'long'].includes(p.phase) && Number(p.total) > 0) {
-        const total = Number(p.total);
-        return { phase: p.phase, total, left: Math.min(total, Math.max(1, Number(p.left) || total)), endsAt: p.endsAt ? Number(p.endsAt) : null, cycle: Math.max(0, Number(p.cycle) || 0), taskId: p.taskId || '', done: !!p.done };
-      }
+      if (p) return window.FakultetiPomodoro.normalize(p, pomoSettings);
     } catch (e) {}
     return { phase: 'focus', total: pomoSettings.focus * 60, left: pomoSettings.focus * 60, endsAt: null, cycle: 0, taskId: '' };
   });
@@ -13448,6 +13446,8 @@ function AcademyApp({
       setPomoFull(true);
       setPomoLocked(true);
     };
+    const timerPermission = event => setPomoSettings(previous => ({ ...previous, notify: !!event.detail }));
+    window.addEventListener('fakulteti:pomo-permission', timerPermission);
     window.addEventListener('fakulteti:android-ready', ready);
     window.addEventListener('fakulteti:demo-repeat-state', updateDemo);
     window.addEventListener('fakulteti:focus-restore', restoreFocus);
@@ -13455,6 +13455,7 @@ function AcademyApp({
     updateDemo();
     if (window.fakultetiAndroid?.focusLocked) restoreFocus();
     return () => {
+      window.removeEventListener('fakulteti:pomo-permission', timerPermission);
       window.removeEventListener('fakulteti:android-ready', ready);
       window.removeEventListener('fakulteti:demo-repeat-state', updateDemo);
       window.removeEventListener('fakulteti:focus-restore', restoreFocus);
@@ -13476,8 +13477,9 @@ function AcademyApp({
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, [pomoOpen, pomoLocked]);
   const [pomoNow, setPomoNow] = useState(() => Date.now());
+  useEffect(() => { const resume = () => { if (!document.hidden) setPomoNow(Date.now()); }; document.addEventListener('visibilitychange', resume); window.addEventListener('pageshow', resume); return () => { document.removeEventListener('visibilitychange', resume); window.removeEventListener('pageshow', resume); }; }, []);
   const pomoDoneRef = useRef(0);
-  const [androidWidgetsHydrated, setAndroidWidgetsHydrated] = useState(() => !window.fakultetiAndroid?.widgetsSupported && !/(?:^|[?&])app=1\.0\.7(?:&|$)/.test(window.location.search));
+  const [androidWidgetsHydrated, setAndroidWidgetsHydrated] = useState(() => !window.fakultetiAndroid?.widgetsSupported && !/(?:^|[?&])app=1\.0\.[78](?:&|$)/.test(window.location.search));
   useEffect(() => { if (androidWidgetsHydrated) return; const id = setTimeout(() => setAndroidWidgetsHydrated(true), 8000); return () => clearTimeout(id); }, [androidWidgetsHydrated]);
   useEffect(() => { try { unitStorage.setItem('u_pomo_settings', JSON.stringify(pomoSettings)); } catch (e) {} }, [pomoSettings]);
   useEffect(() => { try { unitStorage.setItem('u_pomo_history', JSON.stringify(pomoHistory)); } catch (e) {} }, [pomoHistory]);
@@ -33826,8 +33828,8 @@ Nënshkrimi: _____________________`;
     { id: 'marathon', name: 'Maratonë', f: 90, s: 20, l: 30 },
     { id: 'quick', name: 'I shpejtë', f: 15, s: 3, l: 10 }
   ];
-  const pomoPhaseSecs = (phase, s = pomoSettings) => Math.round((phase === 'focus' ? s.focus : phase === 'short' ? s.short : s.long) * 60);
-  const pomoLeftSecs = () => pomo.endsAt ? Math.max(0, Math.ceil((pomo.endsAt - pomoNow) / 1000)) : pomo.left;
+  const pomoPhaseSecs = (phase, s = pomoSettings) => window.FakultetiPomodoro.seconds(phase, s);
+  const pomoLeftSecs = () => window.FakultetiPomodoro.remaining(pomo, pomoNow);
   const pomoFmt = secs => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
   const pomoChime = () => {
     try {
@@ -33847,56 +33849,41 @@ Nënshkrimi: _____________________`;
     } catch (e) {}
   };
   const pomoAlert = (title, body) => {
-    if (pomoSettings.sound) pomoChime();
-    if (pomoSettings.vibrate && navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
-    if (pomoSettings.notify && 'Notification' in window && Notification.permission === 'granted') { try { new Notification(title, { body }); } catch (e) {} }
+    const nativeAlert = window.fakultetiAndroid?.pomoNotificationsSupported && pomoSettings.notify;
+    if (pomoSettings.sound && !nativeAlert) pomoChime();
+    if (pomoSettings.vibrate && !nativeAlert && navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
+    if (!window.fakultetiAndroid?.pomoNotificationsSupported && pomoSettings.notify && 'Notification' in window && Notification.permission === 'granted') { try { new Notification(title, { body }); } catch (e) {} }
     showToast(body, '🔔');
   };
-  const pomoFinishPhase = () => {
-    const p = pomo;
-    const s = pomoSettings;
-    const goal = Math.max(1, Number(s.goal) || 4);
-    const endedAt = p.endsAt || Date.now();
-    let nextPhase = 'focus';
-    let nextCycle = p.cycle;
-    let finished = false;
-    if (p.phase === 'focus') {
-      const task = dailyRoutines.find(r => r.id === p.taskId);
-      setPomoHistory(prev => [...prev, {
-        id: `pomo_${endedAt}_${Math.random().toString(36).slice(2, 6)}`,
-        date: dateKey(new Date(endedAt)),
-        minutes: Math.max(1, Math.round(p.total / 60)),
-        routineId: task ? task.id : '',
-        goal: task ? task.title : ''
-      }].slice(-400));
-      nextCycle = p.cycle + 1;
-      if (nextCycle >= goal) { finished = true; nextCycle = 0; nextPhase = 'focus'; } else nextPhase = 'short';
+  const recordPomoCompletions = entries => {
+    if (!Array.isArray(entries) || !entries.length) return true;
+    const known = new Map((() => { try { const saved = JSON.parse(unitStorage.getItem('u_pomo_history') || '[]'); return Array.isArray(saved) ? saved : []; } catch { return pomoHistory; } })().map(item => [item.id, item]));
+    for (const item of entries.slice(0, 50)) {
+      if (!item || typeof item.id !== 'string' || !Number.isFinite(item.endedAt) || item.endedAt > Date.now() + 60000 || item.endedAt < Date.now() - 7 * 86400000 || !Number.isFinite(item.minutes) || item.minutes <= 0 || item.minutes > 180 || known.has(item.id)) continue;
+      const task = dailyRoutines.find(r => r.id === item.taskId);
+      known.set(item.id, { id: item.id, date: dateKey(new Date(item.endedAt)), minutes: item.minutes, routineId: task?.id || '', goal: task?.title || '' });
     }
-    const total = pomoPhaseSecs(nextPhase, s);
-    const stale = Date.now() - endedAt > 60000;
-    const auto = !finished && !stale;
-    const now = Date.now();
-    setPomo({ phase: nextPhase, total, left: total, endsAt: auto ? now + total * 1000 : null, cycle: nextCycle, taskId: p.taskId, done: finished });
-    if (auto) setPomoNow(now);
-    if (finished) { setPomoLocked(false); pomoAlert('Përfunduan të gjitha', `Bravo! Mbarove ${goal} pomodoro.`); }
-    else if (p.phase === 'focus') pomoAlert('Pomodoro përfundoi', 'Koha për pushim.');
-    else pomoAlert('Pushimi përfundoi', 'Fillon pomodoro tjetër.');
+    const next = [...known.values()].slice(-400);
+    try { unitStorage.setItem('u_pomo_history', JSON.stringify(next)); setPomoHistory(next); return true; }
+    catch { showToast('Nuk ka hapësirë për ta ruajtur sesionin.', 'ℹ️'); return false; }
   };
-  const pomoStart = () => {
-    const now = Date.now();
-    setPomoNow(now);
-    setPomo(p => {
-      const left = p.left > 0 ? p.left : p.total;
-      return { ...p, left, endsAt: now + left * 1000, done: false };
-    });
+  const pomoFinishPhase = () => {
+    const result = window.FakultetiPomodoro.finish(pomo, pomoSettings, Date.now());
+    if (result.completion && !recordPomoCompletions([result.completion])) return;
+    if (window.fakultetiAndroid?.pomoNotificationsSupported && pomo.endsAt) window.fakultetiAndroid.send('pomo-finished:' + pomo.endsAt);
+    setPomo(result.state); setPomoNow(Date.now());
+    if (result.state.done) { setPomoLocked(false); window.fakultetiAndroid?.send('focus-unlock'); pomoAlert('Përfunduan të gjitha', `Bravo! Mbarove ${result.state.cycle} pomodoro.`); }
+    else if (pomo.phase === 'focus') pomoAlert('Pomodoro përfundoi', result.state.phase === 'long' ? 'Koha për pushimin e gjatë.' : 'Koha për pushim.');
+    else pomoAlert('Pushimi përfundoi', result.state.endsAt ? 'Fillon pomodoro tjetër.' : 'Gati për fokusin e radhës.');
   };
-  const pomoPause = () => setPomo(p => p.endsAt ? { ...p, left: Math.max(1, Math.ceil((p.endsAt - Date.now()) / 1000)), endsAt: null } : p);
+  const pomoStart = () => { const now = Date.now(); setPomoNow(now); setPomo(p => window.FakultetiPomodoro.start(p, pomoSettings, now)); };
+  const pomoPause = () => { if (pomo.endsAt && pomo.endsAt <= Date.now()) pomoFinishPhase(); else setPomo(p => window.FakultetiPomodoro.pause(p, Date.now())); };
   const pomoReset = () => setPomo(p => { const t = pomoPhaseSecs(p.phase); return { ...p, total: t, left: t, endsAt: null, done: false }; });
   const pomoRestartAll = () => { const t = pomoPhaseSecs('focus'); setPomo(p => ({ ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: 0, done: false })); };
   const pomoSetPhase = phase => {
     if (pomo.endsAt) return;
     const t = pomoPhaseSecs(phase);
-    setPomo(p => ({ ...p, phase, total: t, left: t }));
+    setPomo(p => ({ ...p, phase, total: t, left: t, done: false }));
   };
   const pomoAdjust = minutes => setPomo(p => {
     const now = Date.now();
@@ -33907,7 +33894,7 @@ Nënshkrimi: _____________________`;
   const pomoSkipBreak = () => setPomo(p => {
     if (p.phase === 'focus') return p;
     const t = pomoPhaseSecs('focus');
-    return { ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: p.phase === 'long' ? 0 : p.cycle };
+    return { ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: p.cycle, done: false };
   });
   const updatePomoSetting = (key, value) => {
     setPomoSettings(prev => ({ ...prev, [key]: value }));
@@ -33922,6 +33909,7 @@ Nënshkrimi: _____________________`;
   };
   const togglePomoNotify = async () => {
     if (pomoSettings.notify) { updatePomoSetting('notify', false); return; }
+    if (window.fakultetiAndroid?.pomoNotificationsSupported) { window.fakultetiAndroid.send('pomo-notifications'); return; }
     if (!('Notification' in window)) { showToast('Ky shfletues nuk i mbështet njoftimet.', 'ℹ️'); return; }
     const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
     if (permission === 'granted') updatePomoSetting('notify', true);
@@ -33986,7 +33974,7 @@ Nënshkrimi: _____________________`;
     const ink = isFocus ? st.ink : '#02140c';
     const pad2 = n => String(n).padStart(2, '0');
     const counter = pomo.done ? goal : Math.min(goal, pomo.cycle + (isFocus ? 1 : 0));
-    const phaseLabel = pomo.done ? 'MBAROVE' : isFocus ? 'FOKUS' : 'PUSHIM';
+    const phaseLabel = pomo.done ? 'MBAROVE' : isFocus ? 'FOKUS' : pomo.phase === 'long' ? 'PUSHIM I GJATË' : 'PUSHIM';
     const counterLabel = `${pad2(counter)}/${pad2(goal)}`;
     const openTasks = visibleDailyRoutines.filter(r => !routineIsDoneToday(r));
     const taskValue = openTasks.some(r => r.id === pomo.taskId) ? pomo.taskId : '';
@@ -34147,12 +34135,12 @@ Nënshkrimi: _____________________`;
         ce("span", { style: { fontSize: 15, color: '#e8e8ee' } }, label),
         ce("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           sBtn('−', `Zvogëlo: ${label}`, () => updatePomoSetting(key, Math.max(min, (Number(s[key]) || min) - 1)), (Number(s[key]) || min) <= min),
-          ce("span", { style: { minWidth: narrow ? 56 : 64, textAlign: 'center', fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' } }, key === 'goal' ? goal : `${s[key]} min`),
+          ce("span", { style: { minWidth: narrow ? 56 : 64, textAlign: 'center', fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' } }, ['goal', 'every'].includes(key) ? s[key] : `${s[key]} min`),
           sBtn('+', `Rrite: ${label}`, () => updatePomoSetting(key, Math.min(max, (Number(s[key]) || min) + 1)), (Number(s[key]) || min) >= max))),
       chips && ce("div", { style: { display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' } },
-        chips.map(v => ce("button", { key: v, type: "button", onClick: () => updatePomoSetting(key, v), "aria-pressed": Number(s[key]) === v, style: { ...btnReset, height: phoneW ? 40 : 34, padding: '0 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, background: Number(s[key]) === v ? st.accent : '#17171c', color: Number(s[key]) === v ? st.ink : '#9a9aa6' } }, key === 'goal' ? v : `${v} min`))),
+        chips.map(v => ce("button", { key: v, type: "button", onClick: () => updatePomoSetting(key, v), "aria-pressed": Number(s[key]) === v, style: { ...btnReset, height: phoneW ? 40 : 34, padding: '0 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, background: Number(s[key]) === v ? st.accent : '#17171c', color: Number(s[key]) === v ? st.ink : '#9a9aa6' } }, ['goal', 'every'].includes(key) ? v : `${v} min`))),
       note && ce("div", { style: { marginTop: 8, fontSize: 12.5, color: muted } }, note));
-    const totalMin = goal * Number(s.focus) + (goal - 1) * Number(s.short);
+    const totalMin = goal * Number(s.focus) + Math.floor(goal / s.every) * Number(s.long) + (goal - Math.floor(goal / s.every)) * Number(s.short);
     const totalTxt = totalMin >= 60 ? `${Math.floor(totalMin / 60)} orë${totalMin % 60 ? ' ' + (totalMin % 60) + ' min' : ''}` : `${totalMin} min`;
     const settingsPanel = pomoSetOpen && !locked ? abs({ inset: 0, background: '#000', overflowY: 'auto', overscrollBehavior: 'contain', padding: 'max(18px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom))', zIndex: 5, WebkitOverflowScrolling: 'touch' },
       ce("div", { className: "pomo-fade", style: { maxWidth: 440, margin: '0 auto', padding: '0 24px' } },
@@ -34161,7 +34149,10 @@ Nënshkrimi: _____________________`;
           roundBtn(P_CLOSE, 'Mbyll cilësimet', () => setPomoSetOpen(false), { size: tsz })),
         stepper('Pomodoro', 'focus', 1, 180, [15, 25, 50, 90]),
         stepper('Pushimi', 'short', 1, 60, [3, 5, 10, 15]),
+        stepper('Pushimi i gjatë', 'long', 1, 120, [15, 20, 30]),
+        stepper('Pushim i gjatë pas', 'every', 1, 12, [2, 4, 6], 'Numri i sesioneve të fokusit para pushimit të gjatë.'),
         stepper('Sa pomodoro', 'goal', 1, 12, [2, 4, 6, 8], `Gjithsej rreth ${totalTxt} me pushime`),
+        ...[['autoBreak', 'Nis pushimin automatikisht'], ['autoFocus', 'Nis fokusin tjetër automatikisht']].map(([key, label]) => ce('label', { key, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 48, padding: '8px 0', fontSize: 14, color: '#e8e8ee' } }, label, ce('input', { type: 'checkbox', checked: !!s[key], onChange: e => updatePomoSetting(key, e.target.checked), style: { width: 20, height: 20, accentColor: st.accent } }))),
         ce("div", { style: { padding: '16px 0', borderBottom: '1px solid #17171c' } },
           ce("label", { htmlFor: "pomo-task", style: { display: 'block', fontSize: 15, color: '#e8e8ee', marginBottom: 10 } }, 'Po punoj te'),
           ce("select", { id: "pomo-task", value: taskValue, onChange: e => { const v = e.target.value; setPomo(p => ({ ...p, taskId: v })); }, style: { width: '100%', height: 48, padding: '0 12px', borderRadius: 12, background: '#111114', border: '1px solid #2a2a32', color: '#f1f1f5', fontSize: 16, outline: 'none' } },
@@ -34340,8 +34331,8 @@ Nënshkrimi: _____________________`;
     },
     store: FilozofikuDailyStore, getRoomEvents: getFilozofikuRoomEvents,
     onHydrated: () => setAndroidWidgetsHydrated(true),
-    pomo, task: dailyRoutines.find(item => item.id === pomo.taskId)?.title || '',
-    onPomo: p => { setPomoNow(Date.now()); setPomo(previous => ({ ...previous, phase: p.phase, total: p.total, left: p.left, endsAt: p.endsAt || null, cycle: p.cycle, taskId: p.taskId, done: !!p.done })); },
+    settings: pomoSettings, pomo, task: dailyRoutines.find(item => item.id === pomo.taskId)?.title || '',
+    onPomo: (p, completions) => { if (!recordPomoCompletions(completions)) return false; setPomoNow(Date.now()); setPomo(window.FakultetiPomodoro.normalize(p, pomoSettings)); return true; },
     onOpen: target => { setCourseVideoFeedOpen(false); setSearchOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(false); if (target === 'schedule') setView('week'); else if (target === 'rooms') setView('freerooms'); else if (target === 'pomodoro') { setPomoOpen(true); setPomoSetOpen(false); } }
   });
   const getScheduleMinSelectedDay = () => {

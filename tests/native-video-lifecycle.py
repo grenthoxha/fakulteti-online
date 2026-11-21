@@ -31,8 +31,8 @@ public class NativeVideoTest {
  static class Page extends View{boolean cacheCleared,restoreOk=true,history;int loads,restores,backs;String url;Map<String,String> headers;void clearCache(boolean disk){cacheCleared=disk;}Object restoreState(Bundle b){restores++;return restoreOk?new Object():null;}void loadUrl(String u,Map<String,String> h){loads++;url=u;headers=h;}boolean canGoBack(){return history;}void goBack(){backs++;}}
  static class Preferences{int revision;int getInt(String key,int fallback){return revision;}Preferences edit(){return this;}Preferences putInt(String k,int value){revision=value;return this;}void apply(){}}
  static class Host{
- static final int WEB_REVISION=8,MODE_PRIVATE=0,LEGACY_LAYOUT_FLAGS=1792;
- static final String START_URL="https://grenthoxha.github.io/fakulteti-online/?source=homescreen&app=1.0.7";
+ static final int WEB_REVISION=9,MODE_PRIVATE=0,LEGACY_LAYOUT_FLAGS=1792;
+ static final String START_URL="https://grenthoxha.github.io/fakulteti-online/?source=homescreen&app=1.0.8";
  View fullscreenView;WebChromeClient.CustomViewCallback fullscreenCallback;Page page=new Page();FrameLayout frame=new FrameLayout();Window window=new Window();Preferences prefs=new Preferences();boolean focusLocked,finished;String appearance="light";
  Preferences getPreferences(int mode){return prefs;}Window getWindow(){return window;}void setAppearance(String a){appearance=a;}void updateSystemAppearance(){appearance="light";}void finish(){finished=true;}
  __METHODS__
@@ -47,10 +47,10 @@ public class NativeVideoTest {
  if(sdk>=30)check(!h.window.controller.hidden);h.hideFullscreenVideo();check(callback.count==1);
  h.focusLocked=true;h.navigateBack();check(!h.finished);h.focusLocked=false;h.page.history=true;h.navigateBack();check(h.page.backs==1);h.page.history=false;h.navigateBack();check(h.finished);
  }
- Host h=new Host();h.initializePage(new Bundle());check(h.page.cacheCleared&&h.page.restores==0&&h.page.loads==1);check(h.prefs.revision==8&&h.page.headers.get("Cache-Control").equals("no-cache"));check(h.page.url.contains("app=1.0.7"));
- h=new Host();h.prefs.revision=8;h.initializePage(new Bundle());check(!h.page.cacheCleared&&h.page.restores==1&&h.page.loads==0);
- h=new Host();h.prefs.revision=8;h.page.restoreOk=false;h.initializePage(new Bundle());check(h.page.restores==1&&h.page.loads==1);
- h=new Host();h.prefs.revision=8;h.initializePage(null);check(!h.page.cacheCleared&&h.page.loads==1);
+ Host h=new Host();h.initializePage(new Bundle());check(h.page.cacheCleared&&h.page.restores==0&&h.page.loads==1);check(h.prefs.revision==9&&h.page.headers.get("Cache-Control").equals("no-cache"));check(h.page.url.contains("app=1.0.8"));
+ h=new Host();h.prefs.revision=9;h.initializePage(new Bundle());check(!h.page.cacheCleared&&h.page.restores==1&&h.page.loads==0);
+ h=new Host();h.prefs.revision=9;h.page.restoreOk=false;h.initializePage(new Bundle());check(h.page.restores==1&&h.page.loads==1);
+ h=new Host();h.prefs.revision=9;h.initializePage(null);check(!h.page.cacheCleared&&h.page.loads==1);
  System.out.println("PASS: "+checks+" native video lifecycle and upgrade refresh checks");
  }
 }
@@ -63,7 +63,7 @@ if True:
  subprocess.run([str(java_home/'bin/javac.exe'),'--release','17',str(p)],check=True)
  subprocess.run([str(java_home/'bin/java.exe'),'-cp',str(folder),'NativeVideoTest'],check=True)
 manifest=(root/'android-native/AndroidManifest.xml').read_text()
-assert 'android:versionCode="8"' in manifest and 'android:versionName="1.0.7-preview"' in manifest
+assert 'android:versionCode="9"' in manifest and 'android:versionName="1.0.8-preview"' in manifest
 assert 'orientation|screenSize|keyboardHidden' in manifest
 assert 'WebStorage.deleteAllData' not in s and 'clearApplicationUserData' not in s
 print('PASS: native version, rotation preservation and local data safeguards')

@@ -49,6 +49,7 @@
     const p=options.pomo||{},total=Math.max(1,Math.min(10800,Number(p.total)||1500));
     return{schema:1,scope:clean(options.scope,240),capturedAt:now,expires:now+8*HOUR,
       allow:{schedule:!!allow.schedule,rooms:!!allow.rooms,pomodoro:!!allow.pomodoro},sessions:sessions.slice(0,100),rooms,
+      settings:{...(root.FakultetiPomodoro?.settings(options.settings)||{focus:25,short:5,long:15,every:4,goal:4,autoBreak:true,autoFocus:false}),notify:!!options.settings?.notify,sound:options.settings?.sound!==false,vibrate:options.settings?.vibrate!==false},
       pomo:allow.pomodoro?{phase:['focus','short','long'].includes(p.phase)?p.phase:'focus',total,left:Math.max(0,Math.min(total,Number(p.left)||0)),endsAt:Number(p.endsAt)>0?Number(p.endsAt):0,cycle:Math.max(0,Number(p.cycle)||0),taskId:clean(p.taskId,120),task:clean(options.task),done:!!p.done}:null};
   }
   function useBridge(options){
@@ -73,7 +74,8 @@
         if(!item||item.scope!==current.scope)return;
         if(item.kind==='pomo'&&current.allow.pomodoro&&item.id&&item.pomo){
           const p=item.pomo;if(!['focus','short','long'].includes(p.phase)||!Number.isFinite(p.total)||p.total<1||p.total>10800||!Number.isFinite(p.left)||p.left<0||p.left>p.total||!Number.isFinite(p.endsAt)||p.endsAt<0||p.endsAt>Date.now()+10800000)return;
-          state.ack=item.id;state.override=p;current.onPomo?.(p);publishRef.current();
+          if(current.onPomo?.(p,item.completions||[])===false)return;
+          state.ack=item.id;state.override=p;publishRef.current();
         }else if(item.kind==='open'){
           const permitted=item.target==='schedule'?current.allow.schedule:item.target==='rooms'?current.allow.rooms:item.target==='pomodoro'?current.allow.pomodoro:false;
           if(permitted){current.onOpen?.(item.target);if(item.target==='rooms'&&item.refresh)current.store.refresh({force:true}).then(()=>publishRef.current());}
@@ -86,7 +88,7 @@
       const timer=setInterval(()=>publishRef.current(),60000);connect();
       return()=>{clearInterval(timer);off?.();offSync?.();root.removeEventListener('fakulteti:android-ready',connect);root.removeEventListener('fakulteti:widget-sync',sync);root.removeEventListener('fakulteti:widget-command',command);document.removeEventListener('visibilitychange',visible);root.removeEventListener('pageshow',visible);};
     },[options.scope]);
-    const stateKey=JSON.stringify([options.pomo,options.task,options.allow,options.revision]);
+    const stateKey=JSON.stringify([options.pomo,options.settings,options.task,options.allow,options.revision]);
     useEffect(()=>{bridge.current.override=null;publishRef.current();},[stateKey]);
   }
   root.FakultetiWidgets=Object.freeze({snapshot,stamp,days,useBridge});
