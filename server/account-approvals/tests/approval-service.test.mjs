@@ -8,7 +8,7 @@ const crypto = webcrypto, utf8 = new TextEncoder();
 const hex = bytes => Buffer.from(bytes).toString('hex');
 const NOW = Date.parse('2026-11-19T20:00:00Z');
 const SERVICE = 'https://approval.test';
-function database() {
+export function database() {
   const sql = new DatabaseSync(':memory:');
   for (const name of readdirSync(new URL('../drizzle/', import.meta.url)).filter(name=>name.endsWith('.sql')).sort()) sql.exec(readFileSync(new URL('../drizzle/'+name, import.meta.url), 'utf8'));
   const db = { prepare(query) {
@@ -24,7 +24,7 @@ function database() {
   }};
   return db;
 }
-async function device(email='applicant@example.test',name='Arta Hoxha') {
+export async function device(email='applicant@example.test',name='Arta Hoxha') {
   const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
   const publicKey=await crypto.subtle.exportKey('jwk',pair.publicKey);
   const id=hex(await crypto.subtle.digest('SHA-256',utf8.encode(publicKey.x+'.'+publicKey.y)));
@@ -35,7 +35,7 @@ async function device(email='applicant@example.test',name='Arta Hoxha') {
   }, async enroll(db,role='student') {return handleApprovalRequest(await this.request('/api/requests','POST',{email,name,publicKey,role}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW);} };
 }
 const result = async response => ({status:response.status,body:await response.json()});
-async function linkOwner(db, owner, origin = 'null') {
+export async function linkOwner(db, owner, origin = 'null') {
   const response=await result(await handleApprovalRequest(await owner.request('/api/admin-link','POST',{}),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW));
   assert.equal(response.status,200);
   const link=response.body.url;

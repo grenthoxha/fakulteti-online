@@ -16,9 +16,15 @@
   root.FakultetiInstalledEntry = Object.freeze({ remember: rememberInstalled });
   if (hasAppLaunchSignal()) rememberInstalled();
   const errors = {
+    SERVICE_UNAVAILABLE: 'Shërbimi online nuk po përgjigjet. Kontrollo internetin dhe provo përsëri.',
+    RATE_LIMITED: 'Pati shumë përpjekje. Provo përsëri pas pak minutash.',
+    MIGRATION_REQUIRED: 'Lidhe llogarinë online nga pajisja ku e ke krijuar fillimisht.',
+    CLOUD_PASSWORD_REQUIRED: 'Ky email është lidhur online. Përdor fjalëkalimin online ose kodin e rikuperimit.',
+    OWNER_LINK_REQUIRED: 'Lidhe fillimisht administrimin nga llogaria ekzistuese e Grentit.',
+    PROFILE_CHANGED: 'Profili ndryshoi në një pajisje tjetër. Rihape aplikacionin.',
     PROFILE_INVALID: 'Plotëso emrin, mbiemrin dhe të dhënat e profilit.',
     EMAIL_INVALID: 'Shkruaj një adresë emaili të vlefshme.',
-    EMAIL_EXISTS: 'Ky email ka llogari në këtë pajisje. Përdor “Hyr”.',
+    EMAIL_EXISTS: 'Ky email ka tashmë llogari. Përdor “Hyr”.',
     PASSWORD_LENGTH: 'Fjalëkalimi duhet të ketë 8–128 karaktere.',
     CREDENTIALS_INVALID: 'Email-i ose fjalëkalimi nuk është i saktë.',
     RECOVERY_INVALID: 'Email-i ose kodi i rikuperimit nuk është i saktë.',
@@ -144,7 +150,7 @@
         h('section', { className: 'local-intro-closing', 'aria-label': 'Fillo me Fakulteti' },
           h('div', null, h('h2', null, 'Fillo me temën që të duhet sot.'), h('p', null, 'Krijo profilin, zgjidh fakultetin dhe hape lëndën. Kalim apo 10, përgatitja fillon me hapin e parë.')),
           h('button', { type: 'button', className: 'local-auth-primary', onClick: () => changeMode('signup') }, 'Nis përgatitjen', icon('M5 12h14M13 6l6 6-6 6'))),
-        h('footer', { className: 'local-intro-footer' }, h('p', null, 'Llogaria dhe të dhënat ruhen në këtë pajisje.'),
+        h('footer', { className: 'local-intro-footer' }, h('p', null, 'Llogaria dhe profili ruhen online. Puna e mësimit mbetet në pajisjen tënde.'),
           !installedLaunch && typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })))));
     return h('main', { className: 'local-auth-page' },
       !isRegistration && brand,
@@ -177,7 +183,7 @@
           h('button', { type: 'button', disabled: busy, className: 'local-auth-text-button', onClick: () => changeMode(mode === 'signin' ? 'recover' : 'signin') }, mode === 'recover' ? 'Kthehu te hyrja' : mode === 'signup' ? 'Ke llogari? Hyr' : 'Ke harruar fjalëkalimin?')),
         notice && h('p', { className: 'local-auth-help', role: 'status' }, notice),
         created && error && h('p', { className: 'local-auth-error', role: 'alert' }, error)),
-      h('p', { className: 'local-auth-device-note' }, icon('M5 4h14v16H5zM10 17h4', 'local-auth-device-icon'), 'Llogari lokale · Të dhënat ruhen në këtë pajisje'),
+      h('p', { className: 'local-auth-device-note' }, icon('M5 4h14v16H5zM10 17h4', 'local-auth-device-icon'), 'Llogari online · Mësimi ruhet në këtë pajisje'),
       !installedLaunch && typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })));
   };
 })(window);

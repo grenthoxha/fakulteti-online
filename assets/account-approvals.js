@@ -1,4 +1,4 @@
-/* Only approval metadata leaves this device. Passwords, learning data and private keys stay local. */
+/* Signed approval access. Online accounts/profile sync excludes all learning data and private keys. */
 (function (root) {
   'use strict';
   const SERVICE = 'https://fakulteti-aprovimet.personalebuds.chatgpt.site';
@@ -39,7 +39,7 @@
       const response = await root.fetch(SERVICE + path, {method, cache:'no-store', credentials:'omit', signal:abort.signal,
         headers:{'Content-Type':'application/json','X-Fakulteti-Id':who.id,'X-Fakulteti-Time':time,'X-Fakulteti-Nonce':nonce,'X-Fakulteti-Signature':signature}, ...(body ? {body} : {})});
       let result; try { result = await response.json(); } catch { throw Error('SERVICE_UNAVAILABLE'); }
-      if (!response.ok) throw Error(result.error || 'SERVICE_UNAVAILABLE');
+      if (!response.ok) { if(result.error==='SESSION_REVOKED'){storage.removeItem(KEYS.cache);accounts.signOut();root.location.reload();} throw Error(result.error || 'SERVICE_UNAVAILABLE'); }
       return result;
     } finally { clearTimeout(timer); }
   }
@@ -57,6 +57,7 @@
     if (checking) return checking;
     checking = (async () => {
       let policy;
+      await accounts.syncProfile?.();
       try { policy = await call('/api/me'); }
       catch (error) {
         if (error.message !== 'REQUEST_NOT_FOUND') throw error;
@@ -94,6 +95,7 @@
   const api = root.FakultetiApprovals = { SECTIONS, ADMIN_EMAIL, check, cached, can, canView, landing, fallback: view => landing(view,false),
     get policy() { return currentPolicy; }, isAdmin: () => Boolean(currentPolicy?.isAdmin),
     adminLink: () => call('/api/admin-link','POST',{}),
+    audit: () => call('/api/admin/audit'),
     list: () => call('/api/admin/requests'), update: (id, policy) => call('/api/admin/requests/' + id,'PATCH',policy) };
 
   const h = React.createElement, {useState,useEffect,useRef} = React;
@@ -141,30 +143,34 @@
       error&&h('p',{className:'approval-error',role:'alert'},error),
       !needsProfile&&h('button',{type:'button',className:'approval-primary',disabled:busy,onClick:refresh},busy?'Po kontrollohet…':'Kontrollo aprovimin'),
       accounts.current()?.email===ADMIN_EMAIL&&!needsProfile&&policy&&!policy.isAdmin&&h(AdminDeviceLink),
+      !accounts.isOnline?.()&&root.FakultetiCloudAccountCard&&h(root.FakultetiCloudAccountCard),
       h('button',{type:'button',className:'approval-text-button',onClick:()=>{accounts.signOut();root.location.reload();}},'Dil nga llogaria')));
   };
   root.FakultetiAccessManager = function AccessManager({onClose}) {
+    const [events,setEvents]=useState([]);
     const [rows,setRows]=useState([]),[query,setQuery]=useState(''),[tab,setTab]=useState('pending'),[selected,setSelected]=useState(null),[draft,setDraft]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-    const load=async()=>{setBusy(true);setError('');try{const result=await api.list();setRows(result.requests);}catch(e){setError(errorText(e));}finally{setBusy(false);}};
+    const load=async()=>{setBusy(true);setError('');try{const [result,audit]=await Promise.all([api.list(),api.audit()]);setRows(result.requests);setEvents(audit.events);}catch(e){setError(errorText(e));}finally{setBusy(false);}};
     useEffect(()=>{if(!api.isAdmin())return;load();const timer=setInterval(()=>{if(!root.document.hidden)load();},30000);return()=>clearInterval(timer);},[]);
     useEffect(()=>{const release=root.lockFilozofikuPageScroll?.();const key=event=>{if(event.key==='Escape')onClose();};root.document.addEventListener('keydown',key);return()=>{release?.();root.document.removeEventListener('keydown',key);};},[]);
     const choose=row=>{setSelected(row);setDraft({...row,permissions:row.status==='pending'?Object.keys(SECTIONS):row.permissions,role:row.requestedRole==='instructor'&&row.status==='pending'?'instructor':row.role});setError('');setNotice('');};
-    const save=async status=>{setBusy(true);setError('');try{const result=await api.update(selected.id,{status,role:draft.role,permissions:draft.permissions,landing:draft.landing,version:selected.version});setRows(rows=>rows.map(row=>row.id===result.id?result:row));setSelected(result);setDraft(result);setNotice(status==='approved'?'Qasja u ruajt.':status==='rejected'?'Kërkesa u refuzua.':'Qasja u pezullua.');}catch(e){setError(errorText(e));}finally{setBusy(false);}};
+    const save=async status=>{setBusy(true);setError('');try{const result=await api.update(selected.id,{status,role:draft.role,permissions:draft.permissions,landing:draft.landing,version:selected.version});const saved={...selected,...result};setRows(rows=>rows.map(row=>row.id===result.id?{...row,...result}:row));setSelected(saved);setDraft(saved);setNotice(status==='approved'?'Qasja u ruajt.':status==='rejected'?'Kërkesa u refuzua.':'Qasja u pezullua.');}catch(e){setError(errorText(e));}finally{setBusy(false);}};
     if(!api.isAdmin()) return null;
     const visible=rows.filter(row=>row.id!==currentPolicy.id&&row.role!=='admin').filter(row=>tab==='all'||(tab==='active'?row.status==='approved':row.status==='pending')).filter(row=>(row.name+' '+row.email).toLocaleLowerCase('sq').includes(query.toLocaleLowerCase('sq')));
     return h('div',{className:'approval-manager-overlay',role:'dialog','aria-modal':true,'aria-label':'Aprovimet dhe qasja'},h('section',{className:'approval-manager card-surface'},
-      h('header',{className:'approval-manager-header'},h('div',null,h('h2',null,'Aprovimet dhe qasja'),h('p',null,'Menaxho kush hyn dhe çfarë i shfaqet.')),h('button',{type:'button','aria-label':'Mbyll administrimin',className:'approval-icon-button',onClick:onClose},icon('M6 6l12 12M18 6L6 18'))),
+      h('header',{className:'approval-manager-header'},h('div',null,h('h2',null,'Aprovimet dhe qasja'),h('p',null,rows.filter(r=>r.status==='pending').length+' në pritje · '+rows.filter(r=>r.status==='approved').length+' aktivë · '+rows.filter(r=>r.online).length+' llogari online')),h('button',{type:'button','aria-label':'Mbyll administrimin',className:'approval-icon-button',onClick:onClose},icon('M6 6l12 12M18 6L6 18'))),
       h('div',{className:'approval-manager-body'},h('aside',{className:'approval-requests'},
         h('div',{className:'approval-manager-tools'},h('input',{type:'search',placeholder:'Kërko emrin ose emailin',value:query,onChange:e=>setQuery(e.target.value),'aria-label':'Kërko kërkesat'}),h('button',{type:'button',onClick:load,disabled:busy,className:'approval-icon-button','aria-label':'Rifresko kërkesat'},icon('M20 8a8 8 0 10.5 5M20 3v5h-5'))),
         h('div',{className:'approval-tabs'},[['pending','Në pritje'],['active','Aktivë'],['all','Të gjithë']].map(([value,label])=>h('button',{key:value,type:'button','aria-pressed':tab===value,onClick:()=>setTab(value)},label,value==='pending'?' ('+rows.filter(row=>row.status==='pending').length+')':''))),
         h('div',{className:'approval-request-list'},visible.length?visible.map(row=>h('button',{type:'button',key:row.id,onClick:()=>choose(row),'aria-pressed':selected?.id===row.id,className:'approval-request'},h('span',{className:'approval-request-avatar'},row.name.split(/\s+/).map(p=>p[0]).slice(0,2).join('')),h('span',null,h('strong',null,row.name),h('small',null,row.email),h('small',{className:'approval-request-status'},({pending:'Në pritje',approved:'Aprovuar',rejected:'Refuzuar',suspended:'Pezulluar'})[row.status])))):h('p',{className:'approval-empty'},busy?'Po ngarkohen kërkesat…':'Nuk ka kërkesa në këtë listë.'))),
       h('section',{className:'approval-user-details'},selected&&draft?h(React.Fragment,null,
-        h('div',{className:'approval-user-heading'},h('h3',null,selected.name),h('p',null,selected.email)),
+        h('div',{className:'approval-user-heading'},h('h3',null,selected.name),h('p',null,selected.email),h('p',{className:'text-sm text-secondary'},selected.online?'Llogari online':'Llogari e mëparshme · Ende pa u lidhur online'),selected.lastLogin&&h('p',{className:'text-sm text-secondary'},'Hyrja e fundit: '+new Date(selected.lastLogin).toLocaleString('sq')),selected.profile?.faculty&&h('p',{className:'text-sm text-secondary'},[selected.profile.faculty,selected.profile.branch,selected.profile.year&&'Viti '+selected.profile.year].filter(Boolean).join(' · '))),
         h('div',{className:'approval-presets'},h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:Object.keys(SECTIONS),landing:'auto'})},'Qasje e plotë'),h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:['rooms'],landing:'freerooms'})},'Vetëm sallat e lira'),h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:['home','schedule','courses','exams','articles'],landing:'courses'})},'Mësimi')),
         h('fieldset',{className:'approval-permissions'},h('legend',null,'Pjesët që i shfaqen'),Object.entries(SECTIONS).map(([key,label])=>h('label',{key},h('input',{type:'checkbox',checked:draft.permissions.includes(key),onChange:e=>setDraft({...draft,permissions:e.target.checked?[...draft.permissions,key]:draft.permissions.filter(p=>p!==key),landing:'auto'})}),h('span',null,label)))),
         h('div',{className:'approval-form-row'},h('label',null,'Profili',h('select',{value:draft.role,onChange:e=>setDraft({...draft,role:e.target.value})},h('option',{value:'student'},'Student'),h('option',{value:'instructor'},'Profesor'))),
         h('label',null,'Faqja që hapet',h('select',{value:draft.landing,onChange:e=>setDraft({...draft,landing:e.target.value})},[['auto','Sipas profilit'],['home','Kreu'],['week','Orari'],['courses','Lëndët'],['student','Provimet'],['studentservices','Shërbimet studentore'],['freerooms','Sallat e lira'],['articles','Artikujt'],['settings','Profili']].filter(([view])=>view==='auto'||view==='settings'||draft.permissions.includes(ROUTES[view])).map(([value,label])=>h('option',{key:value,value},label))))),
         h('div',{className:'approval-save-actions'},h('button',{type:'button',disabled:busy,className:'approval-primary',onClick:()=>save('approved')},selected.status==='approved'?'Ruaj qasjen':'Aprovo llogarinë'),selected.status==='approved'&&h('button',{type:'button',disabled:busy,className:'approval-secondary',onClick:()=>save('suspended')},'Pezullo qasjen'),selected.status!=='approved'&&h('button',{type:'button',disabled:busy,className:'approval-text-button',onClick:()=>save('rejected')},'Refuzo kërkesën')),
+        h('section',{className:'approval-permissions'},h('h3',null,'Aktiviteti i llogarisë'),
+          events.filter(event=>event.email===selected.email).slice(0,8).map((event,index)=>h('p',{key:index,className:'text-sm text-secondary'},({register:'Regjistrim',login:'Hyrje',recover:'Rikuperim','access:approved':'Qasja u aprovua','access:suspended':'Qasja u pezullua','access:rejected':'Kërkesa u refuzua'})[event.action]||event.action,' · ',new Date(event.createdAt).toLocaleString('sq')))),
         notice&&h('p',{role:'status',className:'approval-notice'},notice)) : h('div',{className:'approval-empty'},icon('M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM8 12l3 3 5-6'),h('p',null,'Zgjidh një përdorues për aprovimin dhe qasjen.')))),
       error&&h('p',{className:'approval-error approval-manager-error',role:'alert'},error)));
   };

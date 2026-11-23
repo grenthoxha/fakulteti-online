@@ -1,3 +1,4 @@
+import { handleCloudAuth, cloudAccount, handleCloudProfile } from './cloud-accounts.mjs';
 export const ADMIN_EMAIL = 'grent@gmail.com';
 export const SECTIONS = ['home', 'schedule', 'courses', 'exams', 'services', 'rooms', 'messages', 'articles'];
 const LANDINGS = ['auto', 'home', 'week', 'courses', 'student', 'studentservices', 'freerooms', 'articles', 'settings'];
@@ -82,17 +83,20 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
   const finish = response => { Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value)); return response; };
   try {
     if (url.pathname === '/link-admin') return finish(await linkAdmin(request, env.DB, now, env.APPROVAL_OWNER_EMAIL));
-    if (url.pathname === '/' || url.pathname === '/health') return finish(json({ service:'Fakulteti approvals', status:'ok', stores:'approval requests and access permissions only' }));
+    if (url.pathname === '/' || url.pathname === '/health') return finish(json({ service:'Fakulteti approvals', status:'ok', stores:'accounts, profiles and approvals; learning data stays local', accountDatabase:1 }));
     if (origin && !allowedOrigins.has(origin) && !local && origin !== url.origin) fail('ORIGIN_DENIED', 403);
     if (request.method === 'OPTIONS') return finish(new Response(null, { status:204 }));
     if (!env.DB) fail('SERVICE_UNAVAILABLE', 503);
     const db = env.DB;
     const body = ['POST','PATCH'].includes(request.method) ? await request.text() : '';
-    if (utf8.encode(body).length > 8192) fail('REQUEST_TOO_LARGE', 413);
+    if (utf8.encode(body).length > (url.pathname === '/api/cloud/profile' || url.pathname === '/api/cloud/register' ? 270000 : 8192)) fail('REQUEST_TOO_LARGE', 413);
     let input = {};
     if (body) { try { input = JSON.parse(body); } catch { fail('BODY_INVALID'); } }
     const id = request.headers.get('X-Fakulteti-Id') || '';
     if (!/^[a-f0-9]{64}$/.test(id)) fail('SIGNATURE_REQUIRED', 401);
+    if (/^\/api\/cloud\/(register|login|recover)$/.test(url.pathname) && request.method === 'POST') {
+      return finish(json(await handleCloudAuth(request,input,body,id,db,now,verify,isLinkedAdmin)));
+    }
     if (url.pathname === '/api/requests' && request.method === 'POST') {
       const email = String(input.email || '').trim().toLowerCase(), name = String(input.name || '').normalize('NFC').trim();
       const jwk = input.publicKey;
@@ -111,8 +115,13 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
     const caller = await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(id).first();
     if (!caller) fail('REQUEST_NOT_FOUND', 404);
     await verify(request, body, JSON.parse(caller.public_key), id, db, now);
-    const isAdmin = caller.email === ADMIN_EMAIL && caller.status === 'approved' && caller.role === 'admin' && await isLinkedAdmin(db, id);
-    if (url.pathname === '/api/me' && request.method === 'GET') return finish(json({ ...policy(caller), isAdmin }));
+    const account = await cloudAccount(db,id);
+    if (url.pathname === '/api/cloud/profile') return finish(json(await handleCloudProfile(request,input,account,db,now)));
+    const canonical = account ? await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(account.approval_id).first() : caller;
+    // A password-enrolled device inherits the verified owner's account rights.
+    // An unrelated request using the same email never gets a cloud binding.
+    const isAdmin = canonical.email === ADMIN_EMAIL && canonical.status === 'approved' && canonical.role === 'admin' && await isLinkedAdmin(db, canonical.id);
+    if (url.pathname === '/api/me' && request.method === 'GET') return finish(json({ ...policy(canonical), id, isAdmin }));
     if (url.pathname === '/api/admin-link' && request.method === 'POST') {
       if (caller.email !== ADMIN_EMAIL) fail('ADMIN_REQUIRED', 403);
       const token = random();
@@ -121,9 +130,17 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       return finish(json({ url:url.origin + '/link-admin?request=' + id + '&token=' + token }));
     }
     if (!isAdmin) fail('ADMIN_REQUIRED', 403);
+    if (url.pathname === '/api/admin/audit' && request.method === 'GET') {
+      const rows=await db.prepare('SELECT e.action,e.created_at AS createdAt,COALESCE(a.email,r.email) AS email,COALESCE(r.name,ar.name) AS name FROM account_audit e LEFT JOIN cloud_accounts a ON a.id=e.subject LEFT JOIN approval_requests r ON r.id=e.subject LEFT JOIN approval_requests ar ON ar.id=a.approval_id ORDER BY e.created_at DESC LIMIT 100').all();
+      return finish(json({events:rows.results}));
+    }
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') {
-      const rows = await db.prepare("SELECT * FROM approval_requests WHERE role <> 'admin' OR id = ? ORDER BY created_at DESC LIMIT 1000").bind(id).all();
-      return finish(json({ requests:rows.results.map(policy) }));
+      const rows = await db.prepare("SELECT r.*,a.id AS account_id,a.profile AS cloud_profile,a.last_login FROM approval_requests r LEFT JOIN cloud_accounts a ON a.approval_id=r.id WHERE (r.role <> 'admin' OR r.id = ?) AND NOT EXISTS (SELECT 1 FROM cloud_accounts ca WHERE ca.email=r.email AND ca.approval_id<>r.id) ORDER BY r.created_at DESC LIMIT 1000").bind(canonical.id).all();
+      return finish(json({ requests:rows.results.map(row=>{
+        const profile=row.cloud_profile?JSON.parse(row.cloud_profile):null;
+        return {...policy(row),online:Boolean(row.account_id),lastLogin:row.last_login||null,
+          profile:profile?{faculty:profile.faculty,branch:profile.branch,year:profile.year}:null};
+      }) }));
     }
     const target = /^\/api\/admin\/requests\/([a-f0-9]{64})$/.exec(url.pathname);
     if (target && request.method === 'PATCH') {
@@ -133,6 +150,7 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       if (input.status === 'approved' && input.landing !== 'auto' && input.landing !== 'settings' && !input.permissions.includes(routeSections[input.landing])) fail('LANDING_DENIED');
       const result = await db.prepare('UPDATE approval_requests SET status = ?, role = ?, permissions = ?, landing = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?').bind(input.status,input.role,JSON.stringify([...new Set(input.permissions)]),input.landing,now,target[1],input.version).run();
       if (!result.meta.changes) fail('POLICY_CHANGED', 409);
+      await db.prepare('INSERT INTO account_audit (id,actor,subject,action,created_at) VALUES (?,?,?,?,?)').bind(random(),id,target[1],'access:'+input.status,now).run();
       return finish(json(policy(await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(target[1]).first())));
     }
     fail('NOT_FOUND', 404);

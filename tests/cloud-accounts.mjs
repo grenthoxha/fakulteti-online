@@ -1,0 +1,49 @@
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
+import {database} from '../server/account-approvals/tests/approval-service.test.mjs';
+import {handleApprovalRequest} from '../server/account-approvals/lib/approval-service.mjs';
+
+function page(db,map=new Map(),online=true) {
+ const events={},raw={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k),key:i=>[...map.keys()][i]??null,get length(){return map.size;}};
+ const root={localStorage:raw,crypto:webcrypto,navigator:{},location:{reload(){}},addEventListener:(k,f)=>events[k]=f,dispatchEvent:e=>events[e.type]?.(e),
+   fetch:async(url,options)=>handleApprovalRequest(new Request(url,options),{DB:db})};
+ const timers=new Set(),setTimer=(f,n)=>{const id=setTimeout(()=>{timers.delete(id);f();},n);timers.add(id);return id;};
+ const context=vm.createContext({window:root,TextEncoder,Uint8Array,AbortController,CustomEvent:class{constructor(type,options={}){this.type=type;this.detail=options.detail;}},setTimeout:setTimer,clearTimeout,console});
+ if(online)vm.runInContext(readFileSync('assets/cloud-accounts.js','utf8'),context);
+ vm.runInContext(readFileSync('assets/local-accounts.js','utf8'),context);
+ return {api:root.FakultetiLocalAccounts,map,close:()=>timers.forEach(clearTimeout)};
+}
+const profile={firstName:'Arta',lastName:'Hoxha',gender:'female',role:'student'},email='arta@example.test',password='Only-synthetic-test-123';
+test('frontend cloud flow preserves namespaces, keeps learning local and synchronizes only profiles',async()=>{
+ const db=database(),a=page(db),created=await a.api.register(email,password,false,profile);created.complete();
+ const first=page(db,a.map);assert.equal(first.api.isOnline(),true);
+ first.api.storage.setItem('u_notes','private notes');first.api.storage.setItem('u_grades','private grades');
+ first.api.storage.setItem('u_nickname','Arta student');await first.api.syncProfile();
+ const phone=page(db);await phone.api.signIn(email,password);const second=page(db,phone.map);
+ assert.equal(second.api.storage.getItem('u_nickname'),'Arta student');assert.equal(second.api.storage.getItem('u_notes'),null);assert.equal(second.api.storage.getItem('u_grades'),null);
+ assert.notEqual(second.api.current().id,first.api.current().id);
+ const oldId=first.api.current().id;first.api.signOut();await first.api.signIn(email,password);
+ const again=page(db,a.map);assert.equal(again.api.current().id,oldId);assert.equal(again.api.storage.getItem('u_notes'),'private notes');
+ const row=await db.prepare('SELECT profile FROM cloud_accounts WHERE email=?').bind(email).first();assert(!/private notes|private grades/.test(row.profile));
+ second.api.storage.setItem('u_nickname','Phone edits');await second.api.syncProfile();
+ again.api.storage.setItem('u_nickname','Computer edits');
+ await assert.rejects(again.api.syncProfile(),e=>e.code==='PROFILE_CHANGED');
+ assert.equal(again.api.storage.getItem('u_nickname'),'Computer edits');
+ await again.api.syncProfile(true);
+ assert.equal(JSON.parse((await db.prepare('SELECT profile FROM cloud_accounts WHERE email=?').bind(email).first()).profile).nickname,'Computer edits');
+ await phone.api.resetPassword(email,created.recoveryCode,password+'changed');
+ await assert.rejects(again.api.syncProfile(),e=>e.code==='SESSION_REVOKED');assert.equal(again.api.current(),null);
+ [a,first,phone,second,again].forEach(p=>p.close());
+});
+test('legacy account migration preserves the local ID, learning data, and original recovery code',async()=>{
+ const db=database(),local=page(db,new Map(),false),created=await local.api.register(email,password,false,profile);created.complete();
+ const old=page(db,local.map,false);old.api.storage.setItem('u_notes','keep this');const id=old.api.current().id;old.api.signOut();
+ const connected=page(db,local.map);await connected.api.signIn(email,password);const migrated=page(db,local.map);
+ assert.equal(migrated.api.isOnline(),true);assert.equal(migrated.api.current().id,id);assert.equal(migrated.api.storage.getItem('u_notes'),'keep this');
+ const phone=page(db);await phone.api.resetPassword(email,created.recoveryCode,password+'new');
+ assert.equal(phone.api.current().email,email);
+ [local,old,connected,migrated,phone].forEach(p=>p.close());
+});

@@ -12,7 +12,8 @@
   <link rel="manifest" href="./manifest.webmanifest?v=4">
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
-  <script src="./assets/local-accounts.js?v=4"></script>
+  <script src="./assets/cloud-accounts.js?v=1"></script>
+  <script src="./assets/local-accounts.js?v=5"></script>
   <script>var unitStorage = window.FakultetiLocalAccounts.storage;</script>
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
   <link rel="stylesheet" href="./assets/account-approvals.css?v=2">
@@ -1554,8 +1555,9 @@
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
-  <script src="./assets/local-auth-ui.js?v=12"></script>
-  <script src="./assets/account-approvals.js?v=4"></script>
+  <script src="./assets/local-auth-ui.js?v=13"></script>
+  <script src="./assets/account-approvals.js?v=5"></script>
+  <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
@@ -14767,6 +14769,7 @@ function AcademyApp({
     if (screen === 'profile-resources') return page(t('Burime dhe shërbime', 'Resources and services'),
       groups.map(group => h('section', { key: group.name, className: 'profile-menu-group' }, label(group.name), menu(group.items.map(item => row(item.label, item.icon, () => setView(item.view), undefined, item.view))))));
     if (screen === 'profile-account') return page(t('Llogaria dhe të dhënat', 'Account and data'), h(React.Fragment, null,
+      window.FakultetiCloudAccountCard && h(window.FakultetiCloudAccountCard),
       menu([
         row(t('Të dhënat personale', 'Personal details'), 'M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21c0-4 3-6 8-6s8 2 8 6', openProfileEditor, undefined, 'identity'),
         row(t('Fakulteti dhe drejtimi', 'Faculty and programme'), 'M12 3l9 5-9 5-9-5zM7 11v5c3 2 7 2 10 0v-5', onAcademicChange, undefined, 'faculty')]),

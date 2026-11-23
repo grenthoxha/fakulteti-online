@@ -12,6 +12,18 @@ Lidhja më sipër shkarkon direkt APK-në, pa kërkuar te dosjet e projektit.
 
 [Hape app-in në shfletues](https://grenthoxha.github.io/fakulteti-online/) · [Detajet e APK-së dhe versionit](https://github.com/grenthoxha/fakulteti-online/releases/tag/v1.0.8-android-preview)
 
+## Llogaria online dhe databaza
+
+Llogaritë, profilet dhe aprovimet ruhen në Cloudflare D1. Emaili është unik; hyrja me të njëjtin email/fjalëkalim funksionon në browser dhe APK. Shënimet, detyrat, notat, progresi dhe PDF-të mbeten lokale.
+
+**Llogari e krijuar më herët:** nga pajisja fillestare, hape **Profili → Cilësimet → Llogaria dhe të dhënat → Lidh llogarinë online** dhe shkruaj fjalëkalimin aktual. Mjafton një herë; më pas mund të hysh nga pajisjet e tjera. Mos e çinstalo app-in ose fshi të dhënat lokale.
+
+**Administrimi i Grentit:** **Profili → Cilësimet → Aprovimet dhe qasja**. Aty mund të shohësh kërkesat, profilet, hyrjen e fundit dhe aktivitetin; të aprovosh, refuzosh ose pezullosh; të caktosh pjesët dhe faqen fillestare të secilit përdorues. Vetëm llogaria e pronarit të verifikuar ka këto leje. Llogaritë e reja presin aprovimin.
+
+Kodi i rikuperimit ruhet nga përdoruesi; dërgimi i emailit për verifikim/rikuperim nuk është konfiguruar. Detajet teknike dhe kufijtë: [databaza dhe llogaritë](server/account-approvals/README.md).
+
+APK-ja 1.0.8 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshimet e databazës merren pas rihapjes; nuk kërkohet instalim i pastër.
+
 ---
 
 Aplikacion akademik statik për studentë, i ndërtuar me HTML, React dhe JavaScript.
@@ -26,7 +38,7 @@ Ngarko përmbajtjen e paketës në repository, jo vetëm skedarin HTML. Ruaje do
 
 Faqja kryesore hap `index.html`. Edhe adresa që mbaron me `/fakulteti-online.html` hap të njëjtin aplikacion.
 
-Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Të dhënat personale dhe dokumentet e përdoruesit ruhen në shfletues; kjo paketë nuk eksporton të dhënat e shfletuesit dhe përdor një shërbim publik të veçantë vetëm për kërkimin e emrit në ASK. Shih `server/ask-name-validator/README.md`.
+Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Llogaritë, profilet dhe aprovimet përdorin databazën online; materialet dhe puna e studentit mbeten lokale. Kërkimi i emrit në ASK përdor shërbimin e vet të veçantë. Shih `server/ask-name-validator/README.md`.
 
 Pas publikimit, testo ngarkimin e materialeve, videot dhe transferimin mes pajisjeve në adresën publike.
 

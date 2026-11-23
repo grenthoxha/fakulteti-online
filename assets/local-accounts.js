@@ -1,7 +1,8 @@
-/* Device-local accounts. This is not server authentication or cross-device sync. */
+/* Online accounts and profiles; learning storage retains its original device namespace. */
 (function (root) {
   'use strict';
   const raw = root.localStorage;
+  const cloud = root.FakultetiCloud;
   const USERS = 'fakulteti.local-accounts.v1';
   const SESSION = 'fakulteti.local-session.v1';
   const PREFIX = 'fakulteti.account.v1:';
@@ -65,8 +66,8 @@
     get length() { return keys().length; },
     key(index) { return keys()[Number(index)] ?? null; },
     getItem(key) { return raw.getItem(physical(key)); },
-    setItem(key, value) { raw.setItem(physical(key), String(value)); },
-    removeItem(key) { raw.removeItem(physical(key)); },
+    setItem(key, value) { raw.setItem(physical(key), String(value)); profileChanged(key); },
+    removeItem(key) { raw.removeItem(physical(key)); profileChanged(key); },
     clear() { for (const key of keys()) raw.removeItem(physical(key)); }
   });
   function legacyProfile() {
@@ -87,11 +88,13 @@
     if (profile && (!['male', 'female'].includes(profile.gender) || !['student', 'instructor', 'admin'].includes(profile.role) || !String(profile.firstName || '').trim() || !String(profile.lastName || '').trim())) fail('PROFILE_INVALID');
     const salt = random(16), recovery = random(24), id = random(16), revision = random(16);
     const [hash, recoveryHash] = await Promise.all([passwordHash(password, salt), digest(recovery)]);
+    let online;
+    if (cloud) online = await cloud.authenticate('register',email,password,{id,importedLegacy:false},{profile:{...(importLegacy ? cloud.profile({id,importedLegacy:true}) : {}),firstName:profile?.firstName,lastName:profile?.lastName,gender:profile?.gender,requestedRole:profile?.role === 'instructor' ? 'instructor' : 'student'}});
     const account = await lock(() => {
       const data = registry();
       if (data.accounts.some(a => a.email === email)) fail('EMAIL_EXISTS');
       if (importLegacy && (!legacyProfile() || data.legacyOwner)) fail('LEGACY_CLAIMED');
-      const record = { id, email, salt, hash, iterations: ITERATIONS, recoveryHash, revision, importedLegacy: Boolean(importLegacy), createdAt: new Date().toISOString() };
+      const record = { id, email, salt, hash, iterations: ITERATIONS, recoveryHash, revision, importedLegacy: Boolean(importLegacy), createdAt: new Date().toISOString(), ...(online ? {cloudId:online.result.accountId} : {}) };
       const initial = profile ? {
         u_real_first_name: String(profile.firstName).trim(), u_real_last_name: String(profile.lastName).trim(),
         u_real_name: `${String(profile.firstName).trim()} ${String(profile.lastName).trim()}`,
@@ -109,10 +112,11 @@
         }
         fail('STORAGE_UNAVAILABLE');
       }
+      if (online) cloud.apply(record,online.result,online.who);
       return record;
     });
     return {
-      email, recoveryCode: recovery.match(/.{8}/g).join('-'),
+      email, recoveryCode: online?.result.recoveryCode || recovery.match(/.{8}/g).join('-'),
       complete() {
         const saved = registry().accounts.find(a => a.id === account.id && a.revision === account.revision);
         if (!saved) fail('SESSION_INVALID');
@@ -122,6 +126,7 @@
   }
   async function signIn(email, password) {
     email = normalizeEmail(email);
+    if (cloud) return cloudSignIn(email,password);
     const account = registry().accounts.find(a => a.email === email);
     if (!account || typeof password !== 'string' || password.length > 128) fail('CREDENTIALS_INVALID');
     if (!Number.isInteger(account.iterations) || account.iterations < 100000 || account.iterations > 600000 || !/^[a-f0-9]{32}$/.test(account.salt)) fail('STORAGE_INVALID');
@@ -132,6 +137,7 @@
   }
   async function resetPassword(email, code, password) {
     checkPassword(password);
+    if (cloud) return cloudSignIn(normalizeEmail(email),password,code);
     const data = registry(), account = data.accounts.find(a => a.email === normalizeEmail(email));
     const normalized = String(code || '').toLowerCase().replace(/[\s-]/g, '');
     if (!account || !/^[a-f0-9]{48}$/.test(normalized) || !equal(await digest(normalized), account.recoveryHash)) fail('RECOVERY_INVALID');
@@ -145,7 +151,72 @@
       startSession(changed);
     });
   }
+
+  async function cloudSignIn(email,password,code) {
+    if (!validEmail(email)) fail('EMAIL_INVALID');
+    const existing=registry().accounts.find(a=>a.email===email);
+    const account=existing || {id:random(16),email,importedLegacy:false};
+    let online;
+    try {online=await cloud.authenticate(code ? 'recover':'login',email,password,account,code ? {code}:{});}
+    catch(error) {
+      if(code || error.code!=='CREDENTIALS_INVALID' || !existing || existing.cloudId)throw error;
+      // Claim a legacy account only after its local password and signed device both verify.
+      if(!equal(await passwordHash(password,existing.salt,existing.iterations),existing.hash))fail('CREDENTIALS_INVALID');
+      try { online=await cloud.authenticate('register',email,password,existing,{profile:cloud.profile(existing),recoveryHash:existing.recoveryHash}); }
+      catch(migrationError){if(migrationError.code==='EMAIL_EXISTS')fail('CLOUD_PASSWORD_REQUIRED');throw migrationError;}
+    }
+    const salt=random(16),hash=await passwordHash(password,salt),revision=random(16);
+    const record={...account,salt,hash,iterations:ITERATIONS,revision,cloudId:online.result.accountId,createdAt:account.createdAt||new Date().toISOString()};
+    await lock(()=>{
+      const data=registry();
+      if(existing?.cloudId && raw.getItem((existing.importedLegacy?'':accountPrefix(existing.id))+'u_cloud_profile_dirty')==='1') {
+        raw.setItem((existing.importedLegacy?'':accountPrefix(existing.id))+'u_approval_device_v1',JSON.stringify(online.who));
+      } else cloud.apply(record,online.result,online.who);
+      write(USERS,{...data,accounts:[...data.accounts.filter(a=>a.email!==email),record]});
+      startSession(record);
+    });
+  }
+  let syncTimer, syncing=null;
+  function profileChanged(key) {
+    if(!cloud || !startupAccount || !Object.values(cloud.fields).includes(String(key)))return;
+    if(!registry().accounts.find(a=>a.id===startupAccount.id)?.cloudId)return;
+    storage.setItem('u_cloud_profile_dirty','1');
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(()=>syncProfile().catch(error=>root.dispatchEvent(new CustomEvent('fakulteti:cloud-error',{detail:error.code||error.message}))),900);
+  }
+  async function syncProfile(rebase = false) {
+    if(syncing)return syncing;
+    const account=registry().accounts.find(a=>a.id===startupAccount?.id);
+    if(!cloud || !account?.cloudId)return;
+    syncing=(async()=>{
+      const who=await cloud.identity(account),dirty=storage.getItem('u_cloud_profile_dirty')==='1';
+      if(rebase && dirty) {
+        const latest=await cloud.call(who,'/api/cloud/profile');
+        storage.setItem('u_cloud_profile_version',latest.profileVersion);
+      }
+      const snapshot=cloud.profile(account);
+      const result=await cloud.call(who,'/api/cloud/profile',dirty?'PATCH':'GET',dirty?{version:Number(storage.getItem('u_cloud_profile_version')),profile:snapshot}:undefined);
+      const currentProfile=cloud.profile(account);
+      // Preserve edits made while this request was in flight.
+      if (Object.keys(snapshot).some(key=>snapshot[key]!==currentProfile[key])) {
+        storage.setItem('u_cloud_profile_version',result.profileVersion);
+        storage.setItem('u_cloud_profile_dirty','1');
+        syncTimer=setTimeout(()=>syncProfile().catch(()=>{}),900);
+        return result;
+      }
+      const changed=Object.keys(result.profile).some(key=>String(currentProfile[key]||'')!==String(result.profile[key]||''));
+      cloud.apply(account,result);
+      if(!dirty && changed)root.location.reload();
+      return result;
+    })().catch(error=>{
+      if(error.code==='SESSION_REVOKED'){signOut();root.location.reload();}
+      throw error;
+    }).finally(()=>{syncing=null;});
+    return syncing;
+  }
+
   function signOut() {
+    root.dispatchEvent?.(new CustomEvent('fakulteti:cloud-signout'));
     root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
     raw.removeItem(SESSION);
   }
@@ -158,7 +229,8 @@
     }
   });
   root.FakultetiLocalAccounts = Object.freeze({
-    storage, current, legacyProfile, register, signIn, signOut, resetPassword,
+    storage, current, legacyProfile, register, signIn, signOut, resetPassword, syncProfile,
+    isOnline() { return Boolean(registry().accounts.find(a=>a.id===current()?.id)?.cloudId); },
     databaseName(base) { return startupAccount && !startupAccount.importedLegacy ? base + '-' + startupAccount.id : base; }
   });
 })(window);
