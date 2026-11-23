@@ -3,6 +3,9 @@
   const h = React.createElement;
   const { useState, useRef, useEffect } = React;
   const accounts = root.FakultetiLocalAccounts;
+  const isInstalledLaunch = () => Boolean(root.fakultetiAndroid || root.navigator?.standalone
+    || root.matchMedia?.('(display-mode: standalone)')?.matches
+    || /(?:^|[?&])source=homescreen(?:&|$)/.test(root.location?.search || ''));
   const errors = {
     PROFILE_INVALID: 'Plotëso emrin, mbiemrin dhe të dhënat e profilit.',
     EMAIL_INVALID: 'Shkruaj një adresë emaili të vlefshme.',
@@ -18,7 +21,8 @@
   };
   const icon = (path, cls = '') => h('svg', { className: cls, width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: path }));
   root.FakultetiLocalAuthView = function LocalAuthView() {
-    const [mode, setMode] = useState('intro');
+    const [installedLaunch, setInstalledLaunch] = useState(isInstalledLaunch);
+    const [mode, setMode] = useState(installedLaunch ? 'signin' : 'intro');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [gender, setGender] = useState('');
@@ -40,11 +44,19 @@
         root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
         root.fakultetiAndroid?.send('focus-unlock');
       };
-      root.addEventListener('fakulteti:android-ready', releaseSignedOutSession);
+      const preferSignIn = () => { setInstalledLaunch(true); setMode(previous => previous === 'intro' ? 'signin' : previous); };
+      const nativeReady = () => { preferSignIn(); releaseSignedOutSession(); };
+      const standalone = root.matchMedia?.('(display-mode: standalone)');
+      const modeChanged = event => { if (event.matches) preferSignIn(); };
+      root.addEventListener('fakulteti:android-ready', nativeReady);
+      root.addEventListener('appinstalled', preferSignIn);
+      standalone?.addEventListener?.('change', modeChanged);
       root.addEventListener('fakulteti:focus-restore', releaseSignedOutSession);
       releaseSignedOutSession();
       return () => {
-        root.removeEventListener('fakulteti:android-ready', releaseSignedOutSession);
+        root.removeEventListener('fakulteti:android-ready', nativeReady);
+        root.removeEventListener('appinstalled', preferSignIn);
+        standalone?.removeEventListener?.('change', modeChanged);
         root.removeEventListener('fakulteti:focus-restore', releaseSignedOutSession);
       };
     }, []);
@@ -124,7 +136,7 @@
           h('div', null, h('h2', null, 'Fillo me temën që të duhet sot.'), h('p', null, 'Krijo profilin, zgjidh fakultetin dhe hape lëndën. Kalim apo 10, përgatitja fillon me hapin e parë.')),
           h('button', { type: 'button', className: 'local-auth-primary', onClick: () => changeMode('signup') }, 'Nis përgatitjen', icon('M5 12h14M13 6l6 6-6 6'))),
         h('footer', { className: 'local-intro-footer' }, h('p', null, 'Llogaria dhe të dhënat ruhen në këtë pajisje.'),
-          typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })))));
+          !installedLaunch && typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })))));
     return h('main', { className: 'local-auth-page' },
       !isRegistration && brand,
       h('section', { className: 'local-auth-card', 'aria-labelledby': 'local-auth-title' },
@@ -157,6 +169,6 @@
         notice && h('p', { className: 'local-auth-help', role: 'status' }, notice),
         created && error && h('p', { className: 'local-auth-error', role: 'alert' }, error)),
       h('p', { className: 'local-auth-device-note' }, icon('M5 4h14v16H5zM10 17h4', 'local-auth-device-icon'), 'Llogari lokale · Të dhënat ruhen në këtë pajisje'),
-      typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })));
+      !installedLaunch && typeof UnitInstallButton === 'function' && h('div', { className: 'local-auth-install' }, h(UnitInstallButton, { className: 'local-auth-install-link', uiLanguage: 'sq' })));
   };
 })(window);
