@@ -3,9 +3,18 @@
   const h = React.createElement;
   const { useState, useRef, useEffect } = React;
   const accounts = root.FakultetiLocalAccounts;
-  const isInstalledLaunch = () => Boolean(root.fakultetiAndroid || root.navigator?.standalone
-    || root.matchMedia?.('(display-mode: standalone)')?.matches
+  const installedEntryKey = 'fakulteti_installed_entry_v1';
+  const appDisplayModes = ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'];
+  const hasAppLaunchSignal = () => Boolean(root.fakultetiAndroid || root.navigator?.standalone
+    || appDisplayModes.some(mode => root.matchMedia?.(`(display-mode: ${mode})`)?.matches)
     || /(?:^|[?&])source=homescreen(?:&|$)/.test(root.location?.search || ''));
+  const rememberInstalled = () => { try { root.localStorage?.setItem(installedEntryKey, '1'); } catch {} };
+  const isInstalledLaunch = () => {
+    if (hasAppLaunchSignal()) return true;
+    try { return root.localStorage?.getItem(installedEntryKey) === '1'; } catch { return false; }
+  };
+  root.FakultetiInstalledEntry = Object.freeze({ remember: rememberInstalled });
+  if (hasAppLaunchSignal()) rememberInstalled();
   const errors = {
     PROFILE_INVALID: 'Plotëso emrin, mbiemrin dhe të dhënat e profilit.',
     EMAIL_INVALID: 'Shkruaj një adresë emaili të vlefshme.',
@@ -44,19 +53,19 @@
         root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
         root.fakultetiAndroid?.send('focus-unlock');
       };
-      const preferSignIn = () => { setInstalledLaunch(true); setMode(previous => previous === 'intro' ? 'signin' : previous); };
+      const preferSignIn = () => { rememberInstalled(); setInstalledLaunch(true); setMode(previous => previous === 'intro' ? 'signin' : previous); };
       const nativeReady = () => { preferSignIn(); releaseSignedOutSession(); };
-      const standalone = root.matchMedia?.('(display-mode: standalone)');
+      const displays = appDisplayModes.map(mode => root.matchMedia?.(`(display-mode: ${mode})`)).filter(Boolean);
       const modeChanged = event => { if (event.matches) preferSignIn(); };
       root.addEventListener('fakulteti:android-ready', nativeReady);
       root.addEventListener('appinstalled', preferSignIn);
-      standalone?.addEventListener?.('change', modeChanged);
+      displays.forEach(query => { if (query.addEventListener) query.addEventListener('change', modeChanged); else query.addListener?.(modeChanged); });
       root.addEventListener('fakulteti:focus-restore', releaseSignedOutSession);
       releaseSignedOutSession();
       return () => {
         root.removeEventListener('fakulteti:android-ready', nativeReady);
         root.removeEventListener('appinstalled', preferSignIn);
-        standalone?.removeEventListener?.('change', modeChanged);
+        displays.forEach(query => { if (query.removeEventListener) query.removeEventListener('change', modeChanged); else query.removeListener?.(modeChanged); });
         root.removeEventListener('fakulteti:focus-restore', releaseSignedOutSession);
       };
     }, []);
