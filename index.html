@@ -8971,6 +8971,22 @@ const normalizeHomePreferences = value => {
 };
 
 // Isolated teaching examples. These never write course progress, real review dates or quiz scores.
+// Remove only identifiable demo records; personal exams and grades remain local.
+function readPersonalExamRecords(key) {
+  let saved;
+  try { saved = JSON.parse(unitStorage.getItem(key) || '[]'); } catch { return []; }
+  if (!Array.isArray(saved)) return [];
+  const clean = saved.filter(item => {
+    const id = String(item?.id || '');
+    if (key === 'u_deadlines') return item?.type !== 'exam' || item?.source === 'manual' || !(/^seed_exam_/.test(id) || /^deadline_col_seed_(1|2|past)$/.test(id));
+    if (key === 'u_group_colloquiums_v1') return !/^col_seed_(1|2|past)$/.test(id);
+    if (key === 'u_exam_clash_list') return !/^clash-[1-5]$/.test(id);
+    return true;
+  });
+  if (clean.length !== saved.length) { try { unitStorage.setItem(key, JSON.stringify(clean)); } catch {} }
+  return clean;
+}
+
 const COURSE_LEARNING_EXAMPLE_KEY = 'u_learning_examples_v1';
 const COURSE_LEARNING_EXAMPLE_BASE = Date.UTC(2026, 9, 3, 9);
 const COURSE_LEARNING_EXAMPLE_METHODS = {
@@ -12136,14 +12152,7 @@ function AcademyApp({
       return [];
     }
   });
-  const [deadlines, setDeadlines] = useState(() => {
-    try {
-      const d = JSON.parse(unitStorage.getItem('u_deadlines') || '[]');
-      return Array.isArray(d) ? d : [];
-    } catch {
-      return [];
-    }
-  });
+  const [deadlines, setDeadlines] = useState(() => readPersonalExamRecords('u_deadlines'));
   const [deadlineDraft, setDeadlineDraft] = useState({
     title: '',
     courseId: '',
@@ -12863,9 +12872,9 @@ function AcademyApp({
   const [selectedClashExamIds, setSelectedClashExamIds] = useState(() => {
     try {
       const saved = unitStorage.getItem('u_selected_clash_exams');
-      if (saved) return JSON.parse(saved);
+      if (saved) { const ids = JSON.parse(saved); return Array.isArray(ids) ? ids.filter(id => !/^clash-[1-5]$/.test(String(id))) : []; }
     } catch(e) {}
-    return ['clash-1', 'clash-2', 'clash-3'];
+    return [];
   });
 
   const [newClashExamForm, setNewClashExamForm] = useState({
@@ -12878,69 +12887,7 @@ function AcademyApp({
     ects: 6
   });
 
-  const [examClashList, setExamClashList] = useState(() => {
-    try {
-      const saved = unitStorage.getItem('u_exam_clash_list');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return [
-      {
-        id: 'clash-1',
-        subject: 'Struktura e t\u00EB Dh\u00EBnave & Algoritmet',
-        faculty: 'FIEK / Shkenca Kompjuterike',
-        examDate: '2026-06-15',
-        examTime: '10:00',
-        room: 'Salla 412 (Fakulteti Teknik)',
-        difficulty: 'E lart\u00EB',
-        ects: 6,
-        status: 'in-progress' // ready | in-progress | not-started
-      },
-      {
-        id: 'clash-2',
-        subject: 'Baza t\u00EB Dh\u00EBnave & SQL',
-        faculty: 'FIEK / Shkenca Kompjuterike',
-        examDate: '2026-06-15',
-        examTime: '10:00',
-        room: 'Amfiteatri i Madh',
-        difficulty: 'E lart\u00EB',
-        ects: 6,
-        status: 'not-started'
-      },
-      {
-        id: 'clash-3',
-        subject: 'Arkitektur\u00EB Kompjuterike',
-        faculty: 'FIEK',
-        examDate: '2026-06-16',
-        examTime: '12:00',
-        room: 'Salla 204',
-        difficulty: 'Mesatare',
-        ects: 6,
-        status: 'in-progress'
-      },
-      {
-        id: 'clash-4',
-        subject: 'Matematik\u00EB Diskrete',
-        faculty: 'FSHMN / FIEK',
-        examDate: '2026-06-22',
-        examTime: '09:00',
-        room: 'Amfiteatri 2',
-        difficulty: 'E lart\u00EB',
-        ects: 7,
-        status: 'ready'
-      },
-      {
-        id: 'clash-5',
-        subject: 'Inxhinieri e Softuerit',
-        faculty: 'FIEK',
-        examDate: '2026-06-26',
-        examTime: '11:00',
-        room: 'Salla 301',
-        difficulty: 'Normale',
-        ects: 5,
-        status: 'ready'
-      }
-    ];
-  });
+  const [examClashList, setExamClashList] = useState(() => readPersonalExamRecords('u_exam_clash_list'));
 
   /* ── 4n. UDHËZUESI I TRAFIKUT URBAN PËR STUDENTË (URBAN TRAFFIC GUIDE) ── */
   const [trafficFilterCategory, setTrafficFilterCategory] = useState('all'); // all | lines | pass | faculties
@@ -13892,9 +13839,7 @@ function AcademyApp({
   const [isClassPresident, setIsClassPresident] = useState(() => {
     try { return unitStorage.getItem('u_is_class_president') !== 'false'; } catch { return true; }
   });
-  const [groupColloquiums, setGroupColloquiums] = useState(() => {
-    try { return JSON.parse(unitStorage.getItem('u_group_colloquiums_v1') || '[]'); } catch { return []; }
-  });
+  const [groupColloquiums, setGroupColloquiums] = useState(() => readPersonalExamRecords('u_group_colloquiums_v1'));
   const [groupAnnouncements, setGroupAnnouncements] = useState(() => {
     try {
       const saved = JSON.parse(unitStorage.getItem('u_group_announcements_v1') || '[]');
@@ -17033,37 +16978,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const c2 = enrolledCourses[1] || enrolledCourses[0];
     const c3 = enrolledCourses[2] || enrolledCourses[0];
 
-    // 1. Seed sample scheduled exams if none exist for this scope
-    const hasScopedExams = deadlines.some(item => item.type === 'exam' && (!item.branchId || item.branchId === branchId) && (!item.yearId || item.yearId === yearId));
-    if (!hasScopedExams && !unitStorage.getItem(`u_seeded_exams_${scopeId}`)) {
-      const d1 = new Date(`${today}T12:00:00`);
-      d1.setDate(d1.getDate() + 12);
-      const d2 = new Date(`${today}T12:00:00`);
-      d2.setDate(d2.getDate() + 24);
-      const sampleExams = [
-        {
-          id: `seed_exam_${scopeId}_1`,
-          title: `Provimi: ${c1.title}`,
-          courseId: c1.id,
-          date: dateKey(d1),
-          type: 'exam',
-          branchId,
-          yearId
-        },
-        ...(c2.id !== c1.id ? [{
-          id: `seed_exam_${scopeId}_2`,
-          title: `Provimi: ${c2.title}`,
-          courseId: c2.id,
-          date: dateKey(d2),
-          type: 'exam',
-          branchId,
-          yearId
-        }] : [])
-      ];
-      setDeadlines(prev => [...prev, ...sampleExams]);
-      try { unitStorage.setItem(`u_seeded_exams_${scopeId}`, '1'); } catch {}
-    }
-
     // 4. Seed psychology videos for enrolled courses
     if (!unitStorage.getItem(`u_seeded_psych_videos_v2_${scopeId}`)) {
       const t1 = getCourseSyllabus(c1).topics[0]?.id || 'w1';
@@ -17113,58 +17027,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       try { unitStorage.setItem(`u_seeded_psych_videos_v2_${scopeId}`, '1'); } catch {}
     }
 
-    // 4b. Seed Class President Group Colloquiums & Announcements
-    if ((groupColloquiums.length === 0 || !groupColloquiums.some(c => c.id === 'col_seed_past')) && !unitStorage.getItem('u_seeded_group_pres_v2')) {
-      const dc1 = new Date(`${today}T12:00:00`);
-      dc1.setDate(dc1.getDate() + 6);
-      const dc2 = new Date(`${today}T12:00:00`);
-      dc2.setDate(dc2.getDate() + 14);
-      const dcPast = new Date(`${today}T12:00:00`);
-      dcPast.setDate(dcPast.getDate() - 5);
-      const seededCols = [
-        {
-          id: 'col_seed_1',
-          courseId: c1.id,
-          courseTitle: c1.title,
-          label: 'Kolokfiumi I',
-          date: dateKey(dc1),
-          time: '10:00',
-          room: 'Amfiteatri 3 (Kati I)',
-          group: 'Grupi 1',
-          notes: 'Përfshihen temat e javëve 1–5 dhe rastet praktike të ushtrimeve.',
-          author: 'Kryetari i Klasës',
-          scopeId
-        },
-        {
-          id: 'col_seed_2',
-          courseId: c2.id,
-          courseTitle: c2.title,
-          label: 'Kolokfiumi I',
-          date: dateKey(dc2),
-          time: '12:30',
-          room: 'Salla 14 / Laboratori',
-          group: 'Të gjitha grupet',
-          notes: 'Test me 25 pyetje me alternativa dhe 2 pyetje të hapura analitike.',
-          author: 'Kryetari i Klasës',
-          scopeId
-        },
-        {
-          id: 'col_seed_past',
-          courseId: c1.id,
-          courseTitle: c1.title,
-          label: 'Kolokfiumi Paraprak (I Përfunduar)',
-          date: dateKey(dcPast),
-          time: '09:00',
-          room: 'Amfiteatri 1',
-          group: 'Grupi 1',
-          notes: 'Testi provues para kolokfiumit zyrtar — është mbajtur dhe përfunduar me sukses javën e kaluar.',
-          author: 'Kryetari i Klasës',
-          scopeId
-        }
-      ];
-      setGroupColloquiums(seededCols);
-      try { unitStorage.setItem('u_group_colloquiums_v1', JSON.stringify(seededCols)); } catch {}
-
+    // 4b. Seed Class President Group Announcements
+    if (!unitStorage.getItem('u_seeded_group_pres_v2')) {
       const daPast = new Date(`${today}T12:00:00`);
       daPast.setDate(daPast.getDate() - 10);
       const seededAnns = [
@@ -18319,7 +18183,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         date: deadlineDraft.date,
         time: deadlineDraft.examTime || '',
         room: (deadlineDraft.examRoom || '').trim(),
-        source: item.source === 'kryetar' ? 'manual' : item.source
+        source: 'manual'
       } : item));
       setDeadlineDraft({ title: '', courseId: '', date: '', type: 'task', isExamModalOpen: false });
       showToast('Provimi u ndryshua.', '✅');
@@ -23323,13 +23187,16 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const pendingList = relevantCourses.filter(c => !done.includes(c.id));
 
     const completedEcts = completedList.reduce((acc, c) => acc + (Number(c.ects) || 6), 0);
-    const currentTotalPoints = completedList.reduce((acc, c) => acc + ((studentGrades[c.id] || 9) * (Number(c.ects) || 6)), 0);
-    const currentGpa = completedEcts > 0 ? (currentTotalPoints / completedEcts) : 0;
+    const gradedCompleted = completedList.filter(c => Number.isInteger(Number(studentGrades[c.id])) && Number(studentGrades[c.id]) >= 6 && Number(studentGrades[c.id]) <= 10);
+    const gradedEcts = gradedCompleted.reduce((acc, c) => acc + (Number(c.ects) || 6), 0);
+    const currentTotalPoints = gradedCompleted.reduce((acc, c) => acc + (Number(studentGrades[c.id]) * (Number(c.ects) || 6)), 0);
+    const currentGpa = gradedEcts > 0 ? (currentTotalPoints / gradedEcts) : 0;
 
     let projectedPoints = currentTotalPoints;
-    let projectedEcts = completedEcts;
+    let projectedEcts = gradedEcts;
     pendingList.forEach(c => {
-      const g = simulatedGrades[c.id] || 9;
+      const g = Number(simulatedGrades[c.id]);
+      if (!Number.isInteger(g) || g < 6 || g > 10) return;
       projectedPoints += g * (Number(c.ects) || 6);
       projectedEcts += (Number(c.ects) || 6);
     });
@@ -23359,7 +23226,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         className: "text-lg sm:text-2xl font-black text-primary tracking-tight"
       }, "Kalkulatori & Simulatori i Burs\u00EBs"), /*#__PURE__*/React.createElement("span", {
         className: `text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${isTargetMet ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'}`
-      }, isTargetMet ? "\u2713 Kualifikim i Arritur" : "\uD83D\uDCC8 N\u00EB Progres")), /*#__PURE__*/React.createElement("p", {
+      }, projectedEcts === 0 ? "Vendos notat për të llogaritur mesataren." : isTargetMet ? "\u2713 Kualifikim i Arritur" : "\uD83D\uDCC8 N\u00EB Progres")), /*#__PURE__*/React.createElement("p", {
         className: "text-xs sm:text-sm text-secondary mt-0.5"
       }, "Llogarit mesataren e ponderuar (ECTS) dhe simulo notat e provimeve p\u00EBr Burs\u00EBn e UP-s\u00EB & MASHT-it."))), /*#__PURE__*/React.createElement("div", {
         className: "flex items-center gap-2"
@@ -23398,7 +23265,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         className: "text-xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-300 font-bold"
       }, "Simulimi")), /*#__PURE__*/React.createElement("div", {
         className: "text-3xl sm:text-4xl font-black text-brand-600 dark:text-brand-400"
-      }, projectedGpa.toFixed(2)), /*#__PURE__*/React.createElement("div", {
+      }, projectedEcts > 0 ? projectedGpa.toFixed(2) : "—"), /*#__PURE__*/React.createElement("div", {
         className: "text-[11px] font-semibold text-secondary"
       }, isTargetMet ? "\uD83C\uDF89 Kalon pragun p\u00EBr burs\u00EB universitare!" : `Duhen edhe +${Math.abs(gap).toFixed(2)} pik\u00EB p\u00EBr pragun ${scholarshipTargetGpa.toFixed(2)}`)), /*#__PURE__*/React.createElement("div", {
         className: "card-surface p-5 rounded-2xl border border-default shadow-2xs flex flex-col justify-between space-y-2"
@@ -23448,7 +23315,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, `T\u00EB gjitha ${v}`)))), /*#__PURE__*/React.createElement("div", {
         className: "grid grid-cols-1 md:grid-cols-2 gap-3"
       }, pendingList.map(c => {
-        const currentSim = simulatedGrades[c.id] || 9;
+        const currentSim = simulatedGrades[c.id] || '—';
         const ectsVal = Number(c.ects) || 6;
 
         return /*#__PURE__*/React.createElement("div", {
@@ -23474,7 +23341,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         }, g))));
       })), pendingList.length === 0 && /*#__PURE__*/React.createElement("div", {
         className: "card-surface p-8 rounded-2xl border border-default text-center space-y-2"
-      }, /*#__PURE__*/React.createElement("div", { className: "text-4xl" }, "\uD83C\uDF89"), /*#__PURE__*/React.createElement("div", { className: "text-sm font-bold text-primary" }, "Urime! T\u00EB gjitha l\u00EBnd\u00EBt e k\u00EBtij programi jan\u00EB p\u00EBrfunduar."), /*#__PURE__*/React.createElement("p", { className: "text-xs text-secondary" }, `Mesatarja jote p\u00EBrfundimtare \u00EBsht\u00EB ${currentGpa.toFixed(2)}.`))),
+      }, /*#__PURE__*/React.createElement("div", { className: "text-4xl" }, "\uD83C\uDF89"), /*#__PURE__*/React.createElement("div", { className: "text-sm font-bold text-primary" }, "Urime! T\u00EB gjitha l\u00EBnd\u00EBt e k\u00EBtij programi jan\u00EB p\u00EBrfunduar."), /*#__PURE__*/React.createElement("p", { className: "text-xs text-secondary" }, `Mesatarja jote p\u00EBrfundimtare \u00EBsht\u00EB ${gradedEcts > 0 ? currentGpa.toFixed(2) : "—"}.`))),
 
       /* Tab 2: Official Criteria */
       scholarshipActiveTab === 'criteria' && /*#__PURE__*/React.createElement("div", {
@@ -23531,7 +23398,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       }, [...relevantCourses].sort((a, b) => (Number(b.ects) || 6) - (Number(a.ects) || 6)).map(c => {
         const isDone = done.includes(c.id);
         const ectsNum = Number(c.ects) || 6;
-        const gradeDisplay = isDone ? (studentGrades[c.id] || 9) : (simulatedGrades[c.id] || 'Pa notuar');
+        const gradeDisplay = (isDone ? studentGrades[c.id] : simulatedGrades[c.id]) || 'Pa notuar';
 
         return /*#__PURE__*/React.createElement("div", {
           key: c.id,
