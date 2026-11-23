@@ -25,6 +25,7 @@ test('frontend cloud flow preserves namespaces, keeps learning local and synchro
  const phone=page(db);await phone.api.signIn(email,password);const second=page(db,phone.map);
  assert.equal(second.api.storage.getItem('u_nickname'),'Arta student');assert.equal(second.api.storage.getItem('u_notes'),null);assert.equal(second.api.storage.getItem('u_grades'),null);
  assert.notEqual(second.api.current().id,first.api.current().id);
+ assert.deepEqual(JSON.parse(second.api.storage.getItem('u_unlocked')||'[]'),[]);
  const oldId=first.api.current().id;first.api.signOut();await first.api.signIn(email,password);
  const again=page(db,a.map);assert.equal(again.api.current().id,oldId);assert.equal(again.api.storage.getItem('u_notes'),'private notes');
  const row=await db.prepare('SELECT profile FROM cloud_accounts WHERE email=?').bind(email).first();assert(!/private notes|private grades/.test(row.profile));
@@ -37,6 +38,13 @@ test('frontend cloud flow preserves namespaces, keeps learning local and synchro
  await phone.api.resetPassword(email,created.recoveryCode,password+'changed');
  await assert.rejects(again.api.syncProfile(),e=>e.code==='SESSION_REVOKED');assert.equal(again.api.current(),null);
  [a,first,phone,second,again].forEach(p=>p.close());
+});
+test('online profile enrollment opens its selected year without copying study progress',async()=>{
+ const db=database(),a=page(db),created=await a.api.register(email,password,false,profile);created.complete();
+ const original=page(db,a.map);original.api.storage.setItem('u_faculty','philosophy');original.api.storage.setItem('u_branch','psychology');original.api.storage.setItem('u_year','2');await original.api.syncProfile();
+ const phone=page(db);await phone.api.signIn(email,password);const enrolled=page(db,phone.map);
+ assert.deepEqual(JSON.parse(enrolled.api.storage.getItem('u_unlocked')),[1,2]);assert.equal(enrolled.api.storage.getItem('u_progress'),null);
+ [a,original,phone,enrolled].forEach(p=>p.close());
 });
 test('legacy account migration preserves the local ID, learning data, and original recovery code',async()=>{
  const db=database(),local=page(db,new Map(),false),created=await local.api.register(email,password,false,profile);created.complete();

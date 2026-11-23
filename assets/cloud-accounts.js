@@ -36,7 +36,13 @@
     return p;
   }
   function apply(account,result,who) {
+    const previousBranch=read(account,'u_branch');
     for(const [k,key] of Object.entries(fields))write(account,key,result.profile[k]||'');
+    const year=Number(result.profile.year);
+    if(Number.isInteger(year)&&year>=1&&year<=10) {
+      let unlocked=[];try {const v=JSON.parse(read(account,'u_unlocked')||'[]');if(Array.isArray(v)&&previousBranch===result.profile.branch)unlocked=v.filter(n=>Number.isInteger(n)&&n>=1&&n<=10);}catch{}
+      write(account,'u_unlocked',JSON.stringify([...new Set([...unlocked,...Array.from({length:year},(_,i)=>i+1)])].sort((a,b)=>a-b)));
+    }
     const full=result.profile.firstName+' '+result.profile.lastName;
     write(account,'u_real_name',full);write(account,'u_name',result.profile.nickname||full);
     write(account,'u_faculty_selected_v1',result.profile.faculty?'1':'');

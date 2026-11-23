@@ -81,6 +81,7 @@
     write(SESSION, { id: account.id, revision: account.revision });
   }
   async function register(email, password, importLegacy = false, profile = null) {
+    if(root.FakultetiOnlineAccountsRequired && !cloud)fail('SERVICE_UNAVAILABLE');
     email = normalizeEmail(email);
     if (!validEmail(email)) fail('EMAIL_INVALID');
     checkPassword(password);
@@ -125,6 +126,7 @@
     };
   }
   async function signIn(email, password) {
+    if(root.FakultetiOnlineAccountsRequired && !cloud)fail('SERVICE_UNAVAILABLE');
     email = normalizeEmail(email);
     if (cloud) return cloudSignIn(email,password);
     const account = registry().accounts.find(a => a.email === email);
@@ -136,6 +138,7 @@
     startSession(saved);
   }
   async function resetPassword(email, code, password) {
+    if(root.FakultetiOnlineAccountsRequired && !cloud)fail('SERVICE_UNAVAILABLE');
     checkPassword(password);
     if (cloud) return cloudSignIn(normalizeEmail(email),password,code);
     const data = registry(), account = data.accounts.find(a => a.email === normalizeEmail(email));
