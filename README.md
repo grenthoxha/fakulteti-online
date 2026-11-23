@@ -24,6 +24,10 @@ Kodi i rikuperimit ruhet nga përdoruesi; dërgimi i emailit për verifikim/riku
 
 APK-ja 1.0.8 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshimet e databazës merren pas rihapjes; nuk kërkohet instalim i pastër.
 
+## Projekti Flutter
+
+[Repository i veçantë: fakulteti-flutter](https://github.com/grenthoxha/fakulteti-flutter). Fillimisht ruan app-in aktual brenda Flutter-it; kalimi i plotë në Dart vazhdon gradualisht. Është repository privat për testim, me kontrolle Android dhe iOS në GitHub Actions. APK-ja e qëndrueshme mbetet ajo në krye të kësaj faqeje.
+
 ---
 
 Aplikacion akademik statik për studentë, i ndërtuar me HTML, React dhe JavaScript.
