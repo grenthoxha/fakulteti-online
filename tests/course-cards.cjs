@@ -31,11 +31,35 @@ const opened=[];Object.assign(c,{window:{},getCoursesSelectedSemester:()=>({sele
 vm.runInContext(part('  const renderCoursesSemesterList =','  /* ══ PROVIMET')+'this.render=renderCoursesSemesterList;',c);
 const tree=c.render(),cards=nodes(tree).filter(n=>n.props.className?.split(' ').includes('course-summary-card'));
 ok(cards.length===2,'keeps all enrolled course cards');
-ok(text(cards[0]).includes('Prof. Linda Hoxha')&&text(cards[0]).includes('Asist. Natyra Agani'),'card displays both staff roles');
-ok(text(cards[1]).includes('Prof. —')&&text(cards[1]).includes('Asist. —'),'unknown names stay compact');
+ok(!text(cards[0]).includes('Linda Hoxha')&&!nodes(cards[0]).some(n=>n.props.className?.includes('course-teaching-staff')),'course list leaves staff details inside the course');
+ok(!text(cards[1]).includes('Prof.')&&!text(cards[1]).includes('Asist.'),'unknown staff does not clutter course list');
 ok(text(cards[0]).includes('50%'),'original chapter and exam progress calculation retained');
 cards[0].props.onClick();ok(opened[0]==='course-a','course opening action preserved');
 const ring=nodes(cards[0]).find(n=>n.props.className?.includes('course-progress-ring'));ok(ring.props['aria-label'].startsWith('50%'),'compact ring exposes progress to accessibility');
+// Upcoming exam badges follow the exam records and update on edits/deletion.
+c.daysUntil=date=>({'past':-1,'today':0,'tomorrow':1,'later':8}[date]);
+c.sortedDeadlines=[{courseId:course.id,date:'past',type:'exam'},{courseId:course.id,date:'today',type:'task',title:'Detyrë'},{courseId:'other',date:'today',type:'exam'},{courseId:course.id,date:'tomorrow',type:'exam'},{courseId:course.id,date:'later',type:'exam'}];
+let list=c.render(),first=nodes(list).find(n=>n.props.key===course.id);
+ok(text(first).includes('Provimi nesër')&&!text(first).includes('Detyrë'),'course shows upcoming exam instead of past exams or tasks');
+c.sortedDeadlines=c.sortedDeadlines.filter(d=>d.date!=='tomorrow');
+ok(text(nodes(c.render()).find(n=>n.props.key===course.id)).includes('Provimi pas 8 ditësh'),'deleting an exam exposes the next exam');
+c.sortedDeadlines=[];ok(!text(c.render()).includes('Provimi '),'no exam badge or placeholder without an exam');
+c.sortedDeadlines=[{courseId:course.id,date:'today',type:'exam'}];c.done=[course.id];
+ok(text(nodes(c.render()).find(n=>n.props.key===course.id)).includes('Provimi sot'),'scheduled exam stays visible for a previously passed course');c.done=[];
+// Staff resolves the opened course's own year and appears before learning tools.
+Object.assign(c,{branchYears:[{id:1,semesters:[selected]}],uiLanguage:'sq'});
+vm.runInContext(part('  const renderCourseTeachingStaff =','  const renderCourseStudyView =')+'this.staffView=renderCourseTeachingStaff;',c);
+let staffView=c.staffView(course);
+ok(text(staffView).includes('Profesori/jaLinda Hoxha')&&text(staffView).includes('Asistenti/jaNatyra Agani'),'course detail shows both named teaching roles');
+ok(nodes(staffView).filter(n=>n.type==='dt').length===2&&nodes(staffView).filter(n=>n.type==='dd').length===2,'staff uses readable labelled details');
+let calledYear;const previousProgram=c.getFacultyScheduleProgram;c.branchYears=[{id:2,semesters:[selected]}];c.getFacultyScheduleProgram=(id,year)=>{calledYear=year;return program;};c.staffView(course);
+ok(calledYear===2,'opened course determines teaching year rather than current student year');c.branchYears=[{id:1,semesters:[selected]}];c.getFacultyScheduleProgram=previousProgram;
+Object.assign(c,{lh:h,course,chapters:course.chapters,cards:[],quizzes:[],allChaptersRead:false,pathTargetIdx:0,pathTarget:null,pathTargetPlan:{steps:[]},pathTargetStep:0,pathStarted:false,progressPct:0,courseBook:null,bookBusy:false,bookInputRef:{},pickCourseBook(){},READ_ICONS:{},LESSON_ICONS:{},lessonIcon:()=>null,practiceSub:'Së shpejti',openCoursePractice(){},chapterKeyOf:idx=>course.id+'_'+course.chapters[idx].id,chapterTitleOf:()=> 'Kapitulli i parë'});
+vm.runInContext(part('    const renderCoursePath =','    const sheetRow =')+'this.path=renderCoursePath;',c);
+let detail=c.path(),detailNodes=nodes(detail),staffIndex=detailNodes.findIndex(n=>n.props.className?.includes('course-teaching-staff'));
+ok(staffIndex>=0&&staffIndex<detailNodes.findIndex(n=>n.type==='button'&&text(n).includes('Fillo leximin')),'teaching staff precedes learning actions');
+ok(!text(detail).includes('Sipas caktimit'),'generic professor placeholder is not duplicated in course subtitle');
+c.chapters=[];detail=c.path();ok(text(detail).includes('Linda Hoxha')&&text(detail).indexOf('Linda Hoxha')<text(detail).indexOf('Materialet e kësaj lënde'),'course without chapters still displays staff first');
 for(const mirror of ['github-publish/index.html','github-publish/fakulteti-online.html'])ok(fs.readFileSync(path.join(root,mirror),'utf8')===html,'HTML mirror matches');
 console.log(`PASS: ${checks} course card checks — staff roles, programme/year/group scope, missing names, progress and navigation.`);
-module.exports={html,h,nodes,text,context:c,selected};
+module.exports={html,h,nodes,text,context:c,selected,course};

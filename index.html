@@ -13338,7 +13338,7 @@ function AcademyApp({
     return unsubscribe;
   }, []);
   useEffect(() => {
-    if (!facultyContext.hasFreeRooms || !['week', 'home', 'courses'].includes(view) || (view === 'week' && scheduleProgramFilter === 'personal')) return;
+    if (!facultyContext.hasFreeRooms || !['week', 'home', 'courses', 'course'].includes(view) || (view === 'week' && scheduleProgramFilter === 'personal')) return;
     setScheduleProgramData(FilozofikuDailyStore.getData());
     FilozofikuDailyStore.refresh();
   }, [view, scheduleProgramFilter, branchId]);
@@ -20365,6 +20365,23 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   /* =========================================================================
      COMPREHENSIVE UNIVERSITY-GRADE COURSE STUDY VIEW (view === 'course')
      ========================================================================= */
+  const renderCourseTeachingStaff = selectedCourse => {
+    const ownerYear = branchYears.find(year => (year.semesters || []).some(semester => (semester.courses || []).some(item => item.id === selectedCourse.id)));
+    const ownerSemester = (ownerYear?.semesters || []).find(semester => (semester.courses || []).some(item => item.id === selectedCourse.id));
+    const staffYearId = ownerYear?.id || yearId;
+    const staff = getCourseTeachingStaff(selectedCourse, {
+      program: getFacultyScheduleProgram(branchId, staffYearId), data: scheduleProgramData,
+      schedule: academicSchedule, branchId, yearId: staffYearId, groupId: studentGroupId,
+      courses: ownerSemester?.courses || [selectedCourse]
+    });
+    const ce = React.createElement;
+    return ce('dl', { className: 'course-teaching-staff mt-3 space-y-1 text-[12px] leading-[18px]', 'aria-label': uiLanguage === 'en' ? 'Teaching staff' : 'Stafi i lëndës' },
+      [[uiLanguage === 'en' ? 'Professor' : 'Profesori/ja', staff.professor], [uiLanguage === 'en' ? 'Assistant' : 'Asistenti/ja', staff.assistant]].map(([label, name]) =>
+        ce('div', { key: label, className: 'flex items-baseline gap-2' },
+          ce('dt', { className: 'w-[84px] shrink-0 text-tertiary' }, label),
+          ce('dd', { className: 'min-w-0 text-secondary break-words' }, name || '—'))));
+  };
+
   const renderCourseStudyView = () => {
     if (!course) {
       return /*#__PURE__*/React.createElement("div", {
@@ -20812,6 +20829,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const renderCoursePath = () => {
       if (!chapters.length) return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
         lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
+        renderCourseTeachingStaff(course),
         lh("div", { className: "card-surface border border-default rounded-3xl p-6 text-center space-y-4" },
           lh("p", { className: "text-secondary" }, "Materialet e kësaj lënde ende nuk janë shtuar."),
           lh("button", { type: "button", onClick: () => goBackOr('courses'), className: "h-11 px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Kthehu mbrapa")));
@@ -20864,7 +20882,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         lh("input", { type: "file", accept: "application/pdf,.pdf", className: "hidden", ref: bookInputRef, "aria-hidden": "true", tabIndex: -1, onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
         lh("div", null,
           lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
-          lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`, course.prof || null].filter(Boolean).join(' · '))),
+          lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`].filter(Boolean).join(' · ')),
+          renderCourseTeachingStaff(course)),
 
         renderMaterialCard(),
 
@@ -33162,18 +33181,16 @@ Nënshkrimi: _____________________`;
     const totalRead = stats.reduce((sum, s) => sum + s.read, 0);
     const semesterPct = totalChapters ? Math.round((totalRead / totalChapters) * 100) : 0;
     const R = 19, C = 2 * Math.PI * R;
-    const staffProgram = getFacultyScheduleProgram(branchId, selected.yearId);
     const ring = pct => ce("span", { className: "course-progress-ring relative w-[34px] h-[34px] shrink-0", "aria-label": `${pct}% e lëndës e përfunduar` },
       ce("svg", { width: 34, height: 34, viewBox: "0 0 46 46", "aria-hidden": "true" },
         ce("circle", { cx: 23, cy: 23, r: R, fill: "none", stroke: "currentColor", strokeWidth: 5, className: "text-black/[0.07] dark:text-white/10" }),
         pct > 0 && ce("circle", { cx: 23, cy: 23, r: R, fill: "none", stroke: "currentColor", strokeWidth: 5, strokeLinecap: "round", strokeDasharray: `${(pct / 100) * C} ${C}`, transform: "rotate(-90 23 23)", className: "text-brand-600" })),
       ce("span", { className: `absolute inset-0 flex items-center justify-center text-[9px] font-semibold tabular-nums ${pct > 0 ? 'text-primary' : 'text-tertiary'}` }, `${pct}%`));
     const dueFor = item => (item.cards || []).length ? getFlashcardReviewQueue(item.cards, (fcReviews.courses || {})[item.id] || {}, 'due', Date.now()).dueEntries.length : 0;
-    const examFor = item => sortedDeadlines.find(d => d.courseId === item.id && daysUntil(d.date) >= 0);
+    const examFor = item => sortedDeadlines.find(d => d.type === 'exam' && d.courseId === item.id && daysUntil(d.date) >= 0);
     const row = (s, i) => {
-      const { item, examPassed, pct } = s;
-      const staff = getCourseTeachingStaff(item, { program: staffProgram, data: scheduleProgramData, schedule: academicSchedule, branchId, yearId: selected.yearId, groupId: studentGroupId, courses });
-      const exam = examPassed ? null : examFor(item);
+      const { item, pct } = s;
+      const exam = examFor(item);
       const left = exam ? daysUntil(exam.date) : null;
       const examText = exam ? `${exam.type === 'exam' ? 'Provimi' : (exam.title || 'Afati')} ${left === 0 ? 'sot' : left === 1 ? 'nesër' : `pas ${left} ditësh`}` : '';
       const pillCls = left !== null && left <= 7 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300';
@@ -33188,9 +33205,6 @@ Nënshkrimi: _____________________`;
           ring(pct),
           unitUiIcon(UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0")),
         ce("span", { className: "block text-[14.5px] font-[650] text-primary leading-[19px]" }, item.title),
-        ce("span", { className: "course-teaching-staff block space-y-0.5 text-[11px] leading-[15px] text-secondary" },
-          ce("span", { className: "block break-words" }, ce("span", { className: "text-tertiary" }, "Prof. "), staff.professor || '—'),
-          ce("span", { className: "block break-words" }, ce("span", { className: "text-tertiary" }, "Asist. "), staff.assistant || '—')),
         exam && ce("span", { className: `mt-auto self-start px-2 py-1 rounded-full text-[11px] font-semibold ${pillCls}` }, examText));
     };
     const fullSem = !selectedIsPast ? ((yr && yr.semesters) || []).find(sem => sem.id === selected.id) : null;
