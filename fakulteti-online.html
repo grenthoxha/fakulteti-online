@@ -9949,6 +9949,49 @@ function installFilozofikuScheduleDirections(data) {
 }
 installFilozofikuScheduleDirections(FILOZOFIKU_ROOMS_FALLBACK);
 
+function getCourseTeachingStaff(course, { program, data, schedule = [], branchId, yearId, groupId = '', courses = [course] } = {}) {
+  const cleanName = value => {
+    const name = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!name || /sipas|pacaktuar|pa\s+(?:te|të)\s+dhena|pozita\s*\d*|profesori i|asistenti i|mentori|komisioni/i.test(name)) return '';
+    return name.replace(/^(?:(?:prof|asist|ass|msc|dr)\.?\s+)+/i, '').trim();
+  };
+  const number = title => String(title || '').match(/\b([IVX]+|\d+)\s*(?:\(|$)/)?.[1] || '';
+  const score = (a, b) => number(a) !== number(b) ? 0 : officialCourseMatchScore(a, b);
+  const sameCourse = title => {
+    const ranked = courses.map(item => ({ item, score: score(title, item.title) })).sort((a, b) => b.score - a.score);
+    return ranked[0]?.item.id === course.id && ranked[0].score >= .62 && (!ranked[1] || ranked[0].score > ranked[1].score);
+  };
+  const groupNumber = String(groupId).match(/\d+/)?.[0];
+  const matchesGroup = value => !groupNumber || !/grupi\s*\d/i.test(value) || new RegExp('grupi\\s*' + groupNumber + '(?!\\d)', 'i').test(value);
+  const professors = new Map(), assistants = new Map();
+  const add = (target, value) => String(value || '').split(/\s*·\s*/).forEach(part => {
+    const name = cleanName(part);
+    if (name) target.set(foldFacultyText(name), name);
+  });
+  if (program && data) {
+    for (const room of data.rooms || []) for (const event of room.e || []) {
+      const groups = String(event.g || '').split(/[,;]/);
+      if (!groups.some(value => {
+        const match = foldFacultyText(value).match(/^(.*?)\s*-\s*(\d)ba\b/);
+        return match && match[1].trim() === foldFacultyText(program.groupName) && Number(match[2]) === Number(yearId) && matchesGroup(value);
+      }) || !sameCourse(event.t)) continue;
+      const activity = foldFacultyText(event.a);
+      if (activity.includes('ushtrim')) add(assistants, event.p);
+      else if (activity.includes('ligjerat')) add(professors, event.p);
+    }
+  }
+  // Personal entries must belong to this exact course, faculty direction and year.
+  const hasOfficialProfessor = professors.size > 0, hasOfficialAssistant = assistants.size > 0;
+  for (const entry of schedule) {
+    if (entry.starter || entry.courseId !== course.id || entry.branchId !== branchId || String(entry.yearId) !== String(yearId) || !matchesGroup(entry.group || entry.groupId || '')) continue;
+    if (entry.type === 'exercise') { if (!hasOfficialAssistant) add(assistants, entry.staffName); }
+    else if (entry.type === 'lecture') { if (!hasOfficialProfessor) add(professors, entry.staffName); }
+  }
+  if (!professors.size && course.catalogStatus !== 'schedule') add(professors, course.prof);
+  if (!assistants.size) add(assistants, course.assistant || course.asst);
+  return { professor: [...professors.values()].join(' · '), assistant: [...assistants.values()].join(' · ') };
+}
+
 function formatFilozofikuProf(rawName) {
   if (!rawName) return 'I pacaktuar';
   return String(rawName)
@@ -13295,7 +13338,7 @@ function AcademyApp({
     return unsubscribe;
   }, []);
   useEffect(() => {
-    if (!facultyContext.hasFreeRooms || !['week', 'home'].includes(view) || (view === 'week' && scheduleProgramFilter === 'personal')) return;
+    if (!facultyContext.hasFreeRooms || !['week', 'home', 'courses'].includes(view) || (view === 'week' && scheduleProgramFilter === 'personal')) return;
     setScheduleProgramData(FilozofikuDailyStore.getData());
     FilozofikuDailyStore.refresh();
   }, [view, scheduleProgramFilter, branchId]);
@@ -33119,15 +33162,17 @@ Nënshkrimi: _____________________`;
     const totalRead = stats.reduce((sum, s) => sum + s.read, 0);
     const semesterPct = totalChapters ? Math.round((totalRead / totalChapters) * 100) : 0;
     const R = 19, C = 2 * Math.PI * R;
-    const ring = pct => ce("span", { className: "relative w-[46px] h-[46px] shrink-0" },
-      ce("svg", { width: 46, height: 46, viewBox: "0 0 46 46", "aria-hidden": "true" },
+    const staffProgram = getFacultyScheduleProgram(branchId, selected.yearId);
+    const ring = pct => ce("span", { className: "course-progress-ring relative w-[34px] h-[34px] shrink-0", "aria-label": `${pct}% e lëndës e përfunduar` },
+      ce("svg", { width: 34, height: 34, viewBox: "0 0 46 46", "aria-hidden": "true" },
         ce("circle", { cx: 23, cy: 23, r: R, fill: "none", stroke: "currentColor", strokeWidth: 5, className: "text-black/[0.07] dark:text-white/10" }),
         pct > 0 && ce("circle", { cx: 23, cy: 23, r: R, fill: "none", stroke: "currentColor", strokeWidth: 5, strokeLinecap: "round", strokeDasharray: `${(pct / 100) * C} ${C}`, transform: "rotate(-90 23 23)", className: "text-brand-600" })),
-      ce("span", { className: `absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums ${pct > 0 ? 'text-primary' : 'text-tertiary'}` }, `${pct}%`));
+      ce("span", { className: `absolute inset-0 flex items-center justify-center text-[9px] font-semibold tabular-nums ${pct > 0 ? 'text-primary' : 'text-tertiary'}` }, `${pct}%`));
     const dueFor = item => (item.cards || []).length ? getFlashcardReviewQueue(item.cards, (fcReviews.courses || {})[item.id] || {}, 'due', Date.now()).dueEntries.length : 0;
     const examFor = item => sortedDeadlines.find(d => d.courseId === item.id && daysUntil(d.date) >= 0);
     const row = (s, i) => {
       const { item, examPassed, pct } = s;
+      const staff = getCourseTeachingStaff(item, { program: staffProgram, data: scheduleProgramData, schedule: academicSchedule, branchId, yearId: selected.yearId, groupId: studentGroupId, courses });
       const exam = examPassed ? null : examFor(item);
       const left = exam ? daysUntil(exam.date) : null;
       const examText = exam ? `${exam.type === 'exam' ? 'Provimi' : (exam.title || 'Afati')} ${left === 0 ? 'sot' : left === 1 ? 'nesër' : `pas ${left} ditësh`}` : '';
@@ -33137,12 +33182,15 @@ Nënshkrimi: _____________________`;
         key: item.id,
         type: "button",
         onClick: () => openCourse(item),
-        className: "card-surface border border-default rounded-[20px] p-3.5 min-h-[150px] flex flex-col gap-2.5 text-left cursor-pointer"
+        className: "course-summary-card card-surface border border-default rounded-[20px] p-3.5 min-h-[150px] flex flex-col gap-2 text-left cursor-pointer"
       },
         ce("span", { className: "flex items-start justify-between" },
           ring(pct),
           unitUiIcon(UNIT_UI_ICONS.chev, "w-4 h-4 text-tertiary shrink-0")),
         ce("span", { className: "block text-[14.5px] font-[650] text-primary leading-[19px]" }, item.title),
+        ce("span", { className: "course-teaching-staff block space-y-0.5 text-[11px] leading-[15px] text-secondary" },
+          ce("span", { className: "block break-words" }, ce("span", { className: "text-tertiary" }, "Prof. "), staff.professor || '—'),
+          ce("span", { className: "block break-words" }, ce("span", { className: "text-tertiary" }, "Asist. "), staff.assistant || '—')),
         exam && ce("span", { className: `mt-auto self-start px-2 py-1 rounded-full text-[11px] font-semibold ${pillCls}` }, examText));
     };
     const fullSem = !selectedIsPast ? ((yr && yr.semesters) || []).find(sem => sem.id === selected.id) : null;
