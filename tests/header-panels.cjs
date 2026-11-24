@@ -36,9 +36,17 @@ const searchActions=[];
 const c=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',search:'Psikologji',searchFilter:'all',recentSearches:[],UNIT_UI_ICONS:{},unitUiIcon:()=>null,
  buildSearchGroups:()=>[{id:'courses',label:'Lëndët',items:[{key:'c1',title:'Psikologji',sub:'Kapituj',action:()=>searchActions.push('course')}]},{id:'notes',label:'Shënime',items:[]}],
  setSearch:v=>searchActions.push(['query',v]),setSearchFilter:v=>searchActions.push(['filter',v]),rememberSearch:()=>searchActions.push('remember'),closeSearchPage:()=>searchActions.push('close')});
-vm.runInContext(section('  const renderSearchPage =','  /* ── 11')+'this.render=renderSearchPage;',c);t=c.render();
+vm.runInContext(section('  const renderHeaderSearchInput =','  /* ── 11')+'this.render=renderSearchPage;this.input=renderHeaderSearchInput;',c);t=c.render();
 ok(find(t,'header-search-panel') && find(t,'header-quick-backdrop'),'search is a compact dismissible panel');
 ok(!nodes(t).some(n=>n.props.className?.includes('inset-0')),'search no longer replaces whole screen');
+ok(!nodes(t).some(n=>n.type==='input'),'results panel no longer duplicates header input');
+const headerInput=c.input(), input=nodes(headerInput).find(n=>n.type==='input');
+ok(input.props.autoFocus&&input.props.id==='unit-search-input','header input receives focus when opened');
+ok(input.props.value==='Psikologji','header input retains query');
+input.props.onChange({target:{value:'Etika'}});ok(searchActions.pop()[1]==='Etika','typing in header updates search');
+input.props.onKeyDown({key:'Enter'});ok(searchActions.pop()==='remember','header Enter remembers search');
+input.props.onKeyDown({key:'Escape'});ok(searchActions.pop()==='close','header Escape closes search');
+ok(html.includes('searchOpen && renderHeaderSearchInput()'),'actual app header owns input renderer');
 nodes(t).find(n=>n.type==='button'&&text(n).includes('Kapituj')).props.onClick();
 ok(JSON.stringify(searchActions)==='["remember","close","course"]','search remembers and opens actual result');
 nodes(t).find(n=>n.type==='button'&&text(n)==='Lëndët · 1').props.onClick();

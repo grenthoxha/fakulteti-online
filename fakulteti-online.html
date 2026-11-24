@@ -1574,6 +1574,10 @@
     .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
     .header-quick-layer .mx-room-count { background: transparent; }
     .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 60px rgba(7,20,42,.18); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
+    .app-header.is-searching > div:not(.header-search-heading) { display: none!important; }
+    .app-header.is-searching > .header-search-heading { display: flex; flex: 1; min-width: 0; padding: 0; border: 0; animation: notification-preview-enter .18s ease-out both; }
+    .app-header.is-searching .header-search-field { min-height: 40px; }
+    .app-header.is-searching .notification-control { width: 40px; height: 40px; }
     .header-search-heading { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); flex: none; }
     .header-search-field { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
     .header-search-field:focus-within { border-color: rgba(var(--brand-rgb),.45); }
@@ -1583,7 +1587,7 @@
     .header-search-results section { margin-top: 14px; }
     .header-search-results section > div:last-of-type { border: 0; padding: 0; background: transparent; }
     .header-search-results section button { overflow-wrap: anywhere; }
-    @media (prefers-reduced-motion: reduce) { .header-search-panel { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .header-search-panel,.app-header.is-searching > .header-search-heading { animation: none; } }
 
   </style>
 </head>
@@ -32693,16 +32697,9 @@ Nënshkrimi: _____________________`;
       { id: 'notes', label: 'Shënimet e mia', items: notes }
     ];
   };
-  const renderSearchPage = () => {
+  const renderHeaderSearchInput = () => {
     const ce = React.createElement;
-    const groups = buildSearchGroups();
-    const total = groups.reduce((sum, g) => sum + g.items.length, 0);
-    const visible = groups.filter(g => g.items.length && (searchFilter === 'all' || searchFilter === g.id));
-    const chips = [{ id: 'all', label: 'Të gjitha', count: total }].concat(groups.map(g => ({ id: g.id, label: g.label, count: g.items.length })));
-    return ce(ModalPortal, null, ce('div', { className: 'header-quick-layer', onClick: closeSearchPage, 'aria-label': 'Kërkimi në aplikacion' },
-      ce('div', { className: 'header-quick-backdrop', 'aria-hidden': true }),
-      ce('section', { id: 'header-search', className: 'header-search-panel', onClick: event => event.stopPropagation() },
-        ce('div', { className: 'header-search-heading' },
+    return ce('div', { className: 'header-search-heading', role: 'search', 'aria-label': 'Kërkimi në aplikacion' },
           ce('label', { className: 'header-search-field' },
             unitUiIcon(UNIT_UI_ICONS.search, "w-[18px] h-[18px] text-tertiary shrink-0"),
             ce("input", {
@@ -32720,7 +32717,17 @@ Nënshkrimi: _____________________`;
               className: "flex-1 min-w-0 bg-transparent text-base text-primary focus:outline-none placeholder:text-tertiary"
             }),
             search && ce("button", { type: "button", onClick: () => setSearch(''), "aria-label": "Fshi tekstin", className: "w-6 h-6 rounded-full bg-black/10 dark:bg-white/15 text-secondary flex items-center justify-center shrink-0 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.close, "w-3 h-3"))),
-          ce('button', { type: 'button', onClick: closeSearchPage, 'aria-label': 'Mbyll kërkimin', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
+          ce('button', { type: 'button', onClick: closeSearchPage, 'aria-label': 'Mbyll kërkimin', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4')));
+  };
+  const renderSearchPage = () => {
+    const ce = React.createElement;
+    const groups = buildSearchGroups();
+    const total = groups.reduce((sum, g) => sum + g.items.length, 0);
+    const visible = groups.filter(g => g.items.length && (searchFilter === 'all' || searchFilter === g.id));
+    const chips = [{ id: 'all', label: 'Të gjitha', count: total }].concat(groups.map(g => ({ id: g.id, label: g.label, count: g.items.length })));
+    return ce('div', { className: 'header-quick-layer', onClick: closeSearchPage },
+      ce('div', { className: 'header-quick-backdrop', 'aria-hidden': true }),
+      ce('section', { id: 'header-search', className: 'header-search-panel', role: 'region', 'aria-label': 'Rezultatet e kërkimit', onClick: event => event.stopPropagation() },
         ce('div', { className: 'header-search-results' }, search.trim() ? ce(React.Fragment, null,
           ce("div", { className: "mt-3 flex gap-2 overflow-x-auto no-scrollbar" },
             chips.filter(ch => ch.id === 'all' || ch.count > 0).map(ch => ce("button", {
@@ -32754,7 +32761,7 @@ Nënshkrimi: _____________________`;
               ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, "Kërkimet e fundit"),
               ce("button", { type: "button", onClick: () => { setRecentSearches([]); try { unitStorage.removeItem('u_recent_searches'); } catch (e) {} }, className: "text-[13px] text-tertiary hover:text-primary cursor-pointer" }, "Pastro")),
             ce("div", { className: "flex flex-wrap gap-2" }, recentSearches.map(item => ce("button", { key: item, type: "button", onClick: () => setSearch(item), className: "h-8 px-3 rounded-[10px] card-surface border border-default text-[13px] text-secondary flex items-center gap-1.5 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.history, "w-3.5 h-3.5 text-tertiary"), item)))),
-          ce("p", { className: "text-sm text-tertiary leading-relaxed" }, "Kërko në lëndët, videot dhe shënimet e tua."))))));
+          ce("p", { className: "text-sm text-tertiary leading-relaxed" }, "Kërko në lëndët, videot dhe shënimet e tua.")))));
   };
 
   /* ── 11 · NJOFTIMET ── */
@@ -35578,8 +35585,8 @@ Nënshkrimi: _____________________`;
   }, doneEcts, " / ", totalEcts, " ECTS"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0 lg:pl-64"
   }, /*#__PURE__*/React.createElement("header", {
-    className: `app-header h-16 header-bg border-b border-default px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl ${view === 'home' && !isInstructorAccount ? 'home-header-blend' : ''}`
-  }, /*#__PURE__*/React.createElement("div", {
+    className: `app-header h-16 header-bg border-b border-default px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl ${view === 'home' && !isInstructorAccount ? 'home-header-blend' : ''}${searchOpen ? ' is-searching' : ''}`
+  }, searchOpen && renderHeaderSearchInput(), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
   }, isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSidebarOpen(true),
@@ -35623,7 +35630,6 @@ Nënshkrimi: _____________________`;
     className: `app-header-actions flex items-center gap-2${isInstructorAccount ? '' : ' app-header-actions--student shrink-0'}`
   }, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: openHeaderSearch,
-    "aria-haspopup": "dialog",
     "aria-expanded": searchOpen,
     "aria-controls": searchOpen ? "header-search" : undefined,
     className: "hidden lg:flex w-56 xl:w-64 items-center gap-2.5 px-3 py-2 rounded-xl input-bg border border-default text-secondary hover:border-brand-300 hover:text-primary transition-colors text-left"
@@ -35680,7 +35686,6 @@ Nënshkrimi: _____________________`;
     className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
   }, groupMessageUnreadCount > 99 ? "99+" : groupMessageUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: openHeaderSearch,
-    "aria-haspopup": "dialog",
     "aria-expanded": searchOpen,
     "aria-controls": searchOpen ? "header-search" : undefined,
     "aria-label": "K\xEBrko l\xEBnd\xEB, kapitull ose koncept",
