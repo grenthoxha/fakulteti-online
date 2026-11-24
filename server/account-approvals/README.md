@@ -21,3 +21,13 @@ node --test tests/cloud-accounts.test.mjs
 ```
 
 The full app checkout also provides `node --test tests/cloud-accounts.mjs` for browser-module integration and local-data preservation. Drizzle migrations are append-only and applied by Sites during deployment. `.openai/hosting.json` retains D1 `DB`, with no R2 file upload binding.
+
+## Public study-material reader
+
+`lib/course-materials.mjs` serves only reviewed, content-addressed resources from `lib/course-materials-manifest.mjs`. The originals and native previews are stored inside ZIP_STORED course packages in the repository’s semester Releases. The manifest provides exact byte offsets, lengths and SHA-256 hashes. HTTP ranges are translated to the corresponding package range; a response that ignores or changes the requested range is rejected. CORS permits the public Pages app and its Android WebView. No account cookies or authorization are forwarded to GitHub; no database writes or arbitrary upstream URLs are accepted.
+
+The deployed Sites Worker routes `/api/materials/` to `handleCourseMaterial(request)` before the existing account API handler. Keep all other routes and D1 bindings unchanged. The generated allowlist and reader must be deployed together with the public catalogues.
+
+```sh
+node --test tests/course-materials.test.mjs
+```

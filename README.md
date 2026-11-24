@@ -54,7 +54,7 @@ Ngarko përmbajtjen e paketës në repository, jo vetëm skedarin HTML. Ruaje do
 
 Faqja kryesore hap `index.html`. Edhe adresa që mbaron me `/fakulteti-online.html` hap të njëjtin aplikacion.
 
-Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Llogaritë, profilet dhe aprovimet përdorin databazën online; materialet e ngarkuara nga studenti dhe puna e tij mbeten lokale. Biblioteka e lidhur e lëndëve hap skedarët origjinalë nga Google Drive. Kërkimi i emrit në ASK përdor shërbimin e vet të veçantë. Shih `server/ask-name-validator/README.md`.
+Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Llogaritë, profilet dhe aprovimet përdorin databazën online; materialet e ngarkuara nga studenti dhe puna e tij mbeten lokale. Biblioteka e lëndëve hap materialet e publikuara në GitHub Releases drejtpërdrejt në lexuesin e app-it. Kërkimi i emrit në ASK përdor shërbimin e vet të veçantë. Shih `server/ask-name-validator/README.md`.
 
 Pas publikimit, testo ngarkimin e materialeve, videot dhe transferimin mes pajisjeve në adresën publike.
 
@@ -69,12 +69,16 @@ Përmbajtja vendoset te `assets/editorial-content.js`. Lista `articles` pranon a
 
 Lista `archiveExams` lidh ID-në ekzistuese të lëndës me pyetjet e provimit. Derisa të vendosen pyetjet, zgjedhja e lëndës është e mundshme dhe provimi shfaqet “Në përgatitje”. Nuk përzihen pyetje nga lëndë të tjera.
 
-## Biblioteka e lidhur me Google Drive
+## Materialet e lëndëve brenda app-it
 
-Te lëndët e Psikologjisë janë lidhur **1 335 materiale** nga [dosja e dërguar](https://drive.google.com/drive/folders/1TIEseYBOdAL1eU1hXbVZX3UDzHuwoYbN), sipas inventarit të 24 nëntorit 2026. Janë përfshirë 33 dosje lëndësh në gjashtë semestra; 29 kanë skedarë, ndërsa katër janë bosh. U lanë jashtë 11 skedarë `.DS_Store` dhe tri kopje të një imazhi reklamues jashtë dosjeve mësimore.
+Biblioteka përfshin **1 335 materiale** të inventarit të 24 nëntorit 2026, në 33 lëndë të Psikologjisë dhe gjashtë semestra: 29 dosje kanë skedarë, katër janë bosh. Janë përjashtuar 11 skedarë teknikë `.DS_Store` dhe tri kopje të reklamës së verifikuar. Katalogu dhe lexuesi nuk hapin ndërfaqen e Drive-it.
 
-Origjinalet qëndrojnë në Drive dhe lejet e tyre respektohen. App-i publikon vetëm katalogun dhe lidhjet: literaturë, slajde, shënime, teste, ushtrime dhe të dhëna. Fotot e të njëjtës dosje grupohen në galeri; hapet vetëm një skedar njëherësh. Dosja origjinale dhe çdo material kanë lidhjen për hapje në Drive nëse pamja e brendshme kërkon hyrje ose leje. Për hapjen nga Drive nevojitet internet. Këto materiale nuk krijojnë vetvetiu provime të planifikuara ose nota.
+Origjinalet dhe kopjet për lexim janë publikuar te [GitHub Releases](https://github.com/grenthoxha/fakulteti-online/releases), në paketa sipas lëndës. PDF-të, Word-i, slajdet dhe Excel-i lexohen brenda app-it; dokumentet Office kanë edhe kopje PDF. Fotot grupohen në galeri. Lexuesi ofron kalim faqeje, zmadhim, përshtatje, rrotullim dhe pamje teksti kur dokumenti përmban tekst. Faqja e fundit dhe materiali i hapur së fundi ruhen lokalisht, veçmas për çdo llogari. Origjinali mund të shkarkohet nga ikona përkatëse.
 
-`assets/course-materials-index.js` përmban hartën e lëndëve; `assets/course-materials/` përmban katalogë të veçantë, që ngarkohen vetëm kur hapet lënda. Punojnë edhe nga versioni lokal `file://`. Ndryshimi i përmbajtjes së një skedari ekzistues në Drive shfaqet nga burimi; për skedarë të rinj ose të larguar duhet përditësuar katalogu. Skedari i hapur së fundi ruhet lokalisht, veçmas sipas llogarisë.
+Skedarët SAV shfaqen si tabela, R si tekst, ndërsa raportet SPV shfaqin përmbajtjen e paketës; për analizat interaktive SPSS nevojitet programi përkatës. Origjinalet ruhen të pandryshuara. Një dokument i vjetër RTF që nuk konvertohej është përshtatur për lexim duke ruajtur të gjithë tekstin dhe figurat; origjinali mbetet i disponueshëm.
 
-Kontrollet e bibliotekës: `node tests/course-materials.cjs`. Ato verifikojnë mbulimin e skedarëve, përputhjen me lëndët, ngarkimin sipas nevojës, kërkimin, galeritë dhe ruajtjen lokale sipas llogarisë.
+Materialet kërkojnë internet. Katalogu i lëndës dhe lexuesi PDF ngarkohen vetëm kur nevojiten. Shërbimi ekzistues i app-it ofron vetëm skedarët e miratuar, përmes pjesëve të verifikuara të paketave ZIP në Releases; app-i nuk shkarkon paketën e plotë për të hapur një material. Nuk përdoret proxy për URL arbitrare dhe ky shërbim nuk ndryshon databazën e llogarive. Kodet përkatëse gjenden te `server/account-approvals/lib/course-materials*.mjs`.
+
+`assets/course-materials-index.js` lidh lëndët me katalogët te `assets/course-materials/`. Lexuesi është te `assets/course-material-reader.js`; PDF.js dhe licencat e tij ruhen te `assets/vendor/pdfjs/`. Biblioteka nuk krijon provime të planifikuara ose nota. Ndryshimet e ardhshme në dosjen burimore kërkojnë import dhe kontroll të ri.
+
+Kontrollet: `node tests/course-materials.cjs`, `node tests/course-material-reader.cjs` dhe `node --test server/account-approvals/tests/course-materials.test.mjs`. Ato verifikojnë hartën e materialeve, përjashtimin e reklamës, hapjen native, ngarkimin sipas nevojës, ruajtjen sipas llogarisë, CORS dhe shërbimin e saktë të pjesëve të skedarit.
