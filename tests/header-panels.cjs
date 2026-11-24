@@ -18,14 +18,14 @@ function notificationFixture(extra={}) {
  return {c,actions,render:()=>c.render()};
 }
 let f=notificationFixture(), t=f.render();
-ok(find(t,'header-quick-layer'),'notifications use attached panel');
-ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===4,'preview bounded to four items');
-ok(!nodes(t).some(n=>n.type==='Settings'),'settings stay out of quick list');
-ok(!text(t).includes('Provo çdo 5 min'),'demo stays out of quick list');
-nodes(t).find(n=>n.type==='button'&&text(n)==='Shiko të gjitha').props.onClick();
-ok(JSON.stringify(f.actions)==='[["preview",false],["center",true]]','view all opens full center');
+ok(find(t,'notification-screen'),'notifications fill the screen below app header');
+ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===6,'bell opens all notifications directly');
+ok(nodes(t).some(n=>n.type==='Settings'),'notification settings remain accessible');
+ok(text(t).includes('Provo çdo 5 min'),'native demo remains accessible');
+nodes(t).find(n=>n.props['aria-label']==='Mbyll njoftimet').props.onClick();
+ok(JSON.stringify(f.actions)==='[["center",false],["preview",false]]','close exits current and legacy notification opening paths');
 f.actions.length=0;find(t,'notification-row').props.onClick();
-ok(JSON.stringify(f.actions)==='[["preview",false],["read","0"],["open",0]]','item marks read and navigates');
+ok(JSON.stringify(f.actions)==='[["center",false],["preview",false],["read","0"],["open",0]]','item closes screen, marks read and navigates');
 f=notificationFixture({notificationPreviewOpen:false,notificationCenterOpen:true});t=f.render();
 ok(nodes(t).some(n=>n.type==='Settings'),'full center retains reminder settings');
 ok(text(t).includes('Provo çdo 5 min'),'full center retains native demo');

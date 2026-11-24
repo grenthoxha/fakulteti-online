@@ -1557,6 +1557,11 @@
     .notification-preview-layer .notification-preview { overflow: visible; max-height: min(560px,var(--notification-anchor-height,var(--header-quick-height,calc(100dvh - 88px)))); transform-origin: var(--notification-anchor-x,80%) top; }
     .notification-preview-layer .notification-preview::before { content: ''; position: absolute; left: var(--notification-anchor-x,80%); top: -7px; width: 12px; height: 12px; background: var(--surface); border-top: 1px solid var(--line); border-left: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); pointer-events: none; }
     .app-notification-bell[aria-expanded="true"] { background: rgba(var(--brand-rgb),.09); color: rgb(var(--brand-rgb)); }
+    .notification-screen { top: var(--messages-screen-top,var(--app-header-height,64px)); bottom: auto; height: var(--messages-screen-height,calc(100dvh - var(--app-header-height,64px))); background: var(--surface); }
+    .notification-screen .notification-panel { inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; animation: messages-enter .2s ease-out both; }
+    .notification-screen .notification-header { padding: 14px; }
+    .notification-screen .notification-content { padding-bottom: 1rem; }
+    @media (prefers-reduced-motion: reduce) { .notification-screen .notification-panel { animation: none; } }
     .notification-group-hub { color: var(--ink); }
     .notification-group-hub .mx-hub { padding-bottom: 8px; }
     .notification-tabs { flex-wrap: wrap; }
@@ -12033,6 +12038,8 @@ function AcademyApp({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const headerHomeLabel = freeRoomsHomeUser ? 'Shko te Sallat e Lira' : 'Shko te Kreu';
   const openHeaderHome = () => {
+    setNotificationCenterOpen(false);
+    setNotificationPreviewOpen(false);
     setGroupMessagesOpen(false);
     setSearchOpen(false);
     setSidebarOpen(false);
@@ -32897,13 +32904,14 @@ Nënshkrimi: _____________________`;
   const renderNotificationCenter = () => {
     if (!notificationCenterOpen && !notificationPreviewOpen) return null;
     const ce = React.createElement;
+    const closeNotifications = () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(false); };
     const unreadDot = item => ce('span', {
       className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined,
       style: { visibility: item.unread ? 'visible' : 'hidden' }
     });
     const row = item => ce('button', {
       key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
-      onClick: () => { setNotificationPreviewOpen(false); markNotificationsRead([item.id]); item.action(); }
+      onClick: () => { closeNotifications(); markNotificationsRead([item.id]); item.action(); }
     },
       ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon)),
       ce('span', { className: 'notification-copy' },
@@ -32914,30 +32922,13 @@ Nënshkrimi: _____________________`;
       ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check, 'w-6 h-6')),
       ce('h2', null, unreadOnly ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'),
       ce('p', null, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'));
-    if (notificationPreviewOpen && !notificationCenterOpen) {
-      const recent = notificationFeed.slice(0, 4);
-      return ce(ModalPortal, null, ce('div', { className: 'notification-layer notification-preview-layer header-quick-layer', onClick: () => setNotificationPreviewOpen(false), 'aria-label': 'Njoftimet' },
-        ce('div', { className: 'header-quick-backdrop', 'aria-hidden': true }),
-        ce('section', {
-          id: 'notification-preview', className: 'notification-preview', 'aria-labelledby': 'notification-preview-title',
-          onClick: event => event.stopPropagation()
-        },
-          ce('header', { className: 'notification-preview-heading' },
-            ce('div', { className: 'notification-preview-title' }, ce('h2', { id: 'notification-preview-title' }, 'Njoftimet'), notificationUnreadCount > 0 && ce('span', { className: 'notification-preview-count', 'aria-label': `${notificationUnreadCount} të palexuara` }, notificationUnreadCount)),
-            ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
-          ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(row) : empty(false)),
-          ce('footer', { className: 'notification-preview-footer' },
-            ce('button', {
-    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined, type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4'))))));
-    }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
-    return ce('div', { className: 'notification-layer' },
-      ce('div', { className: 'notification-backdrop', onClick: () => setNotificationCenterOpen(false), 'aria-hidden': true }),
-      ce('section', { className: 'notification-panel', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-center-title' },
+    return ce('div', { className: 'notification-layer notification-screen' },
+      ce('section', { id: 'notification-center', className: 'notification-panel', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-center-title' },
         ce('header', { className: 'notification-header' },
           ce('div', { className: 'notification-heading-row' },
-            ce('button', { type: 'button', onClick: () => setNotificationCenterOpen(false), 'aria-label': 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
+            ce('button', { type: 'button', onClick: closeNotifications, 'aria-label': 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
             ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, 'Njoftimet'), ce('p', null, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
             ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
           ce(window.FakultetiNotifications.Settings),
@@ -32949,7 +32940,7 @@ Nënshkrimi: _____________________`;
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
           ce('div', { className: 'notification-list' }, group.items.map(row)))) : empty(notificationTab === 'unread')),
         ce('footer', { className: 'notification-footer' }, ce('button', {
-    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined, type: 'button', onClick: () => { setNotificationCenterOpen(false); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined, type: 'button', onClick: () => { closeNotifications(); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
   };
 
   /* ── 12 · KARTELA DIGJITALE ── */
@@ -35719,12 +35710,12 @@ Nënshkrimi: _____________________`;
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     ref: notificationBellRef,
-    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(open => !open); },
+    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationPreviewOpen(false); setNotificationCenterOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
     title: "Njoftimet",
     "aria-haspopup": "dialog",
     "aria-expanded": notificationCenterOpen || notificationPreviewOpen,
-    "aria-controls": notificationPreviewOpen ? "notification-preview" : undefined,
+    "aria-controls": notificationCenterOpen || notificationPreviewOpen ? "notification-center" : undefined,
     className: "app-notification-bell flex relative p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors items-center justify-center"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4",
@@ -35775,7 +35766,7 @@ Nënshkrimi: _____________________`;
     className: "app-theme-toggle flex p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors text-sm items-center justify-center"
   }, isDark ? '☀️' : '🌙'), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
-    onClick: () => { setGroupMessagesOpen(false); setView('settings'); },
+    onClick: () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(false); setView('settings'); },
     title: "Cil\xEBsimet dhe Profili",
     "aria-label": "Hap profilin dhe cil\xEBsimet",
     className: "w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-brand-800 flex items-center justify-center text-white font-bold text-xs shadow-inner shadow-black/20 ml-1  transition-colors overflow-hidden"
