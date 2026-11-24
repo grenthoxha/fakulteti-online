@@ -1483,6 +1483,25 @@
       .home-preferences { display: none !important; }
     }
     /* Course-detail modern learning styling */
+    .courses-page .course-summary-card {
+      --course-accent: var(--brand-rgb); position: relative; isolation: isolate; overflow: hidden;
+      background: linear-gradient(145deg,rgba(var(--course-accent),.09),rgba(var(--course-accent),.025) 70%),var(--surface);
+      border-color: rgba(var(--course-accent),.17); box-shadow: 0 3px 12px -8px rgba(var(--course-accent),.24);
+      transition: border-color .18s ease,box-shadow .18s ease;
+    }
+    .courses-page .course-summary-card:nth-child(3n+2) { --course-accent: 34,111,143; }
+    .courses-page .course-summary-card:nth-child(3n+3) { --course-accent: 83,92,166; }
+    .courses-page .course-summary-card::before {
+      content: ''; position: absolute; width: 94px; height: 94px; top: -49px; right: -28px;
+      border: 1px solid rgba(var(--course-accent),.12); border-radius: 50%;
+      background: rgba(var(--course-accent),.035); pointer-events: none;
+    }
+    .courses-page .course-summary-card > span { position: relative; z-index: 1; }
+    .courses-page .course-summary-card:hover { border-color: rgba(var(--course-accent),.32); box-shadow: 0 5px 16px -9px rgba(var(--course-accent),.3); }
+    .courses-page .course-progress-ring { border-radius: 50%; background: rgba(255,255,255,.65); }
+    .dark .courses-page .course-summary-card { background: linear-gradient(145deg,rgba(var(--course-accent),.17),rgba(var(--course-accent),.025) 75%),var(--surface); border-color: rgba(var(--course-accent),.24); }
+    .dark .courses-page .course-progress-ring { background: rgba(255,255,255,.045); }
+    @media(prefers-reduced-motion:reduce) { .courses-page .course-summary-card { transition: none; } }
     .course-detail-page { min-width: 0; }
     .course-detail-body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
     .course-detail-body h1, .course-detail-body h2, .course-detail-body h3 { color: var(--ink); font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; }
@@ -13515,14 +13534,24 @@ function AcademyApp({
       window.removeEventListener('fakulteti:focus-restore', restoreFocus);
     };
   }, []);
-  const [pomoVp, setPomoVp] = useState(() => ({ w: window.innerWidth || 390, h: window.innerHeight || 800 }));
+  const [pomoVp, setPomoVp] = useState(() => ({ w: Math.round(window.visualViewport?.width || window.innerWidth || 390), h: Math.round(window.visualViewport?.height || window.innerHeight || 800) }));
   useEffect(() => {
     if (!pomoOpen) return undefined;
-    const upd = () => setPomoVp({ w: window.innerWidth || 390, h: window.innerHeight || 800 });
+    let frame = 0;
+    const upd = () => setPomoVp({ w: Math.round(window.visualViewport?.width || window.innerWidth || 390), h: Math.round(window.visualViewport?.height || window.innerHeight || 800) });
+    const measure = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(upd); };
     upd();
-    window.addEventListener('resize', upd);
-    window.addEventListener('orientationchange', upd);
-    return () => { window.removeEventListener('resize', upd); window.removeEventListener('orientationchange', upd); };
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    document.addEventListener('fullscreenchange', measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+      document.removeEventListener('fullscreenchange', measure);
+    };
   }, [pomoOpen]);
   useEffect(() => {
     if (!pomoOpen) return undefined;
@@ -21190,16 +21219,16 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
 
     return /*#__PURE__*/React.createElement("div", {
-      className: "course-detail-page w-full max-w-3xl mx-auto px-5 sm:px-6 pt-2 sm:pt-4 pb-28 anim-fade-up"
+      className: "course-detail-page w-full max-w-3xl mx-auto px-5 sm:px-6 pt-0 sm:pt-1 pb-28 anim-fade-up"
     },
       /* SHIRITI I SIPËRM: × · progresi me segmente · ⋯ */
-      /*#__PURE__*/React.createElement("div", { className: "relative flex items-center gap-3 sm:gap-4 h-12 mb-3 sm:mb-4" },
+      /*#__PURE__*/React.createElement("div", { className: "course-detail-toolbar relative flex items-center gap-3 sm:gap-4 h-10 mb-1 sm:mb-2" },
         /*#__PURE__*/React.createElement("button", {
           type: "button",
           onClick: () => { if (currentTab === 'path') goBackOr('courses'); else { setCourseLessonDone(null); openCourseTab('path'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
           "aria-label": currentTab === 'path' ? `Kthehu te ${navPreviousLabel() || 'Lëndët'}` : currentTab === 'syllabus' ? "Mbyll mësimin" : "Kthehu te lënda",
           title: currentTab === 'path' ? `Kthehu te ${navPreviousLabel() || 'Lëndët'}` : currentTab === 'syllabus' ? "Mbyll mësimin" : "Kthehu te lënda",
-          className: currentTab === 'path' ? "h-10 pl-1.5 pr-3 -ml-1.5 rounded-full flex items-center gap-1 text-[15px] font-medium text-brand-600 dark:text-brand-300 hover-surface transition-colors cursor-pointer shrink-0" : iconBtn
+          className: currentTab === 'path' ? "h-10 pl-1.5 pr-3 -ml-1.5 rounded-full flex items-center gap-1 text-[14px] font-medium text-brand-600 dark:text-brand-300 hover-surface transition-colors cursor-pointer shrink-0" : iconBtn
         }, /*#__PURE__*/React.createElement("svg", {
           className: "w-5 h-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"
         }, /*#__PURE__*/React.createElement("path", { d: currentTab === 'syllabus' ? "M6 6l12 12M18 6L6 18" : "M15 18l-6-6 6-6" })), currentTab === 'path' && (navPreviousLabel() || "Lëndët")),
@@ -33939,8 +33968,11 @@ Nënshkrimi: _____________________`;
     const cw = fullView ? vp.w : (phoneW ? vp.w : 420);
     const narrow = cw < 380;
     const ch = fullView ? vp.h : (phoneW ? Math.round(vp.h * 0.94) : Math.round(Math.min(vp.h * 0.9, 820)));
-    const sideW = wide ? 112 : 0;
-    const contentW = cw - sideW;
+    const sideW = wide && !locked ? 104 : 0;
+    const contentW = cw;
+    const displayW = wide ? Math.max(120, cw - sideW * 2 - 32) : cw;
+    const sideGap = ch < 360 ? 6 : 10;
+    const sideSize = Math.max(32, Math.min(44, Math.floor((ch - 40 - sideGap * 5 - 8) / 6)));
     const mm = Math.floor(left / 60);
     const mmStr = pad2(mm);
     const ssStr = pad2(left % 60);
@@ -33965,15 +33997,14 @@ Nënshkrimi: _____________________`;
     const abs = (style, children, key, props) => ce("div", { key, ...(props || {}), style: { position: 'absolute', ...style } }, children);
     const timerProps = { role: 'timer', 'aria-label': `${mm} minuta e ${left % 60} sekonda` };
     const centerIn = (top, children, key, extra) => abs({ left: 0, width: contentW, top, display: 'flex', flexDirection: 'column', alignItems: 'center', ...(extra || {}) }, children, key);
-    const botZone = wide ? 0 : 150;
-    const topZone = wide ? 70 : 100;
-    const midH = ch - topZone - botZone;
-    const midY = topZone + midH / 2;
+    const edgeZone = wide ? (locked ? 88 : 64) : (ch < 540 ? 112 : 132);
+    const midH = Math.max(80, ch - edgeZone * 2);
+    const midY = ch / 2;
     let display = null;
     let bgLayers = null;
 
     if (styleId === 'eklipsi') {
-      const D = Math.round(wide ? Math.min(ch - 110, contentW * 0.62) : Math.min(cw - 64, midH, 340));
+      const D = Math.round(Math.max(72, Math.min(displayW - 56, midH, fullView ? 420 : 340)));
       const R = 146, c0 = 150;
       const sw = Math.max(1.5, Math.min(3, 900 / D));
       let d = '';
@@ -33997,15 +34028,15 @@ Nënshkrimi: _____________________`;
       const nRow = wide ? mmChars.length + ssChars.length : Math.max(mmChars.length, ssChars.length);
       const wideSep = wide ? Math.round(ch * 0.1) : 0;
       const cardW = Math.max(40, Math.floor(wide
-        ? Math.min((contentW - 80 - wideSep - gap * (nRow - 2)) / nRow, ch * 0.34)
+        ? Math.min((displayW - 48 - wideSep - gap * (nRow - 2)) / nRow, ch * 0.34)
         : Math.min((cw - 68 - gap * (nRow - 1)) / nRow, 160)));
-      const cardH = Math.floor(wide ? Math.min(cardW * 1.48, ch * 0.56) : Math.min(cardW * 1.32, (midH - 44) / 2));
+      const cardH = Math.floor(wide ? Math.min(cardW * 1.48, midH) : Math.min(cardW * 1.32, (midH - 44) / 2));
       const card = (chr, k) => ce("div", { key: k, style: { width: cardW, height: cardH, borderRadius: Math.round(cardH * 0.07), background: '#111114', border: '1px solid #1f1f25', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flex: 'none' } },
         ce("span", { key: `${k}-${chr}`, className: "pomo-flipin", style: { fontSize: Math.round(cardH * 0.74), fontWeight: 700, color: '#d8d8dd', letterSpacing: '-0.03em', lineHeight: 1 } }, chr),
         ce("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 3, marginTop: -1.5, background: '#000' } }));
       if (wide) {
         const dot = Math.max(7, Math.round(cardH * 0.045));
-        display = abs({ left: 0, width: contentW, top: midY - cardH / 2 - 10, height: cardH, display: 'flex', alignItems: 'center', justifyContent: 'center', gap },
+        display = abs({ left: 0, width: contentW, top: midY - cardH / 2, height: cardH, display: 'flex', alignItems: 'center', justifyContent: 'center', gap },
           [...mmChars.map((c, i) => card(c, `m${i}`)),
             ce("div", { key: 'sep', style: { width: wideSep, height: cardH, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: Math.round(cardH * 0.18), flex: 'none' } },
               ce("span", { style: { width: dot, height: dot, borderRadius: '50%', background: '#4a4a54' } }), ce("span", { style: { width: dot, height: dot, borderRadius: '50%', background: '#4a4a54' } })),
@@ -34021,7 +34052,7 @@ Nënshkrimi: _____________________`;
             ce("div", { key: 'r2', style: { display: 'flex', gap } }, ssChars.map((c, i) => card(c, `s${i}`)))], undefined, timerProps);
       }
     } else {
-      const horizonY = Math.round(ch * (wide ? 0.66 : 0.64));
+      const horizonY = Math.round(ch * 0.5);
       const D = Math.round(wide ? Math.min(ch * 0.3, contentW * 0.2) : cw * 0.36);
       const svgS = Math.round(D * 1.7);
       const elapsed = 1 - frac;
@@ -34038,11 +34069,13 @@ Nënshkrimi: _____________________`;
         ce("svg", { key: 'moon', viewBox: "-170 -170 340 340", width: svgS, height: svgS, style: { position: 'absolute', left: contentW / 2 - svgS / 2, top: moonY - svgS / 2, transition: running ? 'top 1s linear' : 'none' }, "aria-hidden": "true", dangerouslySetInnerHTML: { __html: POMO_MOON_SVG } }),
         ce("div", { key: 'ground', style: { position: 'absolute', left: 0, right: 0, top: horizonY, bottom: 0, background: 'linear-gradient(#15151b, #08080b 25%, #000)', borderTop: '1px solid rgba(255,255,255,0.18)' } })];
       const gh = ch - horizonY;
-      const tFont = Math.round(wide ? Math.min(gh * 0.5, contentW * 0.14) : cw * 0.215);
-      display = abs({ left: 0, width: contentW, top: horizonY + (wide ? gh * 0.18 : gh * 0.1), display: 'flex', flexDirection: 'column', alignItems: 'center' },
+      const tFont = Math.round(Math.min(midH * 0.46, displayW * 0.215, fullView ? 132 : 100));
+      display = abs({ left: 0, width: contentW, top: midY, transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
         [ce("div", { key: 't', role: "timer", "aria-label": `${mm} minuta e ${left % 60} sekonda`, style: { fontSize: tFont, fontWeight: 200, letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } }, `${mmStr}:${ssStr}`),
           wide ? ce("div", { key: 'l', style: { marginTop: 10, fontSize: 13, letterSpacing: '0.22em', color: accent, opacity: 0.8, fontWeight: 500 } }, phaseLabel) : null].filter(Boolean));
     }
+
+    display = React.cloneElement(display, { className: 'pomo-timer-display', 'data-style': styleId });
 
     /* ---------- kontrollet ---------- */
     const headerText = `${phaseLabel} · ${counterLabel}${wide && taskText ? ' · ' + taskText : ''}`;
@@ -34059,13 +34092,13 @@ Nënshkrimi: _____________________`;
       [ce("button", { key: 'go', type: "button", onClick: toggleRun, style: { ...btnReset, flex: 1, height: 52, borderRadius: 26, background: accent, color: ink, fontSize: 17, fontWeight: 600 } }, runLabel),
         roundBtn(P_RESET, 'Rifillo kohëmatësin', pomoReset, { size: 52, bg: '#17171c' }),
         roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true), { size: 52, bg: '#17171c' })], 'bar');
-    const sideCol = (wide && !locked) ? abs({ right: 'max(20px, env(safe-area-inset-right))', top: 0, bottom: 0, width: sideW - 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 },
-      [roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { key: 'f', outline: '#fff', color: '#fff' }),
-        roundBtn(running ? P_PAUSE : P_PLAY, runLabel, toggleRun, { size: 52, outline: accent, color: accent }),
-        roundBtn(P_RESET, 'Rifillo kohëmatësin', pomoReset),
-        roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true)),
-        roundBtn(P_LOCK, 'Kyç ekranin', pomoLock),
-        roundBtn(P_CLOSE, 'Mbyll', pomoClose)].filter(Boolean).map((el, i) => React.cloneElement(el, { key: i })), 'side') : null;
+    const sideCol = (wide && !locked) ? abs({ right: 'max(20px, env(safe-area-inset-right))', top: 0, bottom: 0, width: sideW - 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: sideGap },
+      [roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { key: 'f', size: sideSize, outline: '#fff', color: '#fff' }),
+        roundBtn(running ? P_PAUSE : P_PLAY, runLabel, toggleRun, { size: sideSize + 8, outline: accent, color: accent }),
+        roundBtn(P_RESET, 'Rifillo kohëmatësin', pomoReset, { size: sideSize }),
+        roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true), { size: sideSize }),
+        roundBtn(P_LOCK, 'Kyç ekranin', pomoLock, { size: sideSize }),
+        roundBtn(P_CLOSE, 'Mbyll', pomoClose, { size: sideSize })].filter(Boolean).map((el, i) => React.cloneElement(el, { key: i })), 'side') : null;
     const lockBar = locked ? abs({ left: 0, right: 0, bottom: 'max(26px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'center' },
       ce("button", {
         type: "button", "aria-label": "Mbaj shtypur për të zhbllokuar",
@@ -34118,11 +34151,11 @@ Nënshkrimi: _____________________`;
     return ce(ModalPortal, null,
       ce("div", {
         className: "fixed inset-0 z-[999999] anim-fade-in",
-        style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100dvh", zIndex: 999999, background: fullView ? '#000' : 'rgba(0,0,0,0.72)', backdropFilter: fullView ? 'none' : 'blur(6px)', display: 'flex', alignItems: (phoneW && !fullView) ? 'flex-end' : 'center', justifyContent: 'center', overflow: 'hidden', overscrollBehavior: 'none', touchAction: locked ? 'none' : 'manipulation' },
-        "aria-label": "Pomodoro",
+        style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: vp.h, zIndex: 999999, background: fullView ? '#000' : 'rgba(0,0,0,0.72)', backdropFilter: fullView ? 'none' : 'blur(6px)', display: 'flex', alignItems: (phoneW && !fullView) ? 'flex-end' : 'center', justifyContent: 'center', overflow: 'hidden', overscrollBehavior: 'none', touchAction: locked ? 'none' : 'manipulation' },
+        role: "dialog", "aria-modal": true, "aria-label": "Pomodoro",
         onClick: e => { if (e.target === e.currentTarget && !fullView && !locked) pomoClose(); }
       },
-        ce("div", { style: { position: 'relative', width: cw, height: ch, maxWidth: '100%', background: '#000', color: '#fff', fontFamily: FONT, overflow: 'hidden', borderRadius: radius, border: fullView ? 0 : '1px solid rgba(255,255,255,0.09)', boxShadow: fullView ? 'none' : '0 30px 80px rgba(0,0,0,0.6)', userSelect: 'none', WebkitUserSelect: 'none' } },
+        ce("div", { className: "pomo-surface", style: { position: 'relative', width: cw, height: ch, maxWidth: '100%', background: '#000', color: '#fff', fontFamily: FONT, overflow: 'hidden', borderRadius: radius, border: fullView ? 0 : '1px solid rgba(255,255,255,0.09)', boxShadow: fullView ? 'none' : '0 30px 80px rgba(0,0,0,0.6)', userSelect: 'none', WebkitUserSelect: 'none' } },
           ce("style", null, css),
           bgLayers, display, header, taskLine, bottomBar, sideCol, lockBar, settingsPanel)));
   };
