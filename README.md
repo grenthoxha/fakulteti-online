@@ -24,6 +24,12 @@ Kodi i rikuperimit ruhet nga përdoruesi; dërgimi i emailit për verifikim/riku
 
 APK-ja 1.0.9 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshimet e databazës merren pas rihapjes; nuk kërkohet instalim i pastër.
 
+## Mesazhet lokale
+
+Te **Mesazhet → +** mund të krijosh grup, të vendosësh foto dhe përshkrim, të shtosh kontakte me emër/email e rol dhe të ruash mesazhe e foto në bisedë. Prek emrin e grupit për detajet dhe anëtarët. Fotot hapen veçmas; ndryshimi dhe fshirja e grupit bëhen nga detajet, me konfirmim para fshirjes.
+
+Grupet, kontaktet, fotot, bisedat dhe draftet ruhen në IndexedDB, veçmas për çdo llogari në këtë pajisje/browser. Nuk dërgohen ftesa ose mesazhe te pajisje të tjera. Fshirja e të dhënave të browser-it ose çinstalimi mund t'i largojë; ato nuk përfshihen në backup-in e vjetër të localStorage.
+
 ## Projekti Flutter
 
 [Repository i veçantë: fakulteti-flutter](https://github.com/grenthoxha/fakulteti-flutter). Fillimisht ruan app-in aktual brenda Flutter-it; kalimi i plotë në Dart vazhdon gradualisht. Është repository privat për testim, me kontrolle Android dhe iOS në GitHub Actions. APK-ja e qëndrueshme mbetet ajo në krye të kësaj faqeje.

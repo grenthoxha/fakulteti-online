@@ -1548,6 +1548,7 @@
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-youtube-native">
+  <link rel="stylesheet" href="./assets/group-messages.css?v=1">
   <style id="header-quick-panels">
     /* Header quick panels share the app palette and leave the current page visible. */
     .header-quick-layer { position: fixed; inset: var(--header-quick-top,calc(var(--app-header-height,64px) + 8px)) 0 0; z-index: 95; }
@@ -1652,6 +1653,8 @@
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
   <script src="./assets/notifications.js?v=2"></script>
+  <script src="./assets/local-messages.js?v=1"></script>
+  <script src="./assets/group-messages-ui.js?v=1"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -7417,97 +7420,15 @@ const ModalPortal = ({ children }) => {
   }
   return portalChild;
 };
-// Group-only UI demo: no backend calls, private conversations or persisted messages.
-const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName, language, onClose }) => {
-  const h = React.createElement;
-  const text = (sq, en) => language === 'en' ? en : sq;
-  const rooms = [
-    { id: 'group', letter: 'G', title: groupTitle || text('Grupi im', 'My group'), subtitle: `${branchTitle} · ${yearTitle}` },
-    { id: 'year', letter: 'V', title: yearTitle, subtitle: text('Të gjitha grupet e vitit', 'All groups in your year'), wide: true },
-    { id: 'faculty', letter: 'F', title: text('Fakulteti im', 'My faculty'), subtitle: text('Të gjitha vitet', 'All years'), wide: true },
-    { id: 'programme-year', letter: 'D', title: branchTitle, subtitle: text(`${yearTitle} · Fakultetet e tjera`, `${yearTitle} · Other faculties`), wide: true },
-    { id: 'programme-all', letter: 'D', title: text('Gjithë drejtimi', 'Entire programme'), subtitle: text(`${branchTitle} · Të gjitha vitet`, `${branchTitle} · All years`), wide: true }
-  ];
-  const [selectedId, setSelectedId] = useState(null);
-  const [drafts, setDrafts] = useState({});
-  const [messages, setMessages] = useState({});
-  const [notice, setNotice] = useState('');
-  const logRef = useRef(null);
-  const draftRef = useRef(null);
-  const headingRef = useRef(null);
-  const roomButtons = useRef({});
-  const lastRoomRef = useRef(null);
-  const sequenceRef = useRef(0);
-  const selectedGroup = rooms.find(item => item.id === selectedId);
-  const draft = drafts[selectedId] || '';
-  const localMessages = messages[selectedId] || [];
-  const sampleMessages = selectedGroup ? (selectedGroup.wide ? [
-    { id: 'sample-1', author: 'Arta K.', origin: text('Fakulteti i Prishtinës', 'Prishtina faculty'), body: text('A ka dikush shënimet e kapitullit 3 të Psikologjisë së përgjithshme?', 'Does anyone have the notes for chapter 3?') },
-    { id: 'sample-2', author: 'Besnik M.', origin: text('Fakulteti i Tetovës', 'Tetovo faculty'), body: text('Po, i kam. I ngarkoj sonte në grupin tonë.', 'Yes, I have them. I will upload them tonight.') },
-    { id: 'sample-3', author: 'Elira S.', origin: text('Fakulteti i Shkupit', 'Skopje faculty'), body: text('Te ne profesori tha se hyn edhe kapitulli 4.', 'Our professor said chapter 4 is included too.') }
-  ] : [
-    { id: 'sample-1', author: 'Arta Krasniqi', body: text('A bëjmë një përsëritje në grup para provimit?', 'Shall we revise together before the exam?') },
-    { id: 'sample-2', author: 'Driton Berisha', body: text('Po! Secili mund të sjellë nga tri pyetje për diskutim.', 'Yes! Each of us can bring three questions to discuss.') }
-  ]) : [];
-  useEffect(() => {
-    if (selectedId) headingRef.current?.focus({ preventScroll: true });
-    else if (lastRoomRef.current) roomButtons.current[lastRoomRef.current]?.focus({ preventScroll: true });
-  }, [selectedId]);
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [selectedId, localMessages.length]);
-  const sendLocalMessage = event => {
-    event.preventDefault();
-    const body = draft.trim().slice(0, 1000);
-    if (!selectedGroup || !body) return;
-    const message = { id: `local-${++sequenceRef.current}`, author: studentName || text('Ti', 'You'), body, mine: true };
-    setMessages(previous => ({ ...previous, [selectedId]: [...(previous[selectedId] || []), message].slice(-100) }));
-    setDrafts(previous => ({ ...previous, [selectedId]: '' }));
-    draftRef.current?.focus({ preventScroll: true });
-    setNotice(text('U shtua në provën lokale.', 'Added to the local preview.'));
-  };
-  return h(ModalPortal, null, h('div', {
-    className: 'unit-messages-overlay header-quick-layer',
-    id: 'unit-group-messages',
-    'aria-label': text('Mesazhet në grupe', 'Group messages'),
-    onClick: onClose
-  }, h('section', {
-    className: `unit-messages-panel${selectedGroup ? '' : ' is-groups'}`,
-    onClick: event => event.stopPropagation()
-  },
-    h('header', { className: 'unit-messages-head' },
-      !selectedGroup && h('span', { className: 'unit-messages-heading-icon', 'aria-hidden': true }, h(TaskIcons.MessageCircle, { className: 'w-5 h-5' })),
-      selectedGroup && h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Kthehu te grupet', 'Back to groups'), onClick: () => { setSelectedId(null); setNotice(''); } }, h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': true }, h('path', { d: 'm14 6-6 6 6 6' }))),
-      selectedGroup && h('span', { className: 'mx-conversation-avatar', 'aria-hidden': true }, selectedGroup.letter),
-      h('div', { className: 'min-w-0 flex-1' },
-        nativeCreateElement('h2', { ref: headingRef, tabIndex: -1 }, selectedGroup ? selectedGroup.title : text('Mesazhet', 'Messages')),
-        h('p', { className: 'text-xs text-secondary mt-0.5' }, selectedGroup ? selectedGroup.subtitle : `${branchTitle} · ${yearTitle}`)),
-      h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Mbyll mesazhet', 'Close messages'), onClick: onClose }, h(TaskIcons.X, { className: 'w-4 h-4' }))),
-
-    !selectedGroup ? h('div', { className: 'mx-body' },
-          rooms.map(room => h(React.Fragment, { key: room.id },
-            h('button', {
-              type: 'button', className: 'mx-room',
-              ref: element => { roomButtons.current[room.id] = element; },
-              onClick: () => { lastRoomRef.current = room.id; setSelectedId(room.id); setNotice(''); }
-            }, h('span', { className: 'mx-room-letter', 'aria-hidden': 'true' }, room.letter),
-              h('span', { className: 'min-w-0 flex-1' },
-                nativeCreateElement('span', { className: 'mx-room-title' }, room.title),
-                h('span', { className: 'mx-room-sub' }, room.subtitle)),
-              h('span', { className: 'mx-room-trailing', 'aria-hidden': true }, h(TaskIcons.ChevronRight, { className: 'w-4 h-4' }))))),
-          h('p', { className: 'mx-note' }, text('Bisedat janë pamje demonstrative.', 'Conversations are a demo preview.')))
-    : h(React.Fragment, null,
-      h('div', { ref: logRef, className: 'unit-messages-log', role: 'log', tabIndex: 0, 'aria-live': 'polite', 'aria-relevant': 'additions', 'aria-label': text('Biseda e grupit · Shembull', 'Group conversation · Example') },
-        [...sampleMessages, ...localMessages].map(message => nativeCreateElement('div', { key: message.id, className: `unit-messages-bubble${message.mine ? ' is-mine' : ''}` },
-          nativeCreateElement('span', { className: 'unit-messages-author' }, message.author, message.origin ? nativeCreateElement('span', { className: 'mx-origin' }, ` · ${message.origin}, ${yearTitle}`) : null),
-          nativeCreateElement('p', null, message.body)))),
-      h('form', { className: 'unit-messages-compose', onSubmit: sendLocalMessage },
-        h('label', { htmlFor: 'unit-group-message-draft', className: 'sr-only' }, text('Mesazhi për grupin', 'Message to the group')),
-        h('div', { className: 'unit-messages-compose-row' },
-          h('textarea', { ref: draftRef, id: 'unit-group-message-draft', rows: 1, maxLength: 1000, value: draft, placeholder: text('Shkruaj në grup…', 'Write to the group…'), onChange: event => { setDrafts(previous => ({ ...previous, [selectedId]: event.target.value })); setNotice(''); } }),
-          h('button', { type: 'submit', className: 'unit-messages-send', disabled: !draft.trim(), 'aria-label': text('Shto mesazhin në provën lokale', 'Add message to the local preview') }, h(TaskIcons.ArrowUp, { className: 'w-5 h-5' }))),
-        h('p', { className: 'text-xs text-secondary mt-2', role: 'status' }, notice || text('Provë lokale · nuk dërgohet online.', 'Local preview · not sent online.'))))
-  )));
+// Conversations and group contacts are stored only on this account's device.
+const GroupMessagesPreview = props => {
+  const Screen = window.FakultetiGroupMessages?.Screen;
+  if (Screen) return React.createElement(Screen, { ...props, Portal: ModalPortal });
+  return React.createElement(ModalPortal, null,
+    React.createElement('div', { className: 'unit-messages-overlay header-quick-layer', onClick: props.onClose },
+      React.createElement('section', { className: 'unit-messages-panel', onClick: event => event.stopPropagation() },
+        React.createElement('p', { role: 'alert', className: 'p-4 text-sm' }, 'Mesazhet nuk u ngarkuan. Rifresko faqen dhe provo përsëri.'),
+        React.createElement('button', { type: 'button', onClick: props.onClose, className: 'p-4', 'aria-label': 'Mbyll mesazhet' }, 'Mbyll'))));
 };
 const dateKey = (value = new Date()) => {
   const d = value instanceof Date ? value : new Date(value);

@@ -90,43 +90,15 @@ c.buildSearchGroups=()=>[];ok(text(c.render()).includes('Asnjë rezultat'),'sear
 c.search='';ok(c.render()===null,'empty search opens only the light header field');
 ok(nodes(headerInput).filter(n=>n.type==='button').length===1,'header field has a single close button');
 
-const stateSetters=[], initial=[];
-const m=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',nativeCreateElement:h,TaskIcons:new Proxy({},{get:()=> 'Icon'}),
- useState:v=>{const i=initial.length;initial.push(v);return[v,n=>stateSetters.push([i,n])];},useRef:()=>({current:null}),useEffect:()=>{}});
+const m=vm.createContext({React:{createElement:h},ModalPortal:'Portal',window:{FakultetiGroupMessages:{Screen:'LocalMessageScreen'}}});
 vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',m);
-t=m.render({branchTitle:'Psikologji',yearTitle:'Viti I',studentName:'Arta',language:'sq',classPresidentHub:'Notices',onClose:()=>stateSetters.push('close')});
-ok(find(t,'header-quick-layer'),'messages use attached panel');
-ok(!find(t,'header-quick-backdrop'),'full messages screen does not dim or cover the retained header');
-ok(nodes(t).filter(n=>n.props.className==='mx-room').length===5,'all group destinations retained');
-ok(!nodes(t).some(n=>n.props.className==='mx-sec'),'no repeated group heading blocks');
-nodes(t).find(n=>n.props.className==='mx-room').props.onClick();
-ok(stateSetters.some(x=>x[0]===0&&x[1]==='group'),'group selection still works');
-ok(!nodes(t).some(n=>n.props.role==='tab'),'messages contain chats without notice tabs');
-ok(!nodes(t).some(n=>n.props.id==='class-president-hub'),'group hub no longer renders inside messages');
-ok(!nodes(t).some(n=>n.props.className==='mx-room-count'),'no fabricated member counts in list');
-
-const messageState=[];let hook=0, effects=[];
-const mc=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',nativeCreateElement:h,TaskIcons:new Proxy({},{get:()=> 'Icon'}),
- useState:value=>{const key=hook++;if(!(key in messageState))messageState[key]=value;return[messageState[key],next=>{messageState[key]=typeof next==='function'?next(messageState[key]):next;}];},
- useRef:()=>({current:null}),useEffect:fn=>effects.push(fn),fetch:()=>{throw new Error('Messages must remain local');}});
-vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',mc);
-const mp={branchTitle:'Psikologji',yearTitle:'Viti I',groupTitle:'Grupi 1',studentName:'Arta',language:'sq',classPresidentHub:'Hub',unreadCount:2,onClose:()=>messageState.push('closed')};
-const renderMessages=()=>{hook=0;effects=[];return mc.render(mp);};
-t=renderMessages();ok(!find(t,'mx-unread-count'),'group notices do not badge messages');
-find(t,'mx-room').props.onClick();t=renderMessages();
-ok(find(t,'unit-messages-log')&&find(t,'mx-conversation-avatar'),'room opens conversation with group identity');
-ok(!text(find(t,'unit-messages-head')).includes('48'),'conversation header does not invent member counts');
-nodes(t).find(n=>n.type==='textarea').props.onChange({target:{value:'Pyetje për kapitullin e parë'}});t=renderMessages();
-ok(!find(t,'unit-messages-send').props.disabled,'typing enables local preview send');
-let prevented=false;find(t,'unit-messages-compose').props.onSubmit({preventDefault(){prevented=true;}});t=renderMessages();
-ok(prevented&&text(find(t,'unit-messages-log')).includes('Pyetje për kapitullin e parë'),'submit adds local message');
-ok(nodes(t).find(n=>n.type==='textarea').props.value==='','sent draft clears');
-ok(find(t,'unit-messages-send').props.disabled,'empty draft cannot submit');
-ok(text(nodes(t).find(n=>n.props.role==='status')).includes('provën lokale'),'local preview remains clearly identified');
-nodes(t).find(n=>n.props['aria-label']==='Kthehu te grupet').props.onClick();t=renderMessages();
-ok(nodes(t).filter(n=>n.props.className==='mx-room').length===5,'back restores all group destinations');
-find(t,'mx-room').props.onClick();t=renderMessages();
-ok(text(find(t,'unit-messages-log')).includes('Pyetje për kapitullin e parë'),'local conversation survives back and reopen');
+t=m.render({branchTitle:'Psikologji',yearTitle:'Viti I',language:'sq',onClose(){}});
+ok(t.type==='LocalMessageScreen'&&t.props.Portal==='Portal','messages delegate to persisted local screen with focus-managed portal');
+ok(t.props.branchTitle==='Psikologji'&&t.props.yearTitle==='Viti I','academic context is retained');
+delete m.window.FakultetiGroupMessages;
+t=m.render({onClose(){}});
+ok(find(t,'header-quick-layer'),'module-load failure retains full screen below header');
+ok(nodes(t).some(n=>n.props.role==='alert'),'module-load failure has a readable recovery message');
 
 // One lock survives switching panels; viewport changes leave room for the keyboard.
 const cssValues={}, listeners=new Map();let cleanup;
