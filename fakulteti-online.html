@@ -8550,12 +8550,12 @@ const ServicesHomeGrid = ({ tiles, icons, lang, updates, mine }) => {
       e('div', { className: 'sv2-shortcuts' }, shortcuts.map(([id, title, icon, open]) =>
         e('button', { key: id, type: 'button', className: 'sv2-shortcut sv2-shortcut--' + id, onClick: open },
           quickIcon(icon), e('strong', null, title), e('small', null, descriptions[id])))),
+      updates,
       e('section', { className: 'sv2-other' },
         e('h2', null, t('Shërbime të tjera','Other services')),
         e('div', { className: 'sv2-news' }, otherTiles.map(([id, title, icon, open]) =>
           e('button', { key: id, type: 'button', className: 'sv2-item', onClick: open },
-            quickIcon(icon), e('span', { className: 'sv2-itx' }, e('b', null, title)), chevron)))),
-      updates));
+            quickIcon(icon), e('span', { className: 'sv2-itx' }, e('b', null, title)), chevron))))));
 };
 const ASK_NAME_LOOKUP_ENDPOINT = 'https://fakulteti-ask-name-check.personalebuds.chatgpt.site/api/ask-name';
 const askGivenNameCache = new Map();
