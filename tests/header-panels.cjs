@@ -11,7 +11,7 @@ const ok = (v,m) => {assert(v,m); checks++;};
 function notificationFixture(extra={}) {
  const actions=[];
  const c=vm.createContext({React:{createElement:h},ModalPortal:'Portal',window:{FakultetiNotifications:{Settings:'Settings'},fakultetiAndroid:{demoRepeatSupported:true}},androidNativeReady:true,androidDemoRepeating:false,
- notificationPreviewOpen:true,notificationCenterOpen:false,notificationTab:'all',notificationUnreadCount:2,
+ notificationPreviewOpen:true,notificationCenterOpen:false,notificationTab:'all',notificationUnreadCount:2,groupMessageUnreadCount:0,renderClassPresidentHub:()=>h('section',{id:'class-president-hub'},'Group notices'),
  notificationFeed:Array.from({length:6},(_,i)=>({id:String(i),group:i<3?'today':'week',title:'Title '+i,sub:'Detail '+i,time:'Sot',unread:i<2,action:()=>actions.push(['open',i])})),
  unitUiIcon:()=>null,UNIT_UI_ICONS:{},setNotificationPreviewOpen:v=>actions.push(['preview',v]),setNotificationCenterOpen:v=>actions.push(['center',v]),markNotificationsRead:v=>actions.push(['read',...v]),setNotificationTab:v=>actions.push(['tab',v]),setView:v=>actions.push(['view',v]),...extra});
  vm.runInContext(section('  const renderNotificationCenter =','  /* ── 12')+'this.render=renderNotificationCenter;',c);
@@ -31,6 +31,34 @@ ok(nodes(t).some(n=>n.type==='Settings'),'full center retains reminder settings'
 ok(text(t).includes('Provo çdo 5 min'),'full center retains native demo');
 ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===6,'full center retains all items');
 f=notificationFixture({notificationFeed:[]});ok(text(f.render()).includes('Nuk ka njoftime'),'notification empty state');
+f=notificationFixture({notificationPreviewOpen:false,notificationCenterOpen:true,notificationTab:'group'});t=f.render();
+ok(nodes(t).some(n=>n.props.id==='class-president-hub'),'group hub is available from main notifications');
+ok(nodes(t).some(n=>n.props.role==='tab'&&n.props['aria-label']==='Nga grupi'),'full notification center has group destination');
+
+// Group announcements retain scope, read state and their original hub destination.
+function groupFeed(extra={}) {
+ const actions=[], writes=[];
+ const entry=(id,props={})=>({done:false,item:{id,title:'Njoftim '+id,body:'Detaje',createdAt:'2026-11-24',scopeId:'psych_1',group:'Grupi 1',...props}});
+ const state=vm.createContext({appNotifications:[{id:'schedule_1',title:'Ligjërata',detail:'08:00',action(){}}],sortedDeadlines:[],enrolledCourses:[],userAndCourseVideos:[],courseVideoFeed:[],isInstructorAccount:true,
+ today:'2026-11-24',hubNoticesOn:true,isClassPresident:false,branchId:'psych',yearId:1,studentGroupId:'Grupi 1',UNIT_UI_ICONS:{calendar:'calendar'},notificationReadIds:[],groupMessageReadIds:[],unreadGroupMessageIds:new Set(['g1']),
+ groupAnnouncementEntries:[entry('g1'),entry('old'),entry('other',{scopeId:'social_1'}),entry('g2',{group:'Grupi 2'}),{...entry('done'),done:true}],formatDateSq:d=>d,
+ setNotificationReadIds:ids=>actions.push(['read',...ids]),setGroupMessageReadIds:ids=>actions.push(['group-read',...ids]),unitStorage:{setItem:(k,v)=>writes.push([k,v])},
+ setNotificationPreviewOpen:v=>actions.push(['preview',v]),setGroupMessagesOpen:v=>actions.push(['messages',v]),setNotificationTab:v=>actions.push(['tab',v]),setNotificationCenterOpen:v=>actions.push(['center',v]),setHubOpenId:v=>actions.push(['hub',v]),...extra});
+ vm.runInContext(section('  const notificationFeed =','  // Native notifications use')+'this.feed=notificationFeed;this.mark=markNotificationsRead;this.count=notificationUnreadCount;',state);
+ return {state,actions,writes,feed:state.feed};
+}
+let gf=groupFeed();
+ok(gf.feed.filter(n=>n.groupAnnouncementId).length===2,'bell includes only current programme and group announcements');
+ok(!gf.feed.some(n=>n.groupAnnouncementId==='done'),'completed notices stay excluded');
+ok(gf.state.count===2,'bell counts ordinary and group unread notices together');
+ok(gf.feed.find(n=>n.groupAnnouncementId==='old').unread===false,'existing group read state survives move');
+const groupItem=gf.feed.find(n=>n.groupAnnouncementId==='g1');
+gf.state.mark([groupItem.id]);ok(gf.actions.some(a=>a[0]==='group-read'&&a[1]==='g1'),'reading main notification updates original group read state');
+ok(gf.writes.some(w=>w[0]==='u_group_messages_read_v1'),'group read state remains persisted locally');
+gf.actions.length=0;groupItem.action();
+ok(JSON.stringify(gf.actions)==='[["preview",false],["messages",false],["tab","group"],["center",true],["hub","g1"]]','group notification opens original entry in main notification hub');
+ok(groupFeed({hubNoticesOn:false}).feed.every(n=>!n.groupAnnouncementId),'group notification opt-out is preserved');
+ok(groupFeed({hubNoticesOn:false,isClassPresident:true}).feed.some(n=>n.groupAnnouncementId),'class president retains access');
 
 const searchActions=[];
 const c=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',search:'Psikologji',searchFilter:'all',recentSearches:[],UNIT_UI_ICONS:{},unitUiIcon:()=>null,
@@ -67,14 +95,13 @@ const m=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPorta
  useState:v=>{const i=initial.length;initial.push(v);return[v,n=>stateSetters.push([i,n])];},useRef:()=>({current:null}),useEffect:()=>{}});
 vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',m);
 t=m.render({branchTitle:'Psikologji',yearTitle:'Viti I',studentName:'Arta',language:'sq',classPresidentHub:'Notices',onClose:()=>stateSetters.push('close')});
-ok(initial[1]==='chat','messages start with chats');
 ok(find(t,'header-quick-layer'),'messages use attached panel');
 ok(nodes(t).filter(n=>n.props.className==='mx-room').length===5,'all group destinations retained');
 ok(!nodes(t).some(n=>n.props.className==='mx-sec'),'no repeated group heading blocks');
 nodes(t).find(n=>n.props.className==='mx-room').props.onClick();
 ok(stateSetters.some(x=>x[0]===0&&x[1]==='group'),'group selection still works');
-ok(nodes(t).some(n=>n.props.role==='tab'&&text(n)==='Njoftime'),'notices remain accessible in messages');
-ok(text(nodes(t).find(n=>n.props.role==='tab'))==='Bisedat','chat tab appears first');
+ok(!nodes(t).some(n=>n.props.role==='tab'),'messages contain chats without notice tabs');
+ok(!nodes(t).some(n=>n.props.id==='class-president-hub'),'group hub no longer renders inside messages');
 ok(!nodes(t).some(n=>n.props.className==='mx-room-count'),'no fabricated member counts in list');
 
 const messageState=[];let hook=0, effects=[];
@@ -84,10 +111,7 @@ const mc=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPort
 vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',mc);
 const mp={branchTitle:'Psikologji',yearTitle:'Viti I',groupTitle:'Grupi 1',studentName:'Arta',language:'sq',classPresidentHub:'Hub',unreadCount:2,onClose:()=>messageState.push('closed')};
 const renderMessages=()=>{hook=0;effects=[];return mc.render(mp);};
-t=renderMessages();ok(text(find(t,'mx-unread-count'))==='2','actual notice unread count appears in tab');
-nodes(t).find(n=>n.props.id==='unit-message-tab-hub').props.onClick();t=renderMessages();
-ok(text(nodes(t).find(n=>n.props.role==='tabpanel'))==='Hub','notices open the existing group hub');
-nodes(t).find(n=>n.props.id==='unit-message-tab-chat').props.onClick();t=renderMessages();
+t=renderMessages();ok(!find(t,'mx-unread-count'),'group notices do not badge messages');
 find(t,'mx-room').props.onClick();t=renderMessages();
 ok(find(t,'unit-messages-log')&&find(t,'mx-conversation-avatar'),'room opens conversation with group identity');
 ok(!text(find(t,'unit-messages-head')).includes('48'),'conversation header does not invent member counts');
@@ -108,13 +132,16 @@ const cssValues={}, listeners=new Map();let cleanup;
 const style={overflow:'auto'}, rootStyle={setProperty:(k,v)=>cssValues[k]=v,removeProperty:k=>delete cssValues[k]};
 const viewport={height:715,offsetTop:0,addEventListener:(k,v)=>listeners.set('viewport:'+k,v),removeEventListener:k=>listeners.delete('viewport:'+k)};
 const lock=vm.createContext({notificationCenterOpen:false,notificationPreviewOpen:false,groupMessagesOpen:false,searchOpen:true,
+ notificationBellRef:{current:{getBoundingClientRect:()=>({left:380,width:40,bottom:52})}},
  document:{body:{style},documentElement:{style:rootStyle},querySelector:()=>({getBoundingClientRect:()=>({bottom:64})})},
- window:{innerHeight:715,visualViewport:viewport,addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)},useEffect:fn=>cleanup=fn()});
+ window:{innerWidth:538,innerHeight:715,visualViewport:viewport,addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)},useEffect:fn=>cleanup=fn()});
 vm.runInContext(section('  const headerPanelOpen =','  const [recentSearches,'),lock);
 ok(style.overflow==='hidden','opening search locks background');
 ok(cssValues['--header-quick-top']==='72px'&&cssValues['--header-quick-height']==='631px','panel starts below header');
+ok(cssValues['--notification-anchor-top']==='64px'&&cssValues['--notification-anchor-x']==='272px','notification pointer follows actual bell center');
 viewport.height=390;listeners.get('viewport:resize')();
 ok(cssValues['--header-quick-height']==='306px','keyboard reduces panel height');
+ok(cssValues['--notification-anchor-height']==='314px','anchored popup responds to keyboard');
 cleanup();ok(style.overflow==='auto'&&listeners.size===0,'closing restores original scroll and removes viewport listeners');
 ok(Object.keys(cssValues).length===0,'viewport styles cleaned up');
 const opening=[];

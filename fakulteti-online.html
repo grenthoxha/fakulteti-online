@@ -842,51 +842,51 @@
     }
     @media (prefers-reduced-motion: reduce) { .unit-messages-panel { animation: none; } }
     /* Notices inside messages: the existing agenda and poll actions are preserved. */
-    .unit-messages-panel .mx-hub { --mx-accent: #1557b0; padding: .15rem 0 1rem; }
-    .dark .unit-messages-panel .mx-hub { --mx-accent: #a2c9f2; }
-    .unit-messages-panel .mx-hub .mx-top { margin: .65rem 1rem 0; padding: .75rem .85rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
-    .unit-messages-panel .mx-hub .mx-top-label { font-size: .8rem; }
-    .unit-messages-panel .mx-hub .mx-president-bar { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .4rem; padding: .65rem 1rem 0; }
-    .unit-messages-panel .mx-hub .mx-president-bar .mx-link { min-height: 2.5rem; padding: .4rem .25rem; border: 1px solid var(--line); border-radius: .75rem; font-size: .72rem; color: var(--mx-accent); background: var(--surface); text-decoration: none; }
-    .unit-messages-panel .mx-hub .mx-agenda { padding: .4rem 1rem 0; }
-    .unit-messages-panel .mx-hub .mx-ag-month { padding: 1rem .2rem .55rem; font-size: .65rem; letter-spacing: .06em; color: var(--muted); }
-    .unit-messages-panel .mx-hub .mx-ag { display: grid; gap: .6rem; }
-    .unit-messages-panel .mx-hub .mx-ag-item { overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
-    .unit-messages-panel .mx-hub .mx-ag-main { gap: .65rem; padding: .9rem .75rem; align-items: flex-start; transition: background .15s; }
-    .unit-messages-panel .mx-hub .mx-ag-main:hover { background: rgba(var(--brand-rgb),.035); }
-    .unit-messages-panel .mx-hub .mx-ag-date { display: grid; place-items: center; align-content: center; gap: .25rem; width: 2.8rem; min-height: 3.1rem; padding: .35rem .15rem; border-radius: .8rem; border: 1px solid rgba(var(--brand-rgb),.1); color: var(--mx-accent); background: rgba(var(--brand-rgb),.075); }
-    .unit-messages-panel .mx-hub .mx-ag-date b { font-size: 1.2rem; font-weight: 700; }
-    .unit-messages-panel .mx-hub .mx-ag-date i { margin: 0; font-size: .5rem; letter-spacing: 0; color: inherit; }
-    .unit-messages-panel .mx-hub .mx-ag-bar { display: none; }
-    .unit-messages-panel .mx-hub .mx-ag-title { font-size: .85rem; line-height: 1.4; }
-    .unit-messages-panel .mx-hub .mx-ag-sub { margin-top: .3rem; font-size: .73rem; line-height: 1.5; }
-    .unit-messages-panel .mx-hub .mx-ag-cal { color: var(--mx-accent); margin-top: .25rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub { --mx-accent: #1557b0; padding: .15rem 0 1rem; }
+    .dark :is(.unit-messages-panel,.notification-group-hub) .mx-hub { --mx-accent: #a2c9f2; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-top { margin: .65rem 1rem 0; padding: .75rem .85rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-top-label { font-size: .8rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-president-bar { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .4rem; padding: .65rem 1rem 0; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-president-bar .mx-link { min-height: 2.5rem; padding: .4rem .25rem; border: 1px solid var(--line); border-radius: .75rem; font-size: .72rem; color: var(--mx-accent); background: var(--surface); text-decoration: none; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-agenda { padding: .4rem 1rem 0; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-month { padding: 1rem .2rem .55rem; font-size: .65rem; letter-spacing: .06em; color: var(--muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag { display: grid; gap: .6rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-item { overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-main { gap: .65rem; padding: .9rem .75rem; align-items: flex-start; transition: background .15s; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-main:hover { background: rgba(var(--brand-rgb),.035); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-date { display: grid; place-items: center; align-content: center; gap: .25rem; width: 2.8rem; min-height: 3.1rem; padding: .35rem .15rem; border-radius: .8rem; border: 1px solid rgba(var(--brand-rgb),.1); color: var(--mx-accent); background: rgba(var(--brand-rgb),.075); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-date b { font-size: 1.2rem; font-weight: 700; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-date i { margin: 0; font-size: .5rem; letter-spacing: 0; color: inherit; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-bar { display: none; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-title { font-size: .85rem; line-height: 1.4; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-sub { margin-top: .3rem; font-size: .73rem; line-height: 1.5; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-cal { color: var(--mx-accent); margin-top: .25rem; }
     .mx-ag-chevron { display: inline-flex; color: var(--muted); flex-shrink: 0; margin-top: .3rem; transition: transform .18s; }
     .mx-ag-main[aria-expanded=true] .mx-ag-chevron { transform: rotate(90deg); }
-    .unit-messages-panel .mx-hub .mx-ag-more { margin: 0 .85rem; padding: .8rem 0; border-top: 1px solid var(--line); }
-    .unit-messages-panel .mx-hub .mx-ag-detail { font-size: .8rem; line-height: 1.6; }
-    .unit-messages-panel .mx-hub .mx-ag-actions { gap: .4rem; margin-top: .6rem; }
-    .unit-messages-panel .mx-hub .mx-ag-actions .mx-link { min-height: 2.5rem; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: .7rem; font-size: .72rem; color: var(--mx-accent); text-decoration: none; background: var(--surface); }
-    .unit-messages-panel .mx-hub .mx-ag-actions .mx-link.is-danger { color: var(--muted); }
-    .unit-messages-panel .mx-hub .mx-ag-note { display: none; }
-    .unit-messages-panel .mx-hub .mx-poll { margin: 1rem 1rem .75rem; padding: .9rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
-    .unit-messages-panel .mx-hub .mx-poll-tag { color: var(--mx-accent); font-size: .62rem; letter-spacing: .05em; }
-    .unit-messages-panel .mx-hub .mx-poll-head .mx-link { min-height: 2rem; font-size: .68rem; }
-    .unit-messages-panel .mx-hub .mx-poll-q { font-size: .85rem; line-height: 1.45; margin: .25rem 0 .75rem; }
-    .unit-messages-panel .mx-hub .mx-poll-opt { margin-top: .45rem; padding: .65rem .7rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--surface); }
-    .unit-messages-panel .mx-hub .mx-poll-row { font-size: .74rem; line-height: 1.45; gap: .5rem; }
-    .unit-messages-panel .mx-hub .mx-poll-text { min-width: 0; overflow-wrap: anywhere; }
-    .unit-messages-panel .mx-hub .mx-poll-pct { flex-shrink: 0; font-size: .65rem; font-weight: 600; }
-    .unit-messages-panel .mx-hub .mx-poll-track { height: 3px; margin-top: .5rem; }
-    .unit-messages-panel .mx-hub .mx-poll-fill { background: rgba(var(--brand-rgb),.3); }
-    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected { border-color: rgba(var(--brand-rgb),.35); background: rgba(var(--brand-rgb),.055); }
-    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected .mx-poll-text { color: var(--mx-accent); }
-    .unit-messages-panel .mx-hub .mx-poll-opt.is-selected .mx-poll-fill { background: var(--mx-accent); }
-    .unit-messages-panel .mx-hub .mx-archive { padding: .3rem 1rem .5rem; }
-    .unit-messages-panel .mx-hub .mx-archive > .mx-link { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 2.5rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface-muted); }
-    .unit-messages-panel .mx-hub .mx-role { padding: .5rem 1rem; text-align: center; }
-    .unit-messages-panel .mx-hub .mx-role .mx-link { font-size: .68rem; min-height: 2.5rem; }
-    .unit-messages-panel .mx-hub .mx-empty { margin: 1rem; padding: 2rem 1rem; text-align: center; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); font-size: .8rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-more { margin: 0 .85rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-detail { font-size: .8rem; line-height: 1.6; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-actions { gap: .4rem; margin-top: .6rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-actions .mx-link { min-height: 2.5rem; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: .7rem; font-size: .72rem; color: var(--mx-accent); text-decoration: none; background: var(--surface); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-actions .mx-link.is-danger { color: var(--muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-ag-note { display: none; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll { margin: 1rem 1rem .75rem; padding: .9rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-tag { color: var(--mx-accent); font-size: .62rem; letter-spacing: .05em; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-head .mx-link { min-height: 2rem; font-size: .68rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-q { font-size: .85rem; line-height: 1.45; margin: .25rem 0 .75rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-opt { margin-top: .45rem; padding: .65rem .7rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--surface); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-row { font-size: .74rem; line-height: 1.45; gap: .5rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-text { min-width: 0; overflow-wrap: anywhere; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-pct { flex-shrink: 0; font-size: .65rem; font-weight: 600; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-track { height: 3px; margin-top: .5rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-fill { background: rgba(var(--brand-rgb),.3); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-opt.is-selected { border-color: rgba(var(--brand-rgb),.35); background: rgba(var(--brand-rgb),.055); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-opt.is-selected .mx-poll-text { color: var(--mx-accent); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-poll-opt.is-selected .mx-poll-fill { background: var(--mx-accent); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-archive { padding: .3rem 1rem .5rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-archive > .mx-link { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 2.5rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface-muted); }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-role { padding: .5rem 1rem; text-align: center; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-role .mx-link { font-size: .68rem; min-height: 2.5rem; }
+    :is(.unit-messages-panel,.notification-group-hub) .mx-hub .mx-empty { margin: 1rem; padding: 2rem 1rem; text-align: center; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-muted); font-size: .8rem; }
     .app-apk-option { display: flex; align-items: center; gap: .75rem; padding: .9rem; border: 1px solid rgba(var(--brand-rgb),.2); border-radius: 1rem; background: rgba(var(--brand-rgb),.055); text-decoration: none; color: var(--ink); }
     .app-apk-option:hover { background: rgba(var(--brand-rgb),.09); }
     .app-apk-option > svg { flex-shrink: 0; color: #1557b0; }
@@ -1553,6 +1553,14 @@
     .header-quick-layer { position: fixed; inset: var(--header-quick-top,calc(var(--app-header-height,64px) + 8px)) 0 0; z-index: 95; }
     .header-quick-backdrop { position: absolute; inset: -8px 0 0; background: rgba(8,15,30,.08); }
     .header-quick-layer .notification-preview { top: 0; right: 10px; width: min(400px,calc(100vw - 20px)); max-height: min(560px,var(--header-quick-height,calc(100dvh - 88px))); border-radius: 18px; }
+    .notification-preview-layer.header-quick-layer { top: var(--notification-anchor-top,var(--header-quick-top,72px)); }
+    .notification-preview-layer .notification-preview { overflow: visible; max-height: min(560px,var(--notification-anchor-height,var(--header-quick-height,calc(100dvh - 88px)))); transform-origin: var(--notification-anchor-x,80%) top; }
+    .notification-preview-layer .notification-preview::before { content: ''; position: absolute; left: var(--notification-anchor-x,80%); top: -7px; width: 12px; height: 12px; background: var(--surface); border-top: 1px solid var(--line); border-left: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); pointer-events: none; }
+    .app-notification-bell[aria-expanded="true"] { background: rgba(var(--brand-rgb),.09); color: rgb(var(--brand-rgb)); }
+    .notification-group-hub { color: var(--ink); }
+    .notification-group-hub .mx-hub { padding-bottom: 8px; }
+    .notification-tabs { flex-wrap: wrap; }
+    .notification-tabs button { white-space: nowrap; }
     .header-quick-layer .notification-preview-list { display: block; padding: 0 12px; }
     .header-quick-layer .notification-row { border: 0; border-radius: 0; background: transparent; padding: 13px 2px; }
     .header-quick-layer .notification-row + .notification-row { border-top: 1px solid var(--line); }
@@ -7405,7 +7413,7 @@ const ModalPortal = ({ children }) => {
   return portalChild;
 };
 // Group-only UI demo: no backend calls, private conversations or persisted messages.
-const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName, language, onClose, classPresidentHub, hubComposing, hubComposeTitle, onComposeClose, unreadCount = 0 }) => {
+const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName, language, onClose }) => {
   const h = React.createElement;
   const text = (sq, en) => language === 'en' ? en : sq;
   const rooms = [
@@ -7416,7 +7424,6 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     { id: 'programme-all', letter: 'D', title: text('Gjithë drejtimi', 'Entire programme'), subtitle: text(`${branchTitle} · Të gjitha vitet`, `${branchTitle} · All years`), wide: true }
   ];
   const [selectedId, setSelectedId] = useState(null);
-  const [panelTab, setPanelTab] = useState('chat');
   const [drafts, setDrafts] = useState({});
   const [messages, setMessages] = useState({});
   const [notice, setNotice] = useState('');
@@ -7454,13 +7461,6 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     draftRef.current?.focus({ preventScroll: true });
     setNotice(text('U shtua në provën lokale.', 'Added to the local preview.'));
   };
-  useEffect(() => { if (hubComposing) setPanelTab('hub'); }, [hubComposing]);
-  const composingNow = Boolean(hubComposing) && panelTab === 'hub' && !selectedGroup;
-  const tabButton = (id, label) => h('button', {
-    type: 'button', role: 'tab', id: `unit-message-tab-${id}`, 'aria-controls': `unit-message-panel-${id}`, 'aria-selected': panelTab === id ? 'true' : 'false',
-    className: `mx-tab${panelTab === id ? ' is-active' : ''}`, onClick: () => setPanelTab(id)
-  }, label, id === 'hub' && unreadCount > 0 && h('span', { className: 'mx-unread-count', 'aria-label': text(`${unreadCount} të palexuara`, `${unreadCount} unread`) }, unreadCount > 99 ? '99+' : unreadCount));
-
   return h(ModalPortal, null, h('div', {
     className: 'unit-messages-overlay header-quick-layer',
     id: 'unit-group-messages',
@@ -7475,19 +7475,11 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
       selectedGroup && h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Kthehu te grupet', 'Back to groups'), onClick: () => { setSelectedId(null); setNotice(''); } }, h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': true }, h('path', { d: 'm14 6-6 6 6 6' }))),
       selectedGroup && h('span', { className: 'mx-conversation-avatar', 'aria-hidden': true }, selectedGroup.letter),
       h('div', { className: 'min-w-0 flex-1' },
-        nativeCreateElement('h2', { ref: headingRef, tabIndex: -1 }, selectedGroup ? selectedGroup.title : (composingNow ? hubComposeTitle : text('Mesazhet', 'Messages'))),
+        nativeCreateElement('h2', { ref: headingRef, tabIndex: -1 }, selectedGroup ? selectedGroup.title : text('Mesazhet', 'Messages')),
         h('p', { className: 'text-xs text-secondary mt-0.5' }, selectedGroup ? selectedGroup.subtitle : `${branchTitle} · ${yearTitle}`)),
-      h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': composingNow ? text('Mbyll', 'Close') : text('Mbyll mesazhet', 'Close messages'), onClick: composingNow ? onComposeClose : onClose }, h(TaskIcons.X, { className: 'w-4 h-4' }))),
+      h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Mbyll mesazhet', 'Close messages'), onClick: onClose }, h(TaskIcons.X, { className: 'w-4 h-4' }))),
 
-    !selectedGroup && !composingNow && h('div', { className: 'mx-tabs', role: 'tablist' },
-      tabButton('chat', text('Bisedat', 'Chats')),
-      classPresidentHub && tabButton('hub', text('Njoftime', 'Notices'))),
-
-    !selectedGroup ? (
-      panelTab === 'hub' && classPresidentHub ? (
-        h('div', { className: 'mx-body', role: 'tabpanel', id: 'unit-message-panel-hub', 'aria-labelledby': 'unit-message-tab-hub' }, classPresidentHub)
-      ) : (
-        h('div', { className: 'mx-body', role: 'tabpanel', id: 'unit-message-panel-chat', 'aria-labelledby': 'unit-message-tab-chat' },
+    !selectedGroup ? h('div', { className: 'mx-body' },
           rooms.map(room => h(React.Fragment, { key: room.id },
             h('button', {
               type: 'button', className: 'mx-room',
@@ -7499,8 +7491,7 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
                 h('span', { className: 'mx-room-sub' }, room.subtitle)),
               h('span', { className: 'mx-room-trailing', 'aria-hidden': true }, h(TaskIcons.ChevronRight, { className: 'w-4 h-4' }))))),
           h('p', { className: 'mx-note' }, text('Bisedat janë pamje demonstrative.', 'Conversations are a demo preview.')))
-      )
-    ) : h(React.Fragment, null,
+    : h(React.Fragment, null,
       h('div', { ref: logRef, className: 'unit-messages-log', role: 'log', tabIndex: 0, 'aria-live': 'polite', 'aria-relevant': 'additions', 'aria-label': text('Biseda e grupit · Shembull', 'Group conversation · Example') },
         [...sampleMessages, ...localMessages].map(message => nativeCreateElement('div', { key: message.id, className: `unit-messages-bubble${message.mine ? ' is-mine' : ''}` },
           nativeCreateElement('span', { className: 'unit-messages-author' }, message.author, message.origin ? nativeCreateElement('span', { className: 'mx-origin' }, ` · ${message.origin}, ${yearTitle}`) : null),
@@ -12004,6 +11995,17 @@ function AcademyApp({
       const top = Math.max(8, Math.min(headerBottom + 8, bottom - 100));
       root.setProperty('--header-quick-top', `${top}px`);
       root.setProperty('--header-quick-height', `${Math.max(80, bottom - top - 12)}px`);
+      const bell = notificationBellRef.current?.getBoundingClientRect();
+      if (bell) {
+        const screenWidth = window.innerWidth;
+        const width = Math.min(400, screenWidth - 20);
+        const left = screenWidth - 10 - width;
+        const anchorTop = Math.max(8, Math.min(bell.bottom + 12, bottom - 100));
+        const arrowX = Math.max(20, Math.min(bell.left + bell.width / 2 - left, width - 20));
+        root.setProperty('--notification-anchor-top', `${anchorTop}px`);
+        root.setProperty('--notification-anchor-x', `${arrowX}px`);
+        root.setProperty('--notification-anchor-height', `${Math.max(80, bottom - anchorTop - 12)}px`);
+      }
     };
     measure();
     window.addEventListener('resize', measure);
@@ -12016,6 +12018,9 @@ function AcademyApp({
       window.visualViewport?.removeEventListener('scroll', measure);
       root.removeProperty('--header-quick-top');
       root.removeProperty('--header-quick-height');
+      root.removeProperty('--notification-anchor-top');
+      root.removeProperty('--notification-anchor-x');
+      root.removeProperty('--notification-anchor-height');
     };
   }, [headerPanelOpen]);
   const [recentSearches, setRecentSearches] = useState(() => {
@@ -32823,13 +32828,33 @@ Nënshkrimi: _____________________`;
       week.push({ id: `video_${v.id || idx}`, group: 'week', icon: UNIT_UI_ICONS.video, title: 'Video e re', sub: [v.title, v.courseTitle].filter(Boolean).join(' · '), time: 'Këtë javë', action: () => { setNotificationCenterOpen(false); openCourseVideoFeed(idx); } });
     });
     if (!isInstructorAccount) week.push({ id: 'student_card_ready', group: 'week', icon: UNIT_UI_ICONS.idcard, title: 'Kartela jote është gati', sub: 'Hape te Profili për verifikim, zbritje studentore ose për ta ruajtur si PDF.', time: 'Këtë javë', action: () => { setNotificationCenterOpen(false); setStudentCardSide('front'); setStudentCardOpen(true); } });
-    return items.concat(week).map(item => ({ ...item, unread: !notificationReadIds.includes(item.id) }));
+    const fromGroup = (hubNoticesOn || isClassPresident) ? groupAnnouncementEntries
+      .filter(({ item, done }) => !done && item.id &&
+        (!item.scopeId || item.scopeId === `${branchId}_${yearId}`) &&
+        (!item.group || item.group === studentGroupId || item.group === 'Të gjitha grupet'))
+      .sort((a, b) => String(b.item.createdAt).localeCompare(String(a.item.createdAt)))
+      .map(({ item }) => ({
+        id: `group_notice_${item.id}`, groupAnnouncementId: item.id,
+        group: item.createdAt === today ? 'today' : 'week', icon: UNIT_UI_ICONS.calendar,
+        title: item.title || item.category, sub: item.body || item.category,
+        time: item.createdAt === today ? 'Sot' : formatDateSq(item.createdAt, { day: 'numeric', month: 'short' }),
+        action: () => { setNotificationPreviewOpen(false); setGroupMessagesOpen(false); setNotificationTab('group'); setNotificationCenterOpen(true); setHubOpenId(item.id); }
+      })) : [];
+    return fromGroup.concat(items, week).map(item => ({ ...item,
+      unread: item.groupAnnouncementId ? unreadGroupMessageIds.has(item.groupAnnouncementId) : !notificationReadIds.includes(item.id)
+    })).sort((a, b) => Number(b.unread) - Number(a.unread));
   })();
   const notificationUnreadCount = notificationFeed.filter(item => item.unread).length;
   const markNotificationsRead = ids => {
     const next = Array.from(new Set([...ids, ...notificationReadIds])).slice(0, 300);
     setNotificationReadIds(next);
     try { unitStorage.setItem('u_notifications_read', JSON.stringify(next)); } catch (e) {}
+    const groupIds = notificationFeed.filter(item => ids.includes(item.id) && item.groupAnnouncementId).map(item => item.groupAnnouncementId);
+    if (groupIds.length) {
+      const groupRead = Array.from(new Set([...groupIds, ...groupMessageReadIds])).slice(0, 300);
+      setGroupMessageReadIds(groupRead);
+      try { unitStorage.setItem('u_group_messages_read_v1', JSON.stringify(groupRead)); } catch {}
+    }
   };
   // Native notifications use the same unread items and destinations as this list.
   const androidNotificationScope = JSON.stringify([window.FakultetiLocalAccounts.databaseName('notifications'), studentName, branchId, yearId]);
@@ -32914,8 +32939,8 @@ Nënshkrimi: _____________________`;
             androidNativeReady && ce('div', { className: 'notification-demo-actions' },
               ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
               window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
-          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
-        ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
+          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount], ['group', 'Nga grupi', groupMessageUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
+        ce('div', { className: 'notification-content' }, notificationTab === 'group' ? ce('div', { className: 'notification-group-hub' }, renderClassPresidentHub()) : groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
           ce('div', { className: 'notification-list' }, group.items.map(row)))) : empty(notificationTab === 'unread')),
         ce('footer', { className: 'notification-footer' }, ce('button', {
@@ -35695,7 +35720,7 @@ Nënshkrimi: _____________________`;
     "aria-haspopup": "dialog",
     "aria-expanded": notificationCenterOpen || notificationPreviewOpen,
     "aria-controls": notificationPreviewOpen ? "notification-preview" : undefined,
-    className: "flex relative p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors items-center justify-center"
+    className: "app-notification-bell flex relative p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors items-center justify-center"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4",
     fill: "none",
@@ -35712,16 +35737,13 @@ Nënshkrimi: _____________________`;
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     type: "button",
     onClick: () => { setSearchOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(open => !open); },
-    "aria-label": groupMessageUnreadCount === 1 ? "Mesazhet, 1 shkrim i palexuar" : groupMessageUnreadCount > 1 ? `Mesazhet, ${groupMessageUnreadCount} shkrime të palexuara` : "Mesazhet",
+    "aria-label": "Mesazhet",
     "aria-haspopup": "dialog",
     "aria-expanded": groupMessagesOpen,
     "aria-controls": groupMessagesOpen ? "unit-group-messages" : undefined,
     title: "Mesazhet",
     className: "app-header-messages flex relative items-center justify-center shrink-0 p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle), groupMessageUnreadCount > 0 && /*#__PURE__*/React.createElement("span", {
-    "aria-hidden": "true",
-    className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
-  }, groupMessageUnreadCount > 99 ? "99+" : groupMessageUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(TaskIcons.MessageCircle)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: openHeaderSearch,
     "aria-expanded": searchOpen,
     "aria-controls": searchOpen ? "header-search" : undefined,
@@ -37922,11 +37944,6 @@ Nënshkrimi: _____________________`;
     groupTitle: studentGroupId,
     studentName,
     language: uiLanguage,
-    unreadCount: groupMessageUnreadCount,
-    classPresidentHub: renderClassPresidentHub(),
-    hubComposing: colloquiumFormOpen || pollFormOpen,
-    hubComposeTitle: pollFormOpen ? 'Sondazh i ri' : (colloquiumDraft.label === 'Provim' ? 'Provim i ri' : 'Kolokfium i ri'),
-    onComposeClose: () => { setColloquiumFormOpen(false); setPollFormOpen(false); setPollPicker(null); setPublishedInfo(null); setColNoteOpen(false); },
     onClose: () => setGroupMessagesOpen(false)
   }), renderNotificationCenter(), renderStudentCard(), renderPremiumModal(), renderLibraryReader(), scheduleInsightsOpen && renderScheduleInsightsModal(), searchOpen && renderSearchPage(), materialDraft && (() => {
     const selectedCourse = allCourses.find(c => c.id === materialDraft.courseId);
