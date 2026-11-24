@@ -1570,19 +1570,19 @@
     .header-quick-layer .notification-item-meta svg { display: none; }
     .header-quick-layer .notification-preview-footer { padding: 8px 12px; }
     .header-quick-layer .notification-view-all { background: transparent; min-height: 36px; }
-    .unit-messages-overlay.header-quick-layer { align-items: flex-start; padding: 0 10px; background: transparent; backdrop-filter: none; }
-    .header-quick-layer .unit-messages-panel { position: relative; width: min(400px,100%); height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); max-height: var(--header-quick-height,calc(100dvh - 88px)); border: 1px solid var(--line); border-radius: 18px; }
-    .header-quick-layer .unit-messages-panel.is-groups { height: auto; }
+    .unit-messages-overlay.header-quick-layer { top: var(--messages-screen-top,var(--app-header-height,64px)); bottom: auto; height: var(--messages-screen-height,calc(100dvh - var(--app-header-height,64px))); align-items: stretch; padding: 0; background: var(--surface); backdrop-filter: none; }
+    .header-quick-layer .unit-messages-panel { position: relative; width: 100%; height: 100%; max-height: 100%; border: 0; border-radius: 0; }
+    .header-quick-layer .unit-messages-panel.is-groups { height: 100%; }
     .header-quick-layer .unit-messages-head { padding: 12px; }
     .header-quick-layer .unit-messages-head h2 { font-size: 16px; }
     .header-quick-layer .unit-messages-heading-icon { display: none; }
     .header-quick-layer .mx-tabs { margin: 8px 12px; }
-    .header-quick-layer .mx-body { padding-bottom: 8px; }
+    .header-quick-layer .mx-body { padding-bottom: max(8px,env(safe-area-inset-bottom,0px)); }
     .header-quick-layer .mx-room { width: calc(100% - 24px); margin: 0 12px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
     .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
     .header-quick-layer .mx-room-count { background: transparent; }
     /* Message list and conversation use the existing palette with lighter rows. */
-    .header-quick-layer .unit-messages-panel { box-shadow: 0 12px 36px rgba(8,15,30,.16); }
+    .header-quick-layer .unit-messages-panel { box-shadow: none; }
     .header-quick-layer .unit-messages-head { gap: 8px; padding: 14px; }
     .header-quick-layer .unit-messages-head p { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
     .header-quick-layer .unit-messages-icon-button { width: 32px; height: 32px; background: transparent; }
@@ -1602,7 +1602,7 @@
     .header-quick-layer .unit-messages-bubble { padding: 10px 12px; font-size: 13px; line-height: 1.55; box-shadow: none; }
     .header-quick-layer .unit-messages-bubble.is-mine { background: rgba(var(--brand-rgb),.09); color: var(--ink); border-color: rgba(var(--brand-rgb),.1); }
     .header-quick-layer .unit-messages-bubble.is-mine .unit-messages-author { color: rgb(var(--brand-rgb)); }
-    .header-quick-layer .unit-messages-compose { padding: 10px 12px; }
+    .header-quick-layer .unit-messages-compose { padding: 10px 12px max(10px,env(safe-area-inset-bottom,0px)); }
     .header-quick-layer .unit-messages-compose textarea { min-height: 42px; border-radius: 14px; }
     .header-quick-layer .unit-messages-send { width: 40px; height: 40px; min-width: 40px; }
     .header-quick-layer .unit-messages-compose [role=status] { font-size: 10px; margin-top: 8px; }
@@ -7466,7 +7466,7 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     id: 'unit-group-messages',
     'aria-label': text('Mesazhet në grupe', 'Group messages'),
     onClick: onClose
-  }, h('div', { className: 'header-quick-backdrop', 'aria-hidden': true }), h('section', {
+  }, h('section', {
     className: `unit-messages-panel${selectedGroup ? '' : ' is-groups'}`,
     onClick: event => event.stopPropagation()
   },
@@ -11993,6 +11993,8 @@ function AcademyApp({
       const bottom = (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight);
       const headerBottom = document.querySelector('header.app-header')?.getBoundingClientRect().bottom || 64;
       const top = Math.max(8, Math.min(headerBottom + 8, bottom - 100));
+      root.setProperty('--messages-screen-top', `${Math.max(0, headerBottom)}px`);
+      root.setProperty('--messages-screen-height', `${Math.max(0, bottom - headerBottom)}px`);
       root.setProperty('--header-quick-top', `${top}px`);
       root.setProperty('--header-quick-height', `${Math.max(80, bottom - top - 12)}px`);
       const bell = notificationBellRef.current?.getBoundingClientRect();
@@ -12016,6 +12018,8 @@ function AcademyApp({
       window.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
+      root.removeProperty('--messages-screen-top');
+      root.removeProperty('--messages-screen-height');
       root.removeProperty('--header-quick-top');
       root.removeProperty('--header-quick-height');
       root.removeProperty('--notification-anchor-top');
@@ -12029,6 +12033,7 @@ function AcademyApp({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const headerHomeLabel = freeRoomsHomeUser ? 'Shko te Sallat e Lira' : 'Shko te Kreu';
   const openHeaderHome = () => {
+    setGroupMessagesOpen(false);
     setSearchOpen(false);
     setSidebarOpen(false);
     if (freeRoomsHomeUser && onRoomsHome) onRoomsHome();
@@ -35770,7 +35775,7 @@ Nënshkrimi: _____________________`;
     className: "app-theme-toggle flex p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors text-sm items-center justify-center"
   }, isDark ? '☀️' : '🌙'), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
-    onClick: () => setView('settings'),
+    onClick: () => { setGroupMessagesOpen(false); setView('settings'); },
     title: "Cil\xEBsimet dhe Profili",
     "aria-label": "Hap profilin dhe cil\xEBsimet",
     className: "w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-brand-800 flex items-center justify-center text-white font-bold text-xs shadow-inner shadow-black/20 ml-1  transition-colors overflow-hidden"

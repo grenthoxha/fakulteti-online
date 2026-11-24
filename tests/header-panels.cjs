@@ -96,6 +96,7 @@ const m=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPorta
 vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',m);
 t=m.render({branchTitle:'Psikologji',yearTitle:'Viti I',studentName:'Arta',language:'sq',classPresidentHub:'Notices',onClose:()=>stateSetters.push('close')});
 ok(find(t,'header-quick-layer'),'messages use attached panel');
+ok(!find(t,'header-quick-backdrop'),'full messages screen does not dim or cover the retained header');
 ok(nodes(t).filter(n=>n.props.className==='mx-room').length===5,'all group destinations retained');
 ok(!nodes(t).some(n=>n.props.className==='mx-sec'),'no repeated group heading blocks');
 nodes(t).find(n=>n.props.className==='mx-room').props.onClick();
@@ -138,9 +139,11 @@ const lock=vm.createContext({notificationCenterOpen:false,notificationPreviewOpe
 vm.runInContext(section('  const headerPanelOpen =','  const [recentSearches,'),lock);
 ok(style.overflow==='hidden','opening search locks background');
 ok(cssValues['--header-quick-top']==='72px'&&cssValues['--header-quick-height']==='631px','panel starts below header');
+ok(cssValues['--messages-screen-top']==='64px'&&cssValues['--messages-screen-height']==='651px','messages fill all space below header without a gap');
 ok(cssValues['--notification-anchor-top']==='64px'&&cssValues['--notification-anchor-x']==='272px','notification pointer follows actual bell center');
 viewport.height=390;listeners.get('viewport:resize')();
 ok(cssValues['--header-quick-height']==='306px','keyboard reduces panel height');
+ok(cssValues['--messages-screen-height']==='326px','full messages screen resizes above the keyboard');
 ok(cssValues['--notification-anchor-height']==='314px','anchored popup responds to keyboard');
 cleanup();ok(style.overflow==='auto'&&listeners.size===0,'closing restores original scroll and removes viewport listeners');
 ok(Object.keys(cssValues).length===0,'viewport styles cleaned up');
