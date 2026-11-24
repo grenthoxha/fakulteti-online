@@ -35,7 +35,7 @@ const tick=()=>new Promise(setImmediate);
  }
  ok(all.length===1335&&new Set(all.map(f=>f.id)).size===1335,'all 1335 learning files are covered once');
  ok(all.every(f=>f.title!=='.DS_Store'&&f.title!=='WhatsApp Image 2026-04-15 at 21.21.51.jpeg'),'technical files and verified repeated advertisement excluded');
- ok(index.up_psi_04_02.semester===4&&index.up_psi_05_06.semester===5&&index.up_psi_04_02.sourceUrl.includes('/materiale-psikologji-2026-s4/up_psi_04_02-')&&index.up_psi_05_06.sourceUrl.includes('/materiale-psikologji-2026-s5/up_psi_05_06-'),'CBT and ethics mapped to proper semester packages');
+ ok(index.up_psi_04_02.semester===4&&index.up_psi_05_06.semester===1&&index.up_psi_04_02.sourceUrl.includes('/materiale-psikologji-2026-s4/up_psi_04_02-')&&index.up_psi_05_06.sourceUrl.includes('/materiale-psikologji-2026-s5/up_psi_05_06-'),'current semester placement preserves the original semester package provenance');
  ok(!JSON.stringify(index).includes('drive.google.com')&&all.every(f=>!JSON.stringify(f).includes('google.com')),'catalogues have no Drive viewer or download links');
  ok(Object.values(index).filter(c=>c.count).length===29,'29 populated and four empty course folders are represented');
  const guard=context();const blocked={...data,files:[{...data.files[0],id:'1rbGp6CTqMxiUh7qr9f0kzxm7FbfPwe1f'},{...data.files[0],id:'otherwise_valid_id',sha256:'6a8627e4461c0fb909b3a5b0c97411ea6ee150b191942f17e6404bf05d4178f8'}]};guard.api.register(blocked);ok((await guard.api.load(data.courseId)).files.length===0,'verified ad IDs and repeated ad binaries cannot re-enter the library');

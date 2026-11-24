@@ -1709,7 +1709,7 @@
   <script src="./assets/local-messages.js?v=2"></script>
   <script src="./assets/group-messages-ui.js?v=3"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
-  <script src="./assets/course-materials-index.js?v=20261124-2"></script>
+  <script src="./assets/course-materials-index.js?v=20261124-4"></script>
   <script src="./assets/course-material-reader.js?v=20261124-3"></script>
   <script src="./assets/course-materials.js?v=20261124-2"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
@@ -6300,7 +6300,11 @@ const MED_YEAR_EXAMS = {
 /* ──── Official UP study catalogues ──── */
 const OFFICIAL_CATALOG_SOURCES = {
   psikologji: {
-    label: 'Departamenti i Psikologjisë · UP',
+    label: 'UP · Psikologji · Programi 2026–2029',
+    url: 'https://uni-pr.edu/en/programs/fakulteti-filozofik/psikologji'
+  },
+  psikologjiPrevious: {
+    label: 'Departamenti i Psikologjisë · Programi i mëparshëm',
     url: 'https://psikolo.uni-pr.edu/about-the-department/programs/bachelor-in-psychology'
   },
   kompjuterike: {
@@ -6521,32 +6525,70 @@ const officialYear = (id, desc, semesters) => ({
   semesters
 });
 
-const OFFICIAL_PSYCHOLOGY_YEARS = [
+const LEGACY_PSYCHOLOGY_YEARS = [
   officialYear(1, 'Bazat e psikologjisë dhe hulumtimit', [
-    officialSemester('PSI', 1, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 1, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Psikologji e përgjithshme', 6, 'O', 'p101'], ['Matematikë për psikologji'], ['Psikologji zhvillimore I', 6, 'O', 'p104'], ['Shkrim akademik për psikologji'], ['Gjuhë angleze për psikologji']
     ]),
-    officialSemester('PSI', 2, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 2, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Shkathtësi intervistuese'], ['Psikologji zhvillimore II'], ['Biopsikologji'], ['Statistikë'], ['Metodat e hulumtimit deskriptiv', 6, 'O', 'p203']
     ])
   ]),
   officialYear(2, 'Metodat shkencore dhe fushat e aplikuara', [
-    officialSemester('PSI', 3, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 3, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Psikologji sociale I (Kognicioni social)', 6, 'O', 'p201'], ['Intervistë terapeutike (Qasje të ndryshme)'], ['Metodat e hulumtimit kualitativ', 6, 'O', 'p203'], ['Psikologji e personalitetit', 6, 'O', 'p204'], ['Filozofi e shkencës', 6, 'Z'], ['Hyrje në sociologji', 6, 'Z']
     ]),
-    officialSemester('PSI', 4, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 4, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Psikologji klinike', 6, 'O', 'p202'], ['Intervenime kognitive-bihejviorale'], ['Psikologji sociale II (Ndërveprimi social)'], ['Metodat e hulumtimit eksperimental'], ['Psikologji e motivimit', 6, 'Z'], ['Përpunimi dhe analiza e të dhënave', 6, 'Z']
     ])
   ]),
   officialYear(3, 'Fushat profesionale të psikologjisë', [
-    officialSemester('PSI', 5, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 5, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Psikologji e edukimit dhe teoritë e të nxënit'], ['Psikologji kognitive', 6, 'O', 'p105'], ['Neuropsikologji'], ['Psikologji diferenciale'], ['Dinamika dhe intervenimet në grup', 6, 'Z'], ['Etika në psikologji', 6, 'Z']
     ]),
-    officialSemester('PSI', 6, OFFICIAL_CATALOG_SOURCES.psikologji, [
+    officialSemester('PSI', 6, OFFICIAL_CATALOG_SOURCES.psikologjiPrevious, [
       ['Intervenime në komunitet'], ['Psikometri', 6, 'O', 'p303'], ['Psikologji organizative', 6, 'O', 'p302'], ['Psikologji gjinore'], ['Psikologji e mediave', 6, 'Z'], ['Marrëdhënie ndërpersonale', 6, 'Z']
     ])
   ])
 ];
+
+// Preserve subject identity and local progress when the accredited programme moves a course.
+// Uploaded files retain their original catalogue IDs; new subjects receive distinct IDs.
+const PSYCHOLOGY_PROGRAMME_2026 = {"version":"2026-2029","verifiedAt":"2026-11-24","source":"https://uni-pr.edu/en/programs/fakulteti-filozofik/psikologji","semesters":[{"id":1,"officialEcts":30,"courses":[{"id":"up_psi_01_01","title":"Psikologji e përgjithshme","ects":7,"status":"O"},{"id":"up_psi_2026_01_statistics","title":"Bazat e statistikës","ects":6,"status":"O"},{"id":"up_psi_01_03","title":"Psikologji zhvillimore I (Fëmijëria & Adoleshenca)","ects":6,"status":"O"},{"id":"up_psi_01_04","title":"Shkrimi akademik për psikologji","ects":5,"status":"O"},{"id":"up_psi_05_06","title":"Etika në psikologji","ects":6,"status":"O"}]},{"id":2,"officialEcts":30,"courses":[{"id":"up_psi_02_02","title":"Psikologji zhvillimore II (Psikologjia e të rriturve)","ects":6,"status":"O"},{"id":"up_psi_02_03","title":"Biopsikologji","ects":6,"status":"O"},{"id":"up_psi_02_04","title":"Statistikë për psikologji","ects":5,"status":"O"},{"id":"up_psi_02_01","title":"Shkathtësi intervistimi","ects":7,"status":"O"},{"id":"up_psi_02_05","title":"Metodat e hulumtimit deskriptiv dhe kuantitativ","ects":6,"status":"O"}]},{"id":3,"officialEcts":30,"courses":[{"id":"up_psi_03_01","title":"Psikologji sociale I (Kognicioni social)","ects":6,"status":"O"},{"id":"up_psi_03_02","title":"Intervista terapeutike","ects":7,"status":"O"},{"id":"up_psi_04_04","title":"Metodat e hulumtimit eksperimental","ects":6,"status":"O"},{"id":"up_psi_03_04","title":"Psikologji personaliteti","ects":6,"status":"O"},{"id":"up_psi_03_05","title":"Filozofi e shkencës","ects":5,"status":"Z"},{"id":"up_psi_03_06","title":"Hyrje në sociologji","ects":5,"status":"Z"}]},{"id":4,"officialEcts":30,"courses":[{"id":"up_psi_04_01","title":"Psikologji klinike","ects":7,"status":"O"},{"id":"up_psi_04_02","title":"Intervenimet kognitivo bihejviorale","ects":6,"status":"O"},{"id":"up_psi_04_03","title":"Psikologji sociale II (Interaksioni social)","ects":6,"status":"O"},{"id":"up_psi_03_03","title":"Metodat e hulumtimit kualitativ","ects":6,"status":"O"},{"id":"up_psi_04_05","title":"Psikologji motivacioni","ects":5,"status":"Z"},{"id":"up_psi_2026_04_ai","title":"Psikologji e inteligjencës artificiale","ects":5,"status":"Z"}]},{"id":5,"officialEcts":35,"courses":[{"id":"up_psi_05_01","title":"Psikologji e edukimit dhe teoritë e nxënit","ects":6,"status":"O"},{"id":"up_psi_06_02","title":"Psikometri","ects":7,"status":"O"},{"id":"up_psi_05_03","title":"Neuropsikologji","ects":6,"status":"O"},{"id":"up_psi_05_04","title":"Psikologji diferenciale","ects":6,"status":"O"},{"id":"up_psi_2026_05_intercultural","title":"Psikologji ndërkulturore","ects":5,"status":"O"},{"id":"up_psi_2026_05_resilience","title":"Rezilienca dhe shëndeti","ects":5,"status":"O"}]},{"id":6,"officialEcts":30,"courses":[{"id":"up_psi_05_02","title":"Psikologji kognitive","ects":7,"status":"O"},{"id":"up_psi_06_01","title":"Intervenimet në komunitet","ects":6,"status":"O"},{"id":"up_psi_06_03","title":"Psikologji organizative","ects":6,"status":"O"},{"id":"up_psi_06_04","title":"Psikologji gjinore","ects":6,"status":"O"},{"id":"up_psi_06_05","title":"Psikologji e mediave","ects":5,"status":"Z"},{"id":"up_psi_06_06","title":"Marrëdhëniet ndërpersonale","ects":5,"status":"Z"}]}]};
+const LEGACY_PSYCHOLOGY_BY_ID = new Map(LEGACY_PSYCHOLOGY_YEARS.flatMap(year => year.semesters.flatMap(semester => semester.courses)).map(course => [course.id, course]));
+const psychologyCurrentSemester = semester => ({
+  id: semester.id, label: `Semestri ${ROMAN_SEMESTERS[semester.id - 1]}`, officialEcts: semester.officialEcts,
+  courses: semester.courses.map((spec, index) => {
+    const previous = LEGACY_PSYCHOLOGY_BY_ID.get(spec.id);
+    return {
+      ...(previous || {}), ...spec, code: `PSI ${String(semester.id).padStart(2,'0')}.${String(index + 1).padStart(2,'0')}`,
+      prof: previous?.prof || 'Sipas caktimit të fakultetit',
+      color: previous?.color || OFFICIAL_COURSE_COLORS[index % OFFICIAL_COURSE_COLORS.length],
+      desc: `${spec.status === 'Z' ? 'Lëndë zgjedhore' : 'Lëndë obligative'} e programit 2026–2029 të Universitetit të Prishtinës.`,
+      chapters: previous?.chapters || [], cards: previous?.cards || [], quiz: previous?.quiz || [], cases: previous?.cases || [],
+      scheduleAliases: previous && previous.title !== spec.title ? [previous.title] : [],
+      official: true, officialSource: OFFICIAL_CATALOG_SOURCES.psikologji, programmeVersion: '2026-2029'
+    };
+  })
+});
+const OFFICIAL_PSYCHOLOGY_YEARS = [1,2,3].map(id => officialYear(id,
+  ['Bazat e psikologjisë, statistikës dhe etikës', 'Hulumtimi shkencor dhe psikologjia e aplikuar', 'Fushat profesionale dhe ndërhyrjet psikologjike'][id - 1],
+  PSYCHOLOGY_PROGRAMME_2026.semesters.filter(semester => Math.ceil(semester.id / 2) === id).map(psychologyCurrentSemester)));
+// Add only newly introduced compulsory subjects; retain choices and old stored IDs.
+const reconcilePsychologyEnrollment = previous => {
+  let changed = false;
+  const next = { ...previous };
+  for (const year of OFFICIAL_PSYCHOLOGY_YEARS) {
+    const scope = `psikologji:${year.id}`, stored = previous[scope];
+    if (!Array.isArray(stored)) continue;
+    const oldIds = new Set((LEGACY_PSYCHOLOGY_YEARS.find(item => item.id === year.id)?.semesters || []).flatMap(semester => semester.courses.map(course => course.id)));
+    if (!stored.some(id => oldIds.has(id))) continue;
+    const introduced = year.semesters.flatMap(semester => semester.courses).filter(course => course.status !== 'Z' && !oldIds.has(course.id)).map(course => course.id);
+    const ids = [...new Set([...stored, ...introduced])];
+    if (ids.length !== stored.length) { next[scope] = ids; changed = true; }
+  }
+  return changed ? next : previous;
+};
 
 const OFFICIAL_COMPUTER_SCIENCE_YEARS = [
   officialYear(1, 'Programim, matematikë dhe struktura të të dhënave', [
@@ -8328,7 +8370,7 @@ BRANCHES.forEach(branch => {
   const source = VERIFIED_BRANCH_SOURCES[branch.id] || null;
   branch.catalogStatus = source ? 'verified' : 'demo';
   branch.source = source;
-  branch.verifiedAt = source ? '2026-09-02' : null;
+  branch.verifiedAt = source ? (branch.id === 'psikologji' ? '2026-11-24' : '2026-09-02') : null;
   branch.years.forEach(year => year.semesters.forEach(semester => semester.courses.forEach(course => {
     course.catalogStatus = branch.catalogStatus;
     course.official = branch.catalogStatus === 'verified';
@@ -9982,7 +10024,7 @@ function getCourseTeachingStaff(course, { program, data, schedule = [], branchId
   const number = title => String(title || '').match(/\b([IVX]+|\d+)\s*(?:\(|$)/)?.[1] || '';
   const score = (a, b) => number(a) !== number(b) ? 0 : officialCourseMatchScore(a, b);
   const sameCourse = title => {
-    const ranked = courses.map(item => ({ item, score: score(title, item.title) })).sort((a, b) => b.score - a.score);
+    const ranked = courses.map(item => ({ item, score: Math.max(...[item.title, ...(item.scheduleAliases || [])].map(alias => score(title, alias))) })).sort((a, b) => b.score - a.score);
     return ranked[0]?.item.id === course.id && ranked[0].score >= .62 && (!ranked[1] || ranked[0].score > ranked[1].score);
   };
   const groupNumber = String(groupId).match(/\d+/)?.[0];
@@ -10757,7 +10799,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
 
   return h('div', { className: 'w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-4 anim-fade-up pb-24' },
     /* Top Header */
-    h('div', { className: 'flex items-center justify-between gap-3 pb-3 border-b border-default' },
+    h('div', { className: 'flex items-center justify-between gap-3' },
       h('div', { className: 'flex items-center gap-3 min-w-0' },
         !compactMode && h('button', {
           type: 'button',
@@ -10778,7 +10820,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     ),
 
     /* Controls Bar */
-    h('section', { className: 'card-surface rounded-2xl border border-default p-3.5 sm:p-4 space-y-3' },
+    h('section', { className: 'card-surface rounded-2xl border border-default p-3.5 sm:p-4 space-y-3', style: { marginTop: 8 } },
 
       h(RoomRefreshButton, {
         busy: syncState.refreshing, compact: compactMode,
@@ -13872,6 +13914,14 @@ function AcademyApp({
       return {};
     }
   });
+  useEffect(() => {
+    if (branchId !== 'psikologji') return;
+    try {
+      if (unitStorage.getItem('u_psychology_programme_version') === '2026-2029') return;
+      setEnrolledCoursesByScope(previous => reconcilePsychologyEnrollment(previous));
+      unitStorage.setItem('u_psychology_programme_version', '2026-2029');
+    } catch {}
+  }, [branchId]);
   const [enrollmentEditorOpen, setEnrollmentEditorOpen] = useState(false);
   const [enrollmentDraft, setEnrollmentDraft] = useState([]);
   // Syllabus state: reviewed topics are kept separate from full lesson content
@@ -15705,7 +15755,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const reviewedOfficialScheduleSessions = selectedOfficialScheduleSessions.map(session => {
     const candidates = enrolledCourses.map(course => ({
       course,
-      score: officialCourseMatchScore(session.officialCourseTitle, course.title)
+      score: Math.max(...[course.title, ...(course.scheduleAliases || [])].map(title => officialCourseMatchScore(session.officialCourseTitle, title)))
     })).sort((a, b) => b.score - a.score);
     const best = candidates[0];
     return {

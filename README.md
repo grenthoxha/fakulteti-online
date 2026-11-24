@@ -82,3 +82,9 @@ Materialet kërkojnë internet. Katalogu i lëndës dhe lexuesi PDF ngarkohen ve
 `assets/course-materials-index.js` lidh lëndët me katalogët te `assets/course-materials/`. Lexuesi është te `assets/course-material-reader.js`; PDF.js dhe licencat e tij ruhen te `assets/vendor/pdfjs/`. Biblioteka nuk krijon provime të planifikuara ose nota. Ndryshimet e ardhshme në dosjen burimore kërkojnë import dhe kontroll të ri.
 
 Kontrollet: `node tests/course-materials.cjs`, `node tests/course-material-reader.cjs` dhe `node --test server/account-approvals/tests/course-materials.test.mjs`. Ato verifikojnë hartën e materialeve, përjashtimin e reklamës, hapjen native, ngarkimin sipas nevojës, ruajtjen sipas llogarisë, CORS dhe shërbimin e saktë të pjesëve të skedarit.
+
+## Lëndët aktuale të Psikologjisë
+
+Lista ndjek [programin e akredituar 2026–2029 të UP-së](https://uni-pr.edu/en/programs/fakulteti-filozofik/psikologji), kontrolluar më 24 nëntor 2026. Të 34 lëndët, semestrat dhe ECTS dokumentohen te `assets/psychology-programme-2026.json`. Lëndët e përbashkëta me programin e mëparshëm ruajnë ID-në, materialet dhe progresin; ndryshimi i semestrit nuk transferon materialin te lënda tjetër që zë pozicionin e vjetër. Katër lëndët e reja nuk trashëgojnë përmbajtje nga një lëndë tjetër. Katalogu ruan gjithashtu origjinalet e lëndëve që nuk janë më në program; ato mbeten në paketat Releases.
+
+Për llogaritë ekzistuese, lista e zgjedhur ruhet dhe vetëm lëndët e reja obligative shtohen një herë. Nuk fshihen shënimet, progresi apo referencat e vjetra të ruajtura. Kontrolli: `node tests/psychology-programme.cjs`.

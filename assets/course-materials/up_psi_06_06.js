@@ -1,1 +1,1 @@
-window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_06","title":"Marrëdhënie ndërpersonale","semester":6,"sourceUrl":"","files":[]});
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_06","title":"Marrëdhëniet ndërpersonale","semester":6,"sourceUrl":"","files":[],"originalTitle":"Marrëdhënie ndërpersonale","originalSemester":6,"currentProgramme":true,"programmeVersion":"2026-2029"});

@@ -1,1 +1,1 @@
-window.FakultetiCourseMaterials.register({"courseId":"up_psi_04_05","title":"Psikologji e motivimit","semester":4,"sourceUrl":"","files":[]});
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_04_05","title":"Psikologji motivacioni","semester":4,"sourceUrl":"","files":[],"originalTitle":"Psikologji e motivimit","originalSemester":4,"currentProgramme":true,"programmeVersion":"2026-2029"});

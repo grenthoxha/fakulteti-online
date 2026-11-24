@@ -1,1 +1,1 @@
-window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_02","title":"Psikometri","semester":6,"sourceUrl":"","files":[]});
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_02","title":"Psikometri","semester":5,"sourceUrl":"","files":[],"originalTitle":"Psikometri","originalSemester":6,"currentProgramme":true,"programmeVersion":"2026-2029"});

@@ -26,6 +26,10 @@ ok(staff.professor==='Arta Berisha'&&staff.assistant==='Mira Gashi','personal st
 ok(c.staff(course,{program,data,schedule,branchId:'psikologji',yearId:1}).professor==='Linda Hoxha','official recurring staff takes precedence');
 ok(c.staff({...course,prof:'Prof. Dr. Arta Berisha',assistant:'Asist. Mira Gashi'}).assistant==='Mira Gashi','explicit course staff supports programmes without linked rooms');
 ok(!c.staff({...course,prof:'Prof. Asistent Gabim',catalogStatus:'schedule'}).professor,'an imported exercise holder is not mislabeled as professor');
+const renamed={...course,title:'Intervenimet kognitivo bihejviorale',scheduleAliases:['Intervenime kognitive-bihejviorale']};
+const renamedData={rooms:[{e:[event('Prof. Mira Gashi','Ligjërata','Psikologji-2BA','Intervenime kognitive-bihejviorale')]}]};
+ok(c.staff(renamed,{program,data:renamedData,yearId:2,courses:[renamed]}).professor==='Mira Gashi','renamed current course retains staff matching through its previous title');
+ok(!c.staff({...renamed,scheduleAliases:[]},{program,data:renamedData,yearId:1,courses:[renamed]}).professor,'title aliases cannot bypass the student year boundary');
 const selected={id:1,yearId:1,label:'Semestri I',courses:[course,{id:'course-b',title:'Lëndë pa staf',chapters:[]}]};
 const opened=[];Object.assign(c,{window:{},getCoursesSelectedSemester:()=>({selected,semesters:[selected],keyOf:s=>s.yearId+':'+s.id}),readChapters:{'course-a_one':true},done:[],yearId:1,branchId:'psikologji',studentGroupId:'Grupi 1',academicSchedule:[],scheduleProgramData:c.rooms,getFacultyScheduleProgram:()=>program,fcReviews:{},sortedDeadlines:[],yr:{semesters:[selected]},enrolledCourseIds:['course-a','course-b'],actualRole:'student',coursesPastMenuOpen:false,renderCoursesManageButton:()=>null,openCourse:course=>opened.push(course.id),UNIT_UI_ICONS:{chev:'chevron'},unitUiIcon:()=>null});
 vm.runInContext(part('  const renderCoursesSemesterList =','  /* ══ PROVIMET')+'this.render=renderCoursesSemesterList;',c);

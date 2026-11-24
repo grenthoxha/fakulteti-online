@@ -1,1 +1,1 @@
-window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_03","title":"Psikologji organizative","semester":6,"sourceUrl":"","files":[]});
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_03","title":"Psikologji organizative","semester":6,"sourceUrl":"","files":[],"originalTitle":"Psikologji organizative","originalSemester":6,"currentProgramme":true,"programmeVersion":"2026-2029"});

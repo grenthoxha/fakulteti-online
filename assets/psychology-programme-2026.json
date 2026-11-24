@@ -1,0 +1,247 @@
+{
+  "version": "2026-2029",
+  "verifiedAt": "2026-11-24",
+  "source": "https://uni-pr.edu/en/programs/fakulteti-filozofik/psikologji",
+  "semesters": [
+    {
+      "id": 1,
+      "officialEcts": 30,
+      "courses": [
+        {
+          "id": "up_psi_01_01",
+          "title": "Psikologji e përgjithshme",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_2026_01_statistics",
+          "title": "Bazat e statistikës",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_01_03",
+          "title": "Psikologji zhvillimore I (Fëmijëria & Adoleshenca)",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_01_04",
+          "title": "Shkrimi akademik për psikologji",
+          "ects": 5,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_05_06",
+          "title": "Etika në psikologji",
+          "ects": 6,
+          "status": "O"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "officialEcts": 30,
+      "courses": [
+        {
+          "id": "up_psi_02_02",
+          "title": "Psikologji zhvillimore II (Psikologjia e të rriturve)",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_02_03",
+          "title": "Biopsikologji",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_02_04",
+          "title": "Statistikë për psikologji",
+          "ects": 5,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_02_01",
+          "title": "Shkathtësi intervistimi",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_02_05",
+          "title": "Metodat e hulumtimit deskriptiv dhe kuantitativ",
+          "ects": 6,
+          "status": "O"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "officialEcts": 30,
+      "courses": [
+        {
+          "id": "up_psi_03_01",
+          "title": "Psikologji sociale I (Kognicioni social)",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_03_02",
+          "title": "Intervista terapeutike",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_04_04",
+          "title": "Metodat e hulumtimit eksperimental",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_03_04",
+          "title": "Psikologji personaliteti",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_03_05",
+          "title": "Filozofi e shkencës",
+          "ects": 5,
+          "status": "Z"
+        },
+        {
+          "id": "up_psi_03_06",
+          "title": "Hyrje në sociologji",
+          "ects": 5,
+          "status": "Z"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "officialEcts": 30,
+      "courses": [
+        {
+          "id": "up_psi_04_01",
+          "title": "Psikologji klinike",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_04_02",
+          "title": "Intervenimet kognitivo bihejviorale",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_04_03",
+          "title": "Psikologji sociale II (Interaksioni social)",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_03_03",
+          "title": "Metodat e hulumtimit kualitativ",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_04_05",
+          "title": "Psikologji motivacioni",
+          "ects": 5,
+          "status": "Z"
+        },
+        {
+          "id": "up_psi_2026_04_ai",
+          "title": "Psikologji e inteligjencës artificiale",
+          "ects": 5,
+          "status": "Z"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "officialEcts": 35,
+      "courses": [
+        {
+          "id": "up_psi_05_01",
+          "title": "Psikologji e edukimit dhe teoritë e nxënit",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_06_02",
+          "title": "Psikometri",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_05_03",
+          "title": "Neuropsikologji",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_05_04",
+          "title": "Psikologji diferenciale",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_2026_05_intercultural",
+          "title": "Psikologji ndërkulturore",
+          "ects": 5,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_2026_05_resilience",
+          "title": "Rezilienca dhe shëndeti",
+          "ects": 5,
+          "status": "O"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "officialEcts": 30,
+      "courses": [
+        {
+          "id": "up_psi_05_02",
+          "title": "Psikologji kognitive",
+          "ects": 7,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_06_01",
+          "title": "Intervenimet në komunitet",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_06_03",
+          "title": "Psikologji organizative",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_06_04",
+          "title": "Psikologji gjinore",
+          "ects": 6,
+          "status": "O"
+        },
+        {
+          "id": "up_psi_06_05",
+          "title": "Psikologji e mediave",
+          "ects": 5,
+          "status": "Z"
+        },
+        {
+          "id": "up_psi_06_06",
+          "title": "Marrëdhëniet ndërpersonale",
+          "ects": 5,
+          "status": "Z"
+        }
+      ]
+    }
+  ]
+}
