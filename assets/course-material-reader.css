@@ -20,10 +20,11 @@
 .cm-reader-error{margin:auto;padding:24px;max-width:440px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
 .cm-reader-error button{display:block;margin:12px auto 0;min-height:42px;padding:8px 14px;border-radius:9px;color:rgb(var(--brand-rgb));background:rgba(var(--brand-rgb),.08)}
 .cm-reading-text{max-width:70ch;margin:auto;padding:20px 22px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:17px/1.8 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere}
-.cm-photo-reader{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;background:var(--surface-muted)}
+.cm-photo-reader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;background:var(--surface-muted)}
+.cm-photo-scroll{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:auto;overscroll-behavior:contain}
 .cm-photo-reader img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;flex:none}
-.cm-photo-reader.is-zoomed{display:block}.cm-photo-reader.is-zoomed img{max-width:none;max-height:none;width:180%;height:auto;margin:auto}
-.cm-photo-zoom{position:sticky;align-self:flex-end;bottom:12px;right:12px;margin:0 12px 12px -54px;width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font-size:23px;flex:none;z-index:2}
+.cm-photo-reader.is-zoomed .cm-photo-scroll{display:block}.cm-photo-reader.is-zoomed img{max-width:none;max-height:none;width:180%;height:auto;margin:auto}
+.cm-photo-zoom{position:absolute;bottom:12px;right:12px;margin:0;width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font-size:23px;flex:none;z-index:2}
 .cm-code-text{width:100%;height:100%;overflow:auto;padding:18px;font:13px/1.7 ui-monospace,monospace;white-space:pre;tab-size:2;overscroll-behavior:contain;color:var(--ink)}
 .cm-data-reader{display:flex;flex-direction:column;min-height:0;width:100%;padding:12px;gap:8px}
 .cm-data-caption{font-size:12px;color:var(--muted)}.cm-table-scroll{overflow:auto;overscroll-behavior:contain;flex:1;min-height:0;border:1px solid var(--line);border-radius:10px}
