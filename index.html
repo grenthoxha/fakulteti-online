@@ -35308,6 +35308,19 @@ Nënshkrimi: _____________________`;
     }
     return h('section', { className: 'space-y-5 anim-fade-up' }, topBar, content);
   };
+  // Keep every destination associated with one primary navigation section.
+  const primaryNavigation = ({
+    home: 'home',
+    week: 'week', freerooms: 'week',
+    courses: 'courses', course: 'courses', session: 'courses',
+    videos: 'courses', library: 'courses', books: 'courses',
+    'topic-explain': 'courses', articles: 'courses', seniortips: 'courses',
+    tutoring: 'courses', 'support-tutoring': 'courses',
+    student: 'student', arena: 'student', cases: 'student',
+    'mock-exam': 'student', 'mock-analysis': 'student', 'final-prep': 'student',
+    'grade-calculator': 'student', 'archive-exam': 'student',
+    exam: 'student', certificate: 'student', pastexams: 'student', examclash: 'student'
+  })[view] || 'settings';
   const viewTitle = isInstructorAccount ? instructorCourse?.title || 'Lënda ime' : ({
     home: '',
     videos: 'Video mësimore',
@@ -37821,8 +37834,8 @@ Nënshkrimi: _____________________`;
   }, /*#__PURE__*/React.createElement("span", { className: "mobile-nav-active active-surface", "aria-hidden": true }), /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
     onClick: () => setView('home'),
-    "aria-current": view === 'home' ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'home' ? 'text-brand-600' : 'text-secondary'}`
+    "aria-current": primaryNavigation === 'home' ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${primaryNavigation === 'home' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -37838,8 +37851,8 @@ Nënshkrimi: _____________________`;
       setScheduleSelectedDayKey(null);
       setView('week');
     },
-    "aria-current": view === 'week' ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'week' ? 'text-brand-600' : 'text-secondary'}`
+    "aria-current": primaryNavigation === 'week' ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${primaryNavigation === 'week' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -37860,8 +37873,8 @@ Nënshkrimi: _____________________`;
       setCoursesSemesterId(`${yearId}:${activeSemesterId}`);
       setView('courses');
     },
-    "aria-current": ['courses', 'course', 'topic-explain', 'session'].includes(view) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${['courses', 'course', 'topic-explain', 'session'].includes(view) ? 'text-brand-600' : 'text-secondary'}`
+    "aria-current": primaryNavigation === 'courses' ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${primaryNavigation === 'courses' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -37876,8 +37889,8 @@ Nënshkrimi: _____________________`;
       setStudentTab('exams');
       setView('student');
     },
-    "aria-current": view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${view === 'student' && studentTab === 'exams' || ['mock-exam', 'mock-analysis', 'final-prep', 'grade-calculator', 'archive-exam'].includes(view) ? 'text-brand-600' : 'text-secondary'}`
+    "aria-current": primaryNavigation === 'student' ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${primaryNavigation === 'student' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
@@ -37890,8 +37903,8 @@ Nënshkrimi: _____________________`;
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
     onClick: () => setView('settings'),
     "aria-label": "Profili dhe cilësimet",
-    "aria-current": (['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-') || view.startsWith('profile-')) ? 'page' : undefined,
-    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${(['settings', 'studentservices', 'academic-progress', 'articles'].includes(view) || view.startsWith('support-') || view.startsWith('profile-')) ? 'text-brand-600' : 'text-secondary'}`
+    "aria-current": primaryNavigation === 'settings' ? 'page' : undefined,
+    className: `mobile-nav-item min-h-[50px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${primaryNavigation === 'settings' ? 'text-brand-600' : 'text-secondary'}`
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-5 h-5",
     fill: "none",
