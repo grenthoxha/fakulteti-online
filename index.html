@@ -1574,10 +1574,21 @@
     .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
     .header-quick-layer .mx-room-count { background: transparent; }
     .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 60px rgba(7,20,42,.18); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
-    .app-header.is-searching > div:not(.header-search-heading) { display: none!important; }
+    .app-header.is-searching { gap: 12px; }
+    .app-header.is-searching > .app-header-actions { display: none!important; }
+    .app-header.is-searching > .app-header-identity { flex: 0 1 auto; max-width: 48%; }
+    .app-header.is-searching .unit-brand-mark { flex-shrink: 0; }
+    .app-header.is-searching .unit-brand-name { flex: 1; min-width: 0; }
+    @media (min-width: 1024px) { .app-header.is-searching > .app-header-identity { display: none; } }
     .app-header.is-searching > .header-search-heading { display: flex; flex: 1; min-width: 0; padding: 0; border: 0; animation: notification-preview-enter .18s ease-out both; }
     .app-header.is-searching .header-search-field { min-height: 40px; }
-    .app-header.is-searching .notification-control { width: 40px; height: 40px; }
+    .app-header.is-searching .notification-control { width: 36px; height: 36px; }
+    @media (max-width: 420px) {
+      .app-header.is-searching { gap: 8px; }
+      .app-header.is-searching > .header-search-heading { gap: 4px; }
+      .app-header.is-searching .header-search-field { gap: 6px; padding-inline: 8px; }
+      .app-header.is-searching .notification-control { width: 32px; height: 36px; }
+    }
     .header-search-heading { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); flex: none; }
     .header-search-field { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
     .header-search-field:focus-within { border-color: rgba(var(--brand-rgb),.45); }
@@ -11987,6 +11998,7 @@ function AcademyApp({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const headerHomeLabel = freeRoomsHomeUser ? 'Shko te Sallat e Lira' : 'Shko te Kreu';
   const openHeaderHome = () => {
+    setSearchOpen(false);
     setSidebarOpen(false);
     if (freeRoomsHomeUser && onRoomsHome) onRoomsHome();
     else setView(window.FakultetiApprovals?.fallback(freeRoomsHomeUser ? 'freerooms' : 'home') || (freeRoomsHomeUser ? 'freerooms' : 'home'));
@@ -32712,7 +32724,7 @@ Nënshkrimi: _____________________`;
               value: search,
               onChange: e => setSearch(e.target.value),
               onKeyDown: e => { if (e.key === 'Escape') closeSearchPage(); if (e.key === 'Enter') rememberSearch(); },
-              placeholder: "Kërko kapituj, video, materiale…",
+              placeholder: "Kërko…",
               "aria-label": "Kërko",
               className: "flex-1 min-w-0 bg-transparent text-base text-primary focus:outline-none placeholder:text-tertiary"
             }),
@@ -35586,8 +35598,8 @@ Nënshkrimi: _____________________`;
     className: "flex-1 flex flex-col min-w-0 lg:pl-64"
   }, /*#__PURE__*/React.createElement("header", {
     className: `app-header h-16 header-bg border-b border-default px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl ${view === 'home' && !isInstructorAccount ? 'home-header-blend' : ''}${searchOpen ? ' is-searching' : ''}`
-  }, searchOpen && renderHeaderSearchInput(), /*#__PURE__*/React.createElement("div", {
-    className: "min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "app-header-identity min-w-0 flex-1 flex items-center gap-2 sm:gap-3"
   }, isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setSidebarOpen(true),
     "aria-label": "Hap menunë e lëndës",
@@ -35626,7 +35638,7 @@ Nënshkrimi: _____________________`;
   }, profileNameParts[profileNameParts.length - 1]))) : ["Fakulteti ", /*#__PURE__*/React.createElement("span", {
     key: "online",
     className: "text-brand-600 dark:text-brand-300"
-  }, "Online")])), /*#__PURE__*/React.createElement("div", {
+  }, "Online")])), searchOpen && renderHeaderSearchInput(), /*#__PURE__*/React.createElement("div", {
     className: `app-header-actions flex items-center gap-2${isInstructorAccount ? '' : ' app-header-actions--student shrink-0'}`
   }, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     onClick: openHeaderSearch,

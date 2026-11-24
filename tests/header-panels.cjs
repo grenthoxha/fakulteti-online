@@ -47,6 +47,11 @@ input.props.onChange({target:{value:'Etika'}});ok(searchActions.pop()[1]==='Etik
 input.props.onKeyDown({key:'Enter'});ok(searchActions.pop()==='remember','header Enter remembers search');
 input.props.onKeyDown({key:'Escape'});ok(searchActions.pop()==='close','header Escape closes search');
 ok(html.includes('searchOpen && renderHeaderSearchInput()'),'actual app header owns input renderer');
+const appHeader=section('  }, /*#__PURE__*/React.createElement("header", {\r\n    className: `app-header','  }, view === \'course\'');
+ok(appHeader.indexOf('app-header-identity')<appHeader.indexOf('searchOpen && renderHeaderSearchInput()'),'identity stays before expanded search');
+ok(appHeader.indexOf('unit-brand-name')<appHeader.indexOf('searchOpen && renderHeaderSearchInput()'),'name remains next to logo during search');
+ok(!html.includes('.app-header.is-searching > div:not(.header-search-heading)'),'search does not hide the identity block');
+ok(html.includes('.app-header.is-searching > .app-header-actions { display: none!important; }'),'only action icons make room for expanded search');
 nodes(t).find(n=>n.type==='button'&&text(n).includes('Kapituj')).props.onClick();
 ok(JSON.stringify(searchActions)==='["remember","close","course"]','search remembers and opens actual result');
 nodes(t).find(n=>n.type==='button'&&text(n)==='Lëndët · 1').props.onClick();
