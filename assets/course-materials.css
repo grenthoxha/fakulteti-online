@@ -20,7 +20,7 @@
 .cl-more { display:block; width:100%; min-height:42px; margin-top:6px; border-top:1px solid var(--line); color:rgb(var(--brand-rgb)); font-size:12px; font-weight:600; }
 .cl-status { padding:18px 4px; color:var(--muted); font-size:13px; line-height:1.5; }
 .cl-status button { min-height:40px; padding:8px; color:rgb(var(--brand-rgb)); font-weight:600; }
-.cl-recent { display:flex; gap:9px; align-items:center; width:100%; padding:10px; border-radius:11px; background:rgba(var(--brand-rgb),.05); text-align:left; margin:4px 0 6px; color:rgb(var(--brand-rgb)); }
+.cl-recent { display:none; gap:9px; align-items:center; width:100%; padding:10px; border-radius:11px; background:rgba(var(--brand-rgb),.05); text-align:left; margin:4px 0 6px; color:rgb(var(--brand-rgb)); }
 .cl-recent > span { min-width:0; flex:1; }
 .cl-recent small { display:block; font-size:10px; color:var(--muted); }
 .cl-recent strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; margin-top:2px; }
