@@ -5,9 +5,9 @@ const nodes=t=>t&&typeof t==='object'?[t,...t.children.flatMap(nodes)]:[];
 const title=t=>t&&typeof t==='object'?t.children.map(title).join(''):String(t??'');
 const mapping=html.slice(html.indexOf('  const primaryNavigation ='),html.indexOf('  const viewTitle ='));
 const start=html.lastIndexOf('React.createElement("nav", {',html.indexOf('"aria-label": "Navigimi kryesor"'));
-const nav=html.slice(start,html.indexOf('), groupMessagesOpen &&',start));
-function render(view,studentTab='exams',allowed=()=>true){
- const actions=[];const c=vm.createContext({view,studentTab,isMobileNavHidden:false,window:{FakultetiApprovals:{canView:allowed}},React:{createElement:h},yearId:1,activeSemesterId:1,
+const nav=html.slice(html.lastIndexOf('!isInstructorAccount &&',start),html.indexOf('), groupMessagesOpen &&',start));
+function render(view,studentTab='exams',allowed=()=>true,hidden=false,isInstructorAccount=false){
+ const actions=[];const c=vm.createContext({view,studentTab,isMobileNavHidden:hidden,isInstructorAccount,window:{FakultetiApprovals:{canView:allowed}},React:{createElement:h},yearId:1,activeSemesterId:1,
  setView:v=>actions.push(['view',v]),setStudentTab:v=>actions.push(['tab',v]),setScheduleWeekOffset:v=>actions.push(['week',v]),setScheduleSelectedDayKey:v=>actions.push(['day',v]),setCoursesSemesterId:v=>actions.push(['semester',v])});
  vm.runInContext(mapping+'this.nav='+nav,c);return {tree:c.nav,actions};
 }
@@ -26,6 +26,15 @@ buttons.find(n=>title(n)==='Orari').props.onClick();ok(JSON.stringify(actions)==
 actions.length=0;buttons.find(n=>title(n)==='Lëndët').props.onClick();ok(JSON.stringify(actions)==='[["semester","1:1"],["view","courses"]]','courses button retains current semester');
 actions.length=0;buttons.find(n=>title(n)==='Provimet').props.onClick();ok(JSON.stringify(actions)==='[["tab","exams"],["view","student"]]','exam navigation retains original action');
 const restricted=render('videos','exams',v=>v!=='courses').tree;ok(nodes(restricted).find(n=>n.props['aria-current']==='page').props['data-access-hidden']==='true','parent highlighting does not bypass access permissions');
+for(const hidden of [false,true]){
+ const courseNav=render('course','exams',()=>true,hidden).tree;
+ ok(courseNav?.type==='nav','course retains actual navigation element, including while scrolling');
+ ok(!courseNav.props['aria-hidden']&&courseNav.props.inert===undefined&&!courseNav.props.className.includes('app-scroll-chrome--bottom-hidden'),'course navigation stays visible and usable');
+ ok(title(nodes(courseNav).find(n=>n.props['aria-current']==='page'))==='Lëndët','course navigation keeps courses selected');
+}
+const scrollingHome=render('home','exams',()=>true,true).tree;
+ok(scrollingHome.props['aria-hidden']===true&&scrollingHome.props.inert==='','other pages retain existing scroll behaviour');
+ok(render('course','exams',()=>true,false,true).tree===false,'instructor navigation remains unchanged');
 for(const mirror of ['github-publish/index.html','github-publish/fakulteti-online.html'])ok(fs.readFileSync(path.join(root,mirror),'utf8')===html,'published HTML stays identical');
 console.log(`PASS: ${checks} navigation checks — child destinations, unique active section, original actions and permissions.`);
 module.exports={render,nodes,title,html};

@@ -21870,7 +21870,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     if (inClassMinimized) {
       return /*#__PURE__*/React.createElement("div", {
-        className: "fixed bottom-5 right-5 z-40 bg-card border border-brand-500/40 shadow-xl rounded-2xl p-2.5 flex items-center gap-3 backdrop-blur-md anim-fade-up"
+        className: "fixed bottom-5 right-5 z-40 bg-card border border-brand-500/40 shadow-xl rounded-2xl p-2.5 flex items-center gap-3 backdrop-blur-md anim-fade-up",
+        style: { bottom: "calc(var(--app-mobile-nav-space, 0px) + 1.25rem)" }
       }, /*#__PURE__*/React.createElement("span", {
         className: "relative flex h-3 w-3"
       }, /*#__PURE__*/React.createElement("span", {
@@ -33199,7 +33200,7 @@ Nënshkrimi: _____________________`;
         key: item.id,
         type: "button",
         onClick: () => openCourse(item),
-        className: "course-summary-card card-surface border border-default rounded-[20px] p-3.5 min-h-[150px] flex flex-col gap-2 text-left cursor-pointer"
+        className: "course-summary-card card-surface border border-default rounded-[20px] p-3.5 flex flex-col gap-2 text-left cursor-pointer"
       },
         ce("span", { className: "flex items-start justify-between" },
           ring(pct),
@@ -33212,7 +33213,7 @@ Nënshkrimi: _____________________`;
     const addTile = () => ce("button", {
       type: "button",
       onClick: () => enrollmentEditorOpen ? setEnrollmentEditorOpen(false) : openEnrollmentEditor(),
-      className: "rounded-[20px] min-h-[150px] border border-dashed border-black/15 dark:border-white/15 flex items-center justify-center text-[14px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer"
+      className: "rounded-[20px] min-h-[96px] border border-dashed border-black/15 dark:border-white/15 flex items-center justify-center text-[14px] font-semibold text-brand-600 dark:text-brand-300 cursor-pointer"
     }, "+ Shto lëndë");
     const groups = [
       { id: 'O', label: 'Obligative', items: stats.filter(s => s.item.status !== 'Z') },
@@ -35383,6 +35384,7 @@ Nënshkrimi: _____________________`;
     'grade-calculator': 'student', 'archive-exam': 'student',
     exam: 'student', certificate: 'student', pastexams: 'student', examclash: 'student'
   })[view] || 'settings';
+  const mobileNavigationHidden = view !== 'course' && isMobileNavHidden;
   const viewTitle = isInstructorAccount ? instructorCourse?.title || 'Lënda ime' : ({
     home: '',
     videos: 'Video mësimore',
@@ -37886,13 +37888,13 @@ Nënshkrimi: _____________________`;
     tabIndex: isMobileNavHidden ? -1 : 0,
     title: "Pomodoro",
     onClick: () => setPomoOpen(true)
-  }, /*#__PURE__*/React.createElement("span", { className: "pomo-dot", "aria-hidden": "true" }), /*#__PURE__*/React.createElement("span", null, pomoFmt(pomoLeftSecs()))), pomoOpen && renderPomodoroSheet(), !isInstructorAccount && view !== 'course' && /*#__PURE__*/React.createElement("nav", {
+  }, /*#__PURE__*/React.createElement("span", { className: "pomo-dot", "aria-hidden": "true" }), /*#__PURE__*/React.createElement("span", null, pomoFmt(pomoLeftSecs()))), pomoOpen && renderPomodoroSheet(), !isInstructorAccount && /*#__PURE__*/React.createElement("nav", {
     "aria-label": "Navigimi kryesor",
     "data-access-nav": window.FakultetiApprovals ? 'true' : undefined,
     style: window.FakultetiApprovals ? { '--access-nav-count': ['home','week','courses','student','settings'].filter(window.FakultetiApprovals.canView).length } : undefined,
-    "aria-hidden": isMobileNavHidden ? true : undefined,
-    inert: isMobileNavHidden ? "" : undefined,
-    className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${isMobileNavHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
+    "aria-hidden": mobileNavigationHidden ? true : undefined,
+    inert: mobileNavigationHidden ? "" : undefined,
+    className: `app-scroll-chrome mobile-nav ${view === 'week' ? 'mobile-nav--schedule' : ''} lg:hidden fixed bottom-0 left-0 right-0 header-bg border-t border-default px-2 pt-2 mobile-safe-bottom grid grid-cols-5 z-20 backdrop-blur-xl ${mobileNavigationHidden ? 'app-scroll-chrome--bottom-hidden' : ''}`
   }, /*#__PURE__*/React.createElement("span", { className: "mobile-nav-active active-surface", "aria-hidden": true }), /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("home")) ? 'true' : undefined,
     onClick: () => setView('home'),
