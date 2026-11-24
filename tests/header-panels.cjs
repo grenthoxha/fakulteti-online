@@ -40,6 +40,21 @@ f=notificationFixture({notificationPreviewOpen:false,notificationCenterOpen:true
 ok(nodes(t).some(n=>n.props.id==='class-president-hub'),'group hub is available from main notifications');
 ok(nodes(t).some(n=>n.props.role==='tab'&&n.props['aria-label']==='Nga grupi'),'full notification center has group destination');
 
+// Presentation keeps specific video titles, dates and their original destinations.
+let videoOpened=0;
+f=notificationFixture({notificationFeed:[
+ {id:'video_qa',group:'week',title:'Video e re',sub:'Si funksionon kujtesa · Psikologji',time:'Këtë javë',unread:true,action:()=>videoOpened++},
+ {id:'deadline_qa',group:'today',title:'Dorëzimi i punimit',sub:'Kapitulli 2',time:'Sot, 14:00',action(){}}
+]});t=f.render();
+let videoRow=nodes(t).find(n=>n.props.key==='video_qa');
+ok(text(find(videoRow,'notification-item-title'))==='Si funksionon kujtesa','video exposes its specific title instead of repeated generic heading');
+ok(text(find(videoRow,'notification-item-detail'))==='Psikologji','video course remains visible separately');
+ok(!find(videoRow,'notification-item-meta'),'duplicate group time is omitted from individual row');
+ok(text(find(nodes(t).find(n=>n.props.key==='deadline_qa'),'notification-item-meta')).includes('14:00'),'meaningful deadline time remains visible');
+videoRow.props.onClick();ok(videoOpened===1&&f.actions.some(a=>a[0]==='read'&&a[1]==='video_qa'),'restyled video retains read tracking and original destination');
+f=notificationFixture({notificationFeed:[{id:'video_fallback',group:'week',title:'Video e re',sub:'Titull pa lëndë',time:'Këtë javë',action(){}}]});
+ok(text(find(f.render(),'notification-item-title'))==='Titull pa lëndë','video without course retains its full title');
+
 // Group announcements retain scope, read state and their original hub destination.
 function groupFeed(extra={}) {
  const actions=[], writes=[];

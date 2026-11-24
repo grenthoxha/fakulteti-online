@@ -1564,30 +1564,35 @@
     .notification-screen .notification-content { padding-bottom: 1rem; }
     @media (prefers-reduced-motion: reduce) { .notification-screen .notification-panel { animation: none; } }
     .notification-screen .notification-panel { background: var(--page); }
-    .notification-screen .notification-heading-copy h1 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
-    .notification-screen .notification-control { width: 34px; height: 34px; border: 1px solid rgba(var(--brand-rgb),.08); background: rgba(var(--brand-rgb),.045); }
-    .notification-screen .notification-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 4px; margin-top: 12px; gap: 4px; border: 1px solid var(--line); border-radius: 13px; background: rgba(var(--brand-rgb),.025); }
-    .notification-screen .notification-tabs button { flex: 1 0 auto; min-height: 34px; padding: 6px 10px; font-size: 12px; border-radius: 9px; }
-    .notification-screen .notification-tabs button.is-active { color: var(--notification-accent); background: var(--surface); box-shadow: 0 2px 6px rgba(8,15,30,.055); }
-    .notification-screen .notification-content { padding: 6px 14px 18px; }
-    .notification-screen .notification-section + .notification-section { margin-top: 20px; }
-    .notification-screen .notification-section-heading { padding: 10px 4px 8px; }
+    .notification-screen .notification-header { padding: 12px 14px 14px; background: var(--surface); }
+    .notification-screen .notification-heading-row { gap: 10px; }
+    .notification-screen .notification-heading-copy h1 { font-size: 19px; font-weight: 700; letter-spacing: -.025em; }
+    .notification-screen .notification-control { width: 42px; height: 42px; border: 1px solid var(--line); background: transparent; }
+    .notification-screen .notification-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 4px; margin-top: 12px; gap: 4px; border: 1px solid var(--line); border-radius: 14px; background: rgba(var(--brand-rgb),.035); }
+    .notification-screen .notification-tabs button { flex: 1 0 auto; min-height: 40px; padding: 7px 9px; font-size: 12px; border-radius: 10px; }
+    .notification-screen .notification-tabs button.is-active { color: var(--notification-accent); background: var(--surface); box-shadow: 0 2px 6px rgba(8,15,30,.07); }
+    .notification-screen .notification-tab-count { background: rgba(var(--brand-rgb),.065); }
+    .notification-screen .notification-content { padding: 8px 14px 20px; }
+    .notification-screen .notification-section { width: 100%; max-width: 720px; margin-inline: auto; }
+    .notification-screen .notification-section + .notification-section { margin-top: 16px; }
+    .notification-screen .notification-section-heading { padding: 10px 3px; }
     .notification-screen .notification-section-heading h2 { font-size: 12px; font-weight: 600; }
-    .notification-screen .notification-list { gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: 0 7px 20px -17px rgba(8,15,30,.3); }
-    .notification-screen .notification-row { padding: 14px 12px; border: 0; border-radius: 0; background: transparent; }
-    .notification-screen .notification-row + .notification-row { border-top: 1px solid var(--line); }
-    .notification-screen .notification-row:hover { background: rgba(var(--brand-rgb),.045); }
-    .notification-screen .notification-icon { width: 38px; height: 38px; border: 1px solid rgba(var(--brand-rgb),.075); border-radius: 12px; background: rgba(var(--brand-rgb),.06); }
-    .notification-screen .notification-item-detail { -webkit-line-clamp: 2; margin-top: 3px; }
-    .notification-screen .notification-item-meta { margin-top: 5px; }
-    .notification-screen .notification-item-meta > svg:first-child { display: none; }
-    .notification-screen .notification-footer { padding: 8px 14px max(8px,env(safe-area-inset-bottom,0px)); border: 0; background: var(--page); }
-    .notification-screen .notification-header { background: linear-gradient(135deg,rgba(var(--brand-rgb),.055),transparent 75%),var(--surface); }
-    .notification-screen .notification-section-heading > span { display: inline-grid; place-items: center; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 7px; color: var(--notification-accent); background: rgba(var(--brand-rgb),.065); }
-    .notification-screen .notification-row.is-unread { background: rgba(var(--brand-rgb),.025); }
-    .notification-screen .notification-row.is-unread .notification-icon { background: rgba(var(--brand-rgb),.11); }
-    .notification-screen .notification-item-title { font-weight: 550; }
-    .notification-screen .notification-footer button { min-height: 40px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 12px; }
+    .notification-screen .notification-section-heading > span { color: var(--muted); font-size: 11px; }
+    .notification-screen .notification-list { gap: 8px; }
+    .notification-screen .notification-row { align-items: center; gap: 12px; padding: 15px 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 3px 10px -7px rgba(8,15,30,.14); }
+    .notification-screen .notification-row:hover { border-color: rgba(var(--brand-rgb),.25); background: var(--surface-muted); }
+    .notification-screen .notification-row:active { background: rgba(var(--brand-rgb),.08); }
+    .notification-screen .notification-icon { width: 40px; height: 40px; border: 0; border-radius: 13px; background: rgba(var(--brand-rgb),.07); }
+    .notification-screen .notification-item-kind { display: block; margin-bottom: 3px; color: var(--notification-accent); font-size: 10px; font-weight: 600; line-height: 1.3; }
+    .notification-screen .notification-item-title { font-size: 14px; font-weight: 600; line-height: 1.45; }
+    .notification-screen .notification-item-detail { -webkit-line-clamp: 2; margin-top: 4px; font-size: 12px; line-height: 1.55; }
+    .notification-screen .notification-item-meta { margin-top: 6px; font-size: 11px; }
+    .notification-screen .notification-row > .notification-chevron { flex-shrink: 0; color: var(--muted); opacity: .7; width: 15px; height: 15px; }
+    .notification-screen .notification-unread-dot { width: 6px; height: 6px; margin-top: 6px; }
+    .notification-screen .notification-row.is-unread { border-color: rgba(var(--brand-rgb),.23); background: linear-gradient(rgba(var(--brand-rgb),.035),rgba(var(--brand-rgb),.035)),var(--surface); }
+    .notification-screen .notification-row.is-unread .notification-icon { background: rgba(var(--brand-rgb),.12); }
+    .notification-screen .notification-footer { padding: 8px 14px max(8px,env(safe-area-inset-bottom,0px)); border-top: 1px solid var(--line); background: var(--surface); }
+    .notification-screen .notification-footer button { max-width: 720px; margin-inline: auto; min-height: 44px; padding: 10px 8px; border-radius: 10px; font-size: 12px; }
     .notification-preferences { max-width: 560px; margin: 0 auto; padding: 14px 0; }
     .notification-preferences > .notification-demo-actions:first-child { gap: 12px; padding-bottom: 18px; }
     .notification-group-hub { color: var(--ink); }
@@ -32858,15 +32863,26 @@ Nënshkrimi: _____________________`;
       className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined,
       style: { visibility: item.unread ? 'visible' : 'hidden' }
     });
-    const row = item => ce('button', {
-      key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
-      onClick: () => { closeNotifications(); markNotificationsRead([item.id]); item.action(); }
-    },
-      ce('span', { className: 'notification-icon' }, unitUiIcon(item.icon)),
-      ce('span', { className: 'notification-copy' },
-        ce('span', { className: 'notification-item-heading' }, ce('span', { className: 'notification-item-title' }, item.title), unreadDot(item)),
-        ce('span', { className: 'notification-item-detail' }, item.sub),
-        ce('span', { className: 'notification-item-meta' }, unitUiIcon(UNIT_UI_ICONS.clock, 'w-3 h-3'), item.time, unitUiIcon(UNIT_UI_ICONS.chev, 'w-3.5 h-3.5 notification-chevron'))));
+    const row = item => {
+      const isVideo = String(item.id).startsWith('video_');
+      const splitAt = isVideo ? String(item.sub || '').lastIndexOf(' · ') : -1;
+      const videoTitle = isVideo ? (splitAt < 0 ? item.sub : item.sub.slice(0, splitAt)) : '';
+      const title = videoTitle || item.title;
+      const detail = videoTitle ? (splitAt < 0 ? '' : item.sub.slice(splitAt + 3)) : item.sub;
+      const groupTime = item.group === 'today' ? 'Sot' : 'Këtë javë';
+      const time = item.time && item.time !== groupTime ? item.time : '';
+      return ce('button', {
+        key: item.id, type: 'button', className: `notification-row${item.unread ? ' is-unread' : ''}`,
+        onClick: () => { closeNotifications(); markNotificationsRead([item.id]); item.action(); }
+      },
+        ce('span', { className: 'notification-icon', 'aria-hidden': true }, unitUiIcon(item.icon)),
+        ce('span', { className: 'notification-copy' },
+          isVideo && ce('span', { className: 'notification-item-kind' }, 'Video'),
+          ce('span', { className: 'notification-item-heading' }, ce('span', { className: 'notification-item-title' }, title), unreadDot(item)),
+          detail && ce('span', { className: 'notification-item-detail' }, detail),
+          time && ce('span', { className: 'notification-item-meta' }, unitUiIcon(UNIT_UI_ICONS.clock, 'w-3 h-3'), time)),
+        unitUiIcon(UNIT_UI_ICONS.chev, 'notification-chevron'));
+    };
     const empty = unreadOnly => ce('div', { className: 'notification-empty' },
       ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check, 'w-6 h-6')),
       ce('h2', null, unreadOnly ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'),
@@ -32883,7 +32899,7 @@ Nënshkrimi: _____________________`;
         ce('header', { className: 'notification-header' },
           ce('div', { className: 'notification-heading-row' },
             ce('button', { type: 'button', onClick: notificationSettingsOpen ? () => setNotificationSettingsOpen(false) : closeNotifications, 'aria-label': notificationSettingsOpen ? 'Kthehu te njoftimet' : 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
-            ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, notificationSettingsOpen ? 'Cilësimet e njoftimeve' : 'Njoftimet'), !notificationSettingsOpen && notificationUnreadCount > 0 && ce('p', null, `${notificationUnreadCount} të palexuara`)),
+            ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, notificationSettingsOpen ? 'Cilësimet e njoftimeve' : 'Njoftimet'), !notificationSettingsOpen && notificationUnreadCount > 0 && ce('p', null, notificationUnreadCount === 1 ? '1 i palexuar' : `${notificationUnreadCount} të palexuara`)),
             !notificationSettingsOpen && ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
           !notificationSettingsOpen && ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount], ['group', 'Nga grupi', groupMessageUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
         ce('div', { className: 'notification-content' }, notificationSettingsOpen ? preferences : notificationTab === 'group' ? ce('div', { className: 'notification-group-hub' }, renderClassPresidentHub()) : groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
