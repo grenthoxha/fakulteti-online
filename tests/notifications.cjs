@@ -31,5 +31,16 @@ assert.equal(await api.show({id:'reminder:exam:x',title:'Provim',detail:'Salla 1
 assert.equal(await api.permission(),'granted');assert.equal(requested,1);root.Notification.permission='granted';
 assert.equal(await api.show({id:'reminder:exam:x',title:'Provim',detail:'Salla 1'},'account-a'),true);assert.equal(shown[0][1].data.scope,'account-a');assert.equal(shown[0][1].data.id,'reminder:exam:x');
 assert.notEqual(plan({deadlines:exams})[0].id,plan({deadlines:[{...exams[0],time:'13:00'}]})[0].id);
+const listeners=new Map(),writes=[],effects=[],local=new Map([['u_notification_settings_v1',JSON.stringify(base.settings)]]);let account={id:'a',importedLegacy:false},tick;
+const add=(k,f)=>{if(!listeners.has(k))listeners.set(k,new Set());listeners.get(k).add(f);},remove=(k,f)=>listeners.get(k)?.delete(f);
+const page={React:{useRef:v=>({current:v}),useEffect:f=>effects.push(f)},addEventListener:add,removeEventListener:remove,dispatchEvent:e=>{for(const f of listeners.get(e.type)||[])f(e);},
+ navigator:{},document:{hidden:false,addEventListener:add,removeEventListener:remove},location:{search:'',pathname:'/',hash:''},FakultetiApprovals:{policy:{status:'approved'}},
+ FakultetiLocalAccounts:{current:()=>account,storage:{getItem:k=>local.get(k)||null,setItem:(k,v)=>local.set(k,v)}},fakultetiAndroid:{scheduledRemindersSupported:true,send:v=>writes.push(v)}};
+const hook=vm.createContext({window:page,Intl,Date,URLSearchParams,Event:class{constructor(type){this.type=type;}},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},setInterval:f=>{tick=f;return 1;},clearInterval(){},setTimeout,clearTimeout});
+vm.runInContext(fs.readFileSync('assets/android-widgets.js','utf8'),hook);vm.runInContext(fs.readFileSync('assets/notifications.js','utf8'),hook);
+page.FakultetiNotifications.useBridge({...base,scope:'notifications-a'});const cleanups=effects.map(f=>f());await new Promise(r=>setImmediate(r));
+assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,true);
+account={id:'b',importedLegacy:false};await tick();assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,false);assert.equal(JSON.parse(writes.at(-1).slice(16)).jobs.length,0);
+account=null;await tick();assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,false);cleanups.forEach(f=>f?.());
 console.log('PASS: real exam timings, CET/CEST, future dates, category/recurrence filters, selected timetable, deduplication, rescheduling, mobile service-worker notifications, explicit consent and local-only payloads.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

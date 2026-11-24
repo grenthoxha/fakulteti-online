@@ -69,7 +69,9 @@
       const update=async()=>{
         if(running.current)return;running.current=true;
         try{
-          const current=latest.current,prefs=settings(),approved=!!root.FakultetiLocalAccounts.current()&&root.FakultetiApprovals?.policy?.status==='approved';
+          const current=latest.current,prefs=settings(),account=root.FakultetiLocalAccounts.current();
+          const expectedScope=account?(account.importedLegacy?'notifications':'notifications-'+account.id):'';
+          const approved=!!account&&current.scope===expectedScope&&root.FakultetiApprovals?.policy?.status==='approved';
           const pending=root.__fakultetiPendingReminder;
           if(approved&&pending?.scope===current.scope&&typeof pending.id==='string'&&pending.id.startsWith('reminder:')){delete root.__fakultetiPendingReminder;root.dispatchEvent(new CustomEvent('fakulteti:notification-open',{detail:pending.id}));root.fakultetiFlutter?.ackReminder?.();}
           let jobs=approved?plan({...current,settings:prefs}):[];
