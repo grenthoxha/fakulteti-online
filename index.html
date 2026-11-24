@@ -1560,6 +1560,7 @@
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
+  <script src="./assets/notifications.js?v=1"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -11037,7 +11038,7 @@ const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty =
 const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
-const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.8', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.8-android-preview/Fakulteti-Online.apk' });
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.9', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.9-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -13273,6 +13274,11 @@ function AcademyApp({
     }
   });
   const [scheduleNotifications, setScheduleNotifications] = useState(() => unitStorage.getItem('u_schedule_notifications') === 'on');
+  useEffect(() => {
+    const syncReminderPreference = () => { const p=window.FakultetiNotifications.settings();setScheduleNotifications(p.enabled&&p.schedule); };
+    window.addEventListener('fakulteti:reminder-settings',syncReminderPreference);syncReminderPreference();
+    return()=>window.removeEventListener('fakulteti:reminder-settings',syncReminderPreference);
+  },[]);
   const [sentScheduleReminders, setSentScheduleReminders] = useState(() => {
     try {
       const s = JSON.parse(unitStorage.getItem('u_schedule_notified') || '[]');
@@ -18865,82 +18871,14 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setSessionMaterials(prev => prev.filter(item => item.id !== id));
   };
   const toggleScheduleNotifications = async () => {
-    if (scheduleNotifications) {
-      setScheduleNotifications(false);
-      return;
-    }
-    if (!('Notification' in window)) {
-      alert('Ky shfletues nuk i mbështet njoftimet. Orari vazhdon të funksionojë normalisht brenda aplikacionit.');
-      return;
-    }
-    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-    if (permission === 'granted') setScheduleNotifications(true);
+    const prefs=window.FakultetiNotifications.settings();
+    if(prefs.enabled&&prefs.schedule){window.FakultetiNotifications.update({schedule:false});setScheduleNotifications(false);return;}
+    window.FakultetiNotifications.update({schedule:true});
+    const status=await window.FakultetiNotifications.permission();
+    if(status==='granted'||status==='pending')setScheduleNotifications(true);
+    else showToast('Lejo njoftimet nga paneli Njoftimet ose cilësimet e telefonit.','ℹ️');
   };
-  useEffect(() => {
-    if (!scheduleNotifications || !('Notification' in window) || Notification.permission !== 'granted') return;
-    const checkUpcomingSessions = () => {
-      const now = new Date();
-      const currentDay = now.getDay() || 7;
-      scopedSchedule.filter(item => Number(item.dayOfWeek) === currentDay).forEach(item => {
-        const startsAt = new Date(`${dateKey(now)}T${item.start}:00`);
-        const minutesAway = Math.round((startsAt - now) / 60000);
-        const reminderKey = `${dateKey(now)}:${item.id}`;
-        if (minutesAway >= 0 && minutesAway <= Number(item.reminderMinutes || 0) && !sentScheduleReminders.includes(reminderKey)) {
-          const selectedCourse = allCourses.find(c => c.id === item.courseId);
-          new Notification(`${selectedCourse?.title || 'Fakulteti Online'} · ${item.start}`, {
-            body: `${item.type === 'exercise' ? 'Ushtrime' : 'Ligjëratë'} në ${item.room}`
-          });
-          setSentScheduleReminders(prev => [...prev, reminderKey]);
-        }
-      });
-    };
-    checkUpcomingSessions();
 
-    /* Check today's routine tasks with reminders */
-    const checkUpcomingRoutines = () => {
-      const now = new Date();
-      (dailyRoutines || []).filter(r => {
-        if (!r.time || !r.reminder || r.reminder === 'none') return false;
-        return (r.recurrence || 'daily') === 'once' ? !r.completedAt : true;
-      }).forEach(r => {
-        const [h, m] = String(r.time).split(':').map(Number);
-        if (!Number.isFinite(h) || !Number.isFinite(m)) return;
-        const targetDate = new Date(`${dateKey(now)}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
-        const minutesAway = Math.round((targetDate - now) / 60000);
-        const threshold = r.reminder === '10m' ? 10 : r.reminder === '30m' ? 30 : r.reminder === '1h' ? 60 : 0;
-        const reminderKey = `routine:${dateKey(now)}:${r.id}:${r.reminder}`;
-
-        if (minutesAway <= threshold && minutesAway >= -3 && !sentScheduleReminders.includes(reminderKey)) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(`⏰ Fakulteti Online · ${r.time}`, {
-              body: minutesAway <= 0 ? `Është koha për aktivitetin: ${r.title}!` : `Kujtesë: ${r.title} fillon për ${minutesAway} minuta.`
-            });
-          }
-          playReminderChime();
-          setSentScheduleReminders(prev => [...prev, reminderKey]);
-        }
-      });
-    };
-    checkUpcomingRoutines();
-
-    const interval = setInterval(() => {
-      checkUpcomingSessions();
-      checkUpcomingRoutines();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [scheduleNotifications, academicSchedule, dailyRoutines, sentScheduleReminders, branchId, yearId]);
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   const playReminderChime = () => {
     if (!reminderSoundEnabled) return;
     try {
@@ -32823,7 +32761,9 @@ Nënshkrimi: _____________________`;
       const current = androidNotificationActions.current;
       const item = current.notificationFeed.find(item => item.id === event.detail);
       setNotificationPreviewOpen(false);
+      setCourseVideoFeedOpen(false);setSearchOpen(false);setGroupMessagesOpen(false);
       if (item) { current.markNotificationsRead([item.id]); item.action(); }
+      else if(String(event.detail).startsWith('reminder:')) {setNotificationCenterOpen(false);const kind=String(event.detail).split(':')[1];setView(kind==='schedule'?'week':(kind==='routine'||kind==='pomodoro')?'home':'student');if(kind==='exam'||kind==='deadline')setStudentTab('exams');if(kind==='pomodoro')setPomoOpen(true);}
       else setNotificationCenterOpen(true);
     };
     window.addEventListener('fakulteti:notification-open', open);
@@ -32871,6 +32811,7 @@ Nënshkrimi: _____________________`;
             ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
           ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(row) : empty(false)),
           ce('footer', { className: 'notification-preview-footer' },
+            ce(window.FakultetiNotifications.Settings),
             androidNativeReady && ce('div', { className: 'notification-demo-actions' },
               ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
               window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
@@ -32887,6 +32828,7 @@ Nënshkrimi: _____________________`;
             ce('button', { type: 'button', onClick: () => setNotificationCenterOpen(false), 'aria-label': 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
             ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, 'Njoftimet'), ce('p', null, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
             ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
+          ce(window.FakultetiNotifications.Settings),
           ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
         ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
@@ -33719,10 +33661,10 @@ Nënshkrimi: _____________________`;
     } catch (e) {}
   };
   const pomoAlert = (title, body) => {
-    const nativeAlert = window.fakultetiAndroid?.pomoNotificationsSupported && pomoSettings.notify;
+    const nativeAlert = (window.fakultetiAndroid?.pomoNotificationsSupported || window.fakultetiFlutter) && pomoSettings.notify;
     if (pomoSettings.sound && !nativeAlert) pomoChime();
     if (pomoSettings.vibrate && !nativeAlert && navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
-    if (!window.fakultetiAndroid?.pomoNotificationsSupported && pomoSettings.notify && 'Notification' in window && Notification.permission === 'granted') { try { new Notification(title, { body }); } catch (e) {} }
+    if (!nativeAlert && pomoSettings.notify) window.FakultetiNotifications.show({id:'reminder:pomodoro:'+Date.now(),title,detail:body,target:'home'},window.FakultetiLocalAccounts.databaseName('notifications')).catch(()=>{});
     showToast(body, '🔔');
   };
   const recordPomoCompletions = entries => {
@@ -33780,6 +33722,7 @@ Nënshkrimi: _____________________`;
   const togglePomoNotify = async () => {
     if (pomoSettings.notify) { updatePomoSetting('notify', false); return; }
     if (window.fakultetiAndroid?.pomoNotificationsSupported) { window.fakultetiAndroid.send('pomo-notifications'); return; }
+    if(window.fakultetiFlutter?.requestPomo){window.fakultetiFlutter.requestPomo();return;}
     if (!('Notification' in window)) { showToast('Ky shfletues nuk i mbështet njoftimet.', 'ℹ️'); return; }
     const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
     if (permission === 'granted') updatePomoSetting('notify', true);
@@ -34188,6 +34131,17 @@ Nënshkrimi: _____________________`;
     .filter((item, idx, arr) => arr.findIndex(t => t.id === item.id || (t.courseId === item.courseId && t.start === item.start && t.type === item.type)) === idx)
     .sort((a, b) => a.start.localeCompare(b.start));
   const scheduleMinToMinutes = hm => { const [h, m] = String(hm || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  window.FakultetiNotifications.useBridge({
+    scope: window.FakultetiLocalAccounts.databaseName('notifications'),
+    allow: {exams:window.FakultetiApprovals?.can('exams'),home:window.FakultetiApprovals?.can('home'),schedule:window.FakultetiApprovals?.can('schedule')},
+    deadlines: sortedDeadlines, routines: dailyRoutines, routineDone: dailyRoutineDone, pomo, pomoSettings,
+    revision: JSON.stringify([branchId,yearId,scopedSchedule,scheduleNotifications]), store: FilozofikuDailyStore,
+    getSessions: (dayId,dayKey) => {
+      const program=socialWorkScheduleUser?'social-work':facultyScheduleProgram;
+      return program?getFilozofikuProgramSessions(FilozofikuDailyStore.getData(),program,dayId,dayKey).map(e=>({title:e.t,room:e.room,start:e.start,end:e.end}))
+        :scheduleMinDaySessions(dayId).map(item=>({...item,title:item.title||allCourses.find(c=>c.id===item.courseId)?.title||''}));
+    }
+  });
   // Native launcher widgets reuse the same selected programme, room source and focus state.
   const widgetCan = section => window.FakultetiApprovals?.can(section) === true;
   window.FakultetiWidgets.useBridge({

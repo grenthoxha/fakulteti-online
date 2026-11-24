@@ -40,12 +40,13 @@ import android.window.OnBackInvokedDispatcher;
 public final class MainActivity extends Activity {
     private static final Uri APP_ORIGIN = Uri.parse("https://grenthoxha.github.io");
     private static final String APP_PATH = "/fakulteti-online/";
-    private static final int WEB_REVISION = 9;
-    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.8";
+    private static final int WEB_REVISION = 10;
+    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.9";
     private static final int FILE_PICKER = 1;
     private static final int NOTIFICATION_PERMISSION = 2;
     private static final int REPEAT_NOTIFICATION_PERMISSION = 3;
     private static final int POMODORO_PERMISSION = 4;
+    private static final int REMINDERS_PERMISSION = 5;
     private static final String FOCUS_LOCKED = "focus_locked";
     private static final String AWAITING_ALARM_SETTINGS = "awaiting_alarm_settings";
     private static final int DARK_SURFACE = 0xff111827;
@@ -74,6 +75,8 @@ public final class MainActivity extends Activity {
                 window.dispatchEvent(new Event('fakulteti:demo-repeat-state'));
               } else if (event.data === 'pomo-notifications-on' || event.data === 'pomo-notifications-off') {
                 window.dispatchEvent(new CustomEvent('fakulteti:pomo-permission', { detail: event.data === 'pomo-notifications-on' }));
+              } else if (typeof event.data === 'string' && event.data.startsWith('reminders-permission:')) {
+                try { window.dispatchEvent(new CustomEvent('fakulteti:reminders-permission', {detail:JSON.parse(event.data.slice(21))})); } catch {}
               } else if (event.data === 'widget-sync') {
                 window.dispatchEvent(new Event('fakulteti:widget-sync'));
               } else if (typeof event.data === 'string' && event.data.startsWith('widget-command:')) {
@@ -87,6 +90,7 @@ public final class MainActivity extends Activity {
               get demoRepeating() { return demoRepeating; },
               demoRepeatSupported: true,
               notificationFeedSupported: true,
+              scheduledRemindersSupported: true,
               widgetsSupported: true,
               pomoNotificationsSupported: true,
               send(command) {
@@ -339,6 +343,8 @@ public final class MainActivity extends Activity {
     }
 
     private void handlePageMessage(String message) {
+        if(message.equals("reminders-permission")){if(!focusLocked&&hasWindowFocus())requestReminderPermission();return;}
+        if(message.startsWith("reminders-state:")){ScheduledReminders.sync(this,message.substring(16));return;}
         if (message.equals("pomo-notifications")) { if (!focusLocked && hasWindowFocus()) requestPomodoroNotifications(); return; }
         if (message.startsWith("pomo-finished:")) { FacultyWidgets.finishActive(this,message.substring(14)); return; }
         if (message.startsWith("widget-state:")) { FacultyWidgets.sync(this, message.substring(13)); return; }
@@ -354,6 +360,7 @@ public final class MainActivity extends Activity {
         }
         switch (message) {
             case "notification-clear" -> {
+                ScheduledReminders.clear(this);
                 DemoNotifications.sync(this, "{\"scope\":\"signed-out\",\"expires\":"
                         + (System.currentTimeMillis() + 60000) + ",\"items\":[]}");
                 notificationFeedReady = false;
@@ -372,6 +379,23 @@ public final class MainActivity extends Activity {
             case "focus-lock" -> lockFocus();
             case "focus-unlock" -> unlockFocus();
         }
+    }
+
+    private void requestReminderPermission(){
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+            if(!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)&&getPreferences(MODE_PRIVATE).getBoolean("asked_reminders",false)){showNotificationSettings();return;}
+            getPreferences(MODE_PRIVATE).edit().putBoolean("asked_reminders",true).apply();
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REMINDERS_PERMISSION);return;
+        }
+        finishReminderPermission();
+    }
+    private void finishReminderPermission(){
+        boolean granted=ScheduledReminders.permitted(this),exact=DemoNotifications.canSchedule(this);
+        if(pagePort!=null)pagePort.postMessage(new WebMessage("reminders-permission:{\"granted\":"+granted+",\"exact\":"+exact+"}"));
+        if(granted&&!exact)new AlertDialog.Builder(this).setTitle("Koha e saktë e kujtesave").setMessage("Lejo Alarmet dhe kujtesat për provimet dhe aktivitetet e planifikuara.")
+            .setPositiveButton("Hap cilësimet",(dialog,button)->{try{startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));}catch(ActivityNotFoundException ignored){}})
+            .setNegativeButton("Më vonë",null).show();
+        ScheduledReminders.reschedule(this);
     }
 
     private void requestPomodoroNotifications() {
@@ -443,7 +467,8 @@ public final class MainActivity extends Activity {
 
     private void openPendingNotification() {
         if (!notificationFeedReady || pagePort == null || focusLocked || pendingNotificationId == null) return;
-        if (DemoNotifications.scope(this).equals(pendingNotificationScope)) {
+        if (DemoNotifications.scope(this).equals(pendingNotificationScope) || ScheduledReminders.scope(this).equals(pendingNotificationScope)) {
+            hideFullscreenVideo();
             pagePort.postMessage(new WebMessage("notification-open:" + pendingNotificationId));
         }
         pendingNotificationId = null;
@@ -480,6 +505,7 @@ public final class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(request, permissions, grants);
+        if(request==REMINDERS_PERMISSION){finishReminderPermission();return;}
         if (request==POMODORO_PERMISSION) { finishPomodoroPermission(); return; }
         if ((request == NOTIFICATION_PERMISSION || request == REPEAT_NOTIFICATION_PERMISSION) && grants.length > 0
                 && grants[0] == PackageManager.PERMISSION_GRANTED) {
@@ -548,6 +574,7 @@ public final class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         sendWidgetCommands();
+        ScheduledReminders.reschedule(this);
         FacultyWidgets.updateAll(this);
         if (awaitingAlarmSettings) {
             awaitingAlarmSettings = false;

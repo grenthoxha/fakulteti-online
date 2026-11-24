@@ -11,3 +11,15 @@ self.addEventListener('fetch', event => {
     status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }
   })));
 });
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const data=event.notification.data||{};
+  if(typeof data.id!=='string'||!data.id.startsWith('reminder:'))return;
+  event.waitUntil((async()=>{
+    const pages=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    const page=pages.find(p=>p.url.startsWith(self.registration.scope));
+    if(page){await page.focus();page.postMessage({type:'fakulteti-reminder-open',id:data.id,scope:data.scope});}
+    else{const url=new URL('./',self.registration.scope);url.searchParams.set('reminder',data.id);url.searchParams.set('reminderScope',data.scope||'');await self.clients.openWindow(url.href);}
+  })());
+});

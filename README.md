@@ -2,7 +2,7 @@
 
 ## Instalo në Android
 
-### [⬇️ Shkarko Fakulteti — APK 1.0.8](https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.8-android-preview/Fakulteti-Online.apk)
+### [⬇️ Shkarko Fakulteti — APK 1.0.9](https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.9-android-preview/Fakulteti-Online.apk)
 
 Lidhja më sipër shkarkon direkt APK-në, pa kërkuar te dosjet e projektit.
 
@@ -10,7 +10,7 @@ Lidhja më sipër shkarkon direkt APK-në, pa kërkuar te dosjet e projektit.
 2. Nëse e ke app-in, instaloje si **përditësim**, pa e çinstaluar. Të dhënat lokale ruhen.
 3. Për widget-et: **Profili → ⚙️ Cilësimet → Widget-et e telefonit**.
 
-[Hape app-in në shfletues](https://grenthoxha.github.io/fakulteti-online/) · [Detajet e APK-së dhe versionit](https://github.com/grenthoxha/fakulteti-online/releases/tag/v1.0.8-android-preview)
+[Hape app-in në shfletues](https://grenthoxha.github.io/fakulteti-online/) · [Detajet e APK-së dhe versionit](https://github.com/grenthoxha/fakulteti-online/releases/tag/v1.0.9-android-preview)
 
 ## Llogaria online dhe databaza
 
@@ -22,11 +22,17 @@ Llogaritë, profilet dhe aprovimet ruhen në Cloudflare D1. Emaili është unik;
 
 Kodi i rikuperimit ruhet nga përdoruesi; dërgimi i emailit për verifikim/rikuperim nuk është konfiguruar. Detajet teknike dhe kufijtë: [databaza dhe llogaritë](server/account-approvals/README.md).
 
-APK-ja 1.0.8 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshimet e databazës merren pas rihapjes; nuk kërkohet instalim i pastër.
+APK-ja 1.0.9 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshimet e databazës merren pas rihapjes; nuk kërkohet instalim i pastër.
 
 ## Projekti Flutter
 
 [Repository i veçantë: fakulteti-flutter](https://github.com/grenthoxha/fakulteti-flutter). Fillimisht ruan app-in aktual brenda Flutter-it; kalimi i plotë në Dart vazhdon gradualisht. Është repository privat për testim, me kontrolle Android dhe iOS në GitHub Actions. APK-ja e qëndrueshme mbetet ajo në krye të kësaj faqeje.
+
+## Kujtesat në telefon
+
+Për provime, afate, orar dhe detyra instalo **APK 1.0.9** si përditësim mbi versionin ekzistues. Hape zilen → **Aktivizo kujtesat** dhe lejo njoftimet. Zgjidh kategoritë që dëshiron; për kohë më të saktë lejo edhe **Alarmet dhe kujtesat**. Pomodoro ka çelësin e vet të njoftimeve te cilësimet e kohëmatësit.
+
+Kujtesat ruhen në telefon dhe mund të shfaqen kur APK-ja është në prapavijë. Provimet njoftohen një ditë dhe një orë përpara; orari pa orë të provimit përdor kujtesë në 09:00. Orari dhe detyrat e përsëritura rifreskohen për 14 ditët e ardhshme kur e hap app-in. Në browser kujtesat kontrollohen ndërsa faqja është e hapur; push nga serveri dhe mesazhe online nuk janë aktivizuar.
 
 ---
 

@@ -63,7 +63,7 @@ if True:
  subprocess.run([str(java_home/'bin/javac.exe'),'--release','17',str(p)],check=True)
  subprocess.run([str(java_home/'bin/java.exe'),'-cp',str(folder),'NativeVideoTest'],check=True)
 manifest=(root/'android-native/AndroidManifest.xml').read_text()
-assert 'android:versionCode="9"' in manifest and 'android:versionName="1.0.8-preview"' in manifest
+assert 'android:versionCode="10"' in manifest and 'android:versionName="1.0.9-preview"' in manifest
 assert 'orientation|screenSize|keyboardHidden' in manifest
 assert 'WebStorage.deleteAllData' not in s and 'clearApplicationUserData' not in s
 print('PASS: native version, rotation preservation and local data safeguards')
