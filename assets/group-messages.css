@@ -25,7 +25,10 @@
 .fm-room-trailing { display:flex; align-items:center; gap:8px; color:var(--muted); flex:none; }
 .fm-room-trailing time { font-size:10px; }
 .fm-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:56px 24px; text-align:center; color:var(--muted); font-size:13px; }
-.fm-empty > svg { width:34px; height:34px; color:rgb(var(--brand-rgb)); }
+.fm-empty-icon { position:relative; display:grid; place-items:center; width:64px; height:64px; margin-bottom:5px; border:1px solid rgba(var(--brand-rgb),.09); border-radius:21px; color:rgb(var(--brand-rgb)); background:linear-gradient(145deg,rgba(var(--brand-rgb),.09),rgba(var(--brand-rgb),.035)); box-shadow:0 8px 20px -17px rgba(var(--brand-rgb),.45); }
+.fm-empty-icon > svg { width:31px; height:31px; }
+.fm-empty-add { position:absolute; right:-4px; bottom:-4px; display:grid; place-items:center; width:24px; height:24px; border:3px solid var(--surface); border-radius:50%; background:rgb(var(--brand-rgb)); color:white; }
+.fm-empty-add svg { width:13px; height:13px; }
 .fm-empty h3 { color:var(--ink); font-size:16px; font-weight:600; }
 .fm-empty p { max-width:290px; line-height:1.6; }
 .fm-primary,.fm-secondary { display:inline-flex; justify-content:center; align-items:center; min-height:42px; padding:10px 18px; border:0; border-radius:12px; background:rgb(var(--brand-rgb)); color:white; font:inherit; font-size:13px; font-weight:600; line-height:1.4; cursor:pointer; }
