@@ -1573,6 +1573,31 @@
     .header-quick-layer .mx-room { width: calc(100% - 24px); margin: 0 12px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
     .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
     .header-quick-layer .mx-room-count { background: transparent; }
+    /* Message list and conversation use the existing palette with lighter rows. */
+    .header-quick-layer .unit-messages-panel { box-shadow: 0 12px 36px rgba(8,15,30,.16); }
+    .header-quick-layer .unit-messages-head { gap: 8px; padding: 14px; }
+    .header-quick-layer .unit-messages-head p { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+    .header-quick-layer .unit-messages-icon-button { width: 32px; height: 32px; background: transparent; }
+    .header-quick-layer .unit-messages-icon-button:hover { background: var(--surface-muted); }
+    .header-quick-layer .unit-messages-panel .mx-tabs { margin: 0; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; gap: 6px; }
+    .header-quick-layer .mx-tab { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; }
+    .header-quick-layer .unit-messages-panel .mx-tab.is-active { background: rgba(var(--brand-rgb),.07); box-shadow: none; }
+    .header-quick-layer .mx-unread-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding-inline: 4px; border-radius: 9px; font-size: 10px; color: rgb(var(--brand-rgb)); background: rgba(var(--brand-rgb),.1); }
+    .header-quick-layer .unit-messages-panel .mx-room { min-height: 72px; padding: 12px 2px; gap: 12px; }
+    .header-quick-layer .unit-messages-panel .mx-room:last-child { border-bottom: 0; }
+    .header-quick-layer .unit-messages-panel .mx-room-letter { flex: none; width: 42px; height: 42px; border: 1px solid rgba(var(--brand-rgb),.06); background: rgba(var(--brand-rgb),.055); font-size: 15px; }
+    .header-quick-layer .unit-messages-panel .mx-room-title { font-size: 14px; font-weight: 600; line-height: 1.35; }
+    .header-quick-layer .unit-messages-panel .mx-room-sub { font-size: 12px; line-height: 1.4; margin-top: 3px; }
+    .header-quick-layer .mx-body > .mx-note:last-child { padding: 10px 16px 8px; font-size: 10px; border-top: 1px solid var(--line); }
+    .header-quick-layer .mx-conversation-avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; color: rgb(var(--brand-rgb)); background: rgba(var(--brand-rgb),.07); font-size: 12px; font-weight: 600; }
+    .header-quick-layer .unit-messages-log { padding: 14px; gap: 12px; background: var(--page); }
+    .header-quick-layer .unit-messages-bubble { padding: 10px 12px; font-size: 13px; line-height: 1.55; box-shadow: none; }
+    .header-quick-layer .unit-messages-bubble.is-mine { background: rgba(var(--brand-rgb),.09); color: var(--ink); border-color: rgba(var(--brand-rgb),.1); }
+    .header-quick-layer .unit-messages-bubble.is-mine .unit-messages-author { color: rgb(var(--brand-rgb)); }
+    .header-quick-layer .unit-messages-compose { padding: 10px 12px; }
+    .header-quick-layer .unit-messages-compose textarea { min-height: 42px; border-radius: 14px; }
+    .header-quick-layer .unit-messages-send { width: 40px; height: 40px; min-width: 40px; }
+    .header-quick-layer .unit-messages-compose [role=status] { font-size: 10px; margin-top: 8px; }
     .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 24px rgba(7,20,42,.1); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
     .app-header.is-searching { gap: 12px; }
     .app-header.is-searching > .app-header-actions { display: none!important; }
@@ -7380,15 +7405,15 @@ const ModalPortal = ({ children }) => {
   return portalChild;
 };
 // Group-only UI demo: no backend calls, private conversations or persisted messages.
-const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName, language, onClose, classPresidentHub, hubComposing, hubComposeTitle, onComposeClose }) => {
+const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName, language, onClose, classPresidentHub, hubComposing, hubComposeTitle, onComposeClose, unreadCount = 0 }) => {
   const h = React.createElement;
   const text = (sq, en) => language === 'en' ? en : sq;
   const rooms = [
-    { id: 'group', section: text('Grupi im', 'My group'), letter: 'G', title: groupTitle || 'Grupi 1', subtitle: `${branchTitle} · ${yearTitle}`, count: '48', members: text('48 anëtarë', '48 members') },
-    { id: 'year', section: text('Viti im', 'My year'), letter: 'V', title: text(`${yearTitle} · të gjitha grupet`, `${yearTitle} · all groups`), subtitle: text('Fakulteti im', 'My faculty'), count: '142', members: text('142 anëtarë', '142 members'), wide: true },
-    { id: 'faculty', section: text('Fakulteti im', 'My faculty'), letter: 'F', title: text('Të tre vitet', 'All three years'), subtitle: text('Viti I, II dhe III', 'Year I, II and III'), count: '390', members: text('390 anëtarë', '390 members'), wide: true },
-    { id: 'programme-year', section: text('Drejtimi, të gjitha fakultetet', 'Programme, all faculties'), letter: 'D', title: text(`${branchTitle} · gjithë vendi`, `${branchTitle} · nationwide`), subtitle: text(`5 fakultete, ${yearTitle}`, `5 faculties, ${yearTitle}`), count: '2.3k', members: text('5 fakultete · 2.3k anëtarë', '5 faculties · 2.3k members'), wide: true },
-    { id: 'programme-all', section: null, letter: 'D', title: text(`${branchTitle} · të tre vitet`, `${branchTitle} · all three years`), subtitle: text('5 fakultete, Viti I, II, III', '5 faculties, Year I, II, III'), count: '6.8k', members: text('5 fakultete · 6.8k anëtarë', '5 faculties · 6.8k members'), wide: true }
+    { id: 'group', letter: 'G', title: groupTitle || text('Grupi im', 'My group'), subtitle: `${branchTitle} · ${yearTitle}` },
+    { id: 'year', letter: 'V', title: yearTitle, subtitle: text('Të gjitha grupet e vitit', 'All groups in your year'), wide: true },
+    { id: 'faculty', letter: 'F', title: text('Fakulteti im', 'My faculty'), subtitle: text('Të gjitha vitet', 'All years'), wide: true },
+    { id: 'programme-year', letter: 'D', title: branchTitle, subtitle: text(`${yearTitle} · Fakultetet e tjera`, `${yearTitle} · Other faculties`), wide: true },
+    { id: 'programme-all', letter: 'D', title: text('Gjithë drejtimi', 'Entire programme'), subtitle: text(`${branchTitle} · Të gjitha vitet`, `${branchTitle} · All years`), wide: true }
   ];
   const [selectedId, setSelectedId] = useState(null);
   const [panelTab, setPanelTab] = useState('chat');
@@ -7427,14 +7452,14 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     setMessages(previous => ({ ...previous, [selectedId]: [...(previous[selectedId] || []), message].slice(-100) }));
     setDrafts(previous => ({ ...previous, [selectedId]: '' }));
     draftRef.current?.focus({ preventScroll: true });
-    setNotice(text('Mesazhi u dërgua në grup.', 'Message sent to the group.'));
+    setNotice(text('U shtua në provën lokale.', 'Added to the local preview.'));
   };
   useEffect(() => { if (hubComposing) setPanelTab('hub'); }, [hubComposing]);
   const composingNow = Boolean(hubComposing) && panelTab === 'hub' && !selectedGroup;
   const tabButton = (id, label) => h('button', {
-    type: 'button', role: 'tab', 'aria-selected': panelTab === id ? 'true' : 'false',
+    type: 'button', role: 'tab', id: `unit-message-tab-${id}`, 'aria-controls': `unit-message-panel-${id}`, 'aria-selected': panelTab === id ? 'true' : 'false',
     className: `mx-tab${panelTab === id ? ' is-active' : ''}`, onClick: () => setPanelTab(id)
-  }, label);
+  }, label, id === 'hub' && unreadCount > 0 && h('span', { className: 'mx-unread-count', 'aria-label': text(`${unreadCount} të palexuara`, `${unreadCount} unread`) }, unreadCount > 99 ? '99+' : unreadCount));
 
   return h(ModalPortal, null, h('div', {
     className: 'unit-messages-overlay header-quick-layer',
@@ -7447,21 +7472,22 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
   },
     h('header', { className: 'unit-messages-head' },
       !selectedGroup && h('span', { className: 'unit-messages-heading-icon', 'aria-hidden': true }, h(TaskIcons.MessageCircle, { className: 'w-5 h-5' })),
-      selectedGroup && h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Kthehu te grupet', 'Back to groups'), onClick: () => { setSelectedId(null); setNotice(''); } }, '←'),
+      selectedGroup && h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': text('Kthehu te grupet', 'Back to groups'), onClick: () => { setSelectedId(null); setNotice(''); } }, h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': true }, h('path', { d: 'm14 6-6 6 6 6' }))),
+      selectedGroup && h('span', { className: 'mx-conversation-avatar', 'aria-hidden': true }, selectedGroup.letter),
       h('div', { className: 'min-w-0 flex-1' },
         nativeCreateElement('h2', { ref: headingRef, tabIndex: -1 }, selectedGroup ? selectedGroup.title : (composingNow ? hubComposeTitle : text('Mesazhet', 'Messages'))),
-        h('p', { className: 'text-xs text-secondary mt-0.5' }, selectedGroup ? selectedGroup.members : `${branchTitle} · ${yearTitle}`)),
-      h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': composingNow ? text('Mbyll', 'Close') : text('Mbyll mesazhet', 'Close messages'), onClick: composingNow ? onComposeClose : onClose }, '✕')),
+        h('p', { className: 'text-xs text-secondary mt-0.5' }, selectedGroup ? selectedGroup.subtitle : `${branchTitle} · ${yearTitle}`)),
+      h('button', { type: 'button', className: 'unit-messages-icon-button', 'aria-label': composingNow ? text('Mbyll', 'Close') : text('Mbyll mesazhet', 'Close messages'), onClick: composingNow ? onComposeClose : onClose }, h(TaskIcons.X, { className: 'w-4 h-4' }))),
 
     !selectedGroup && !composingNow && h('div', { className: 'mx-tabs', role: 'tablist' },
-      classPresidentHub && tabButton('hub', text('Njoftime', 'Notices')),
-      tabButton('chat', text('Bisedat', 'Chats'))),
+      tabButton('chat', text('Bisedat', 'Chats')),
+      classPresidentHub && tabButton('hub', text('Njoftime', 'Notices'))),
 
     !selectedGroup ? (
       panelTab === 'hub' && classPresidentHub ? (
-        h('div', { className: 'mx-body' }, classPresidentHub)
+        h('div', { className: 'mx-body', role: 'tabpanel', id: 'unit-message-panel-hub', 'aria-labelledby': 'unit-message-tab-hub' }, classPresidentHub)
       ) : (
-        h('div', { className: 'mx-body' },
+        h('div', { className: 'mx-body', role: 'tabpanel', id: 'unit-message-panel-chat', 'aria-labelledby': 'unit-message-tab-chat' },
           rooms.map(room => h(React.Fragment, { key: room.id },
             h('button', {
               type: 'button', className: 'mx-room',
@@ -7471,8 +7497,8 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
               h('span', { className: 'min-w-0 flex-1' },
                 nativeCreateElement('span', { className: 'mx-room-title' }, room.title),
                 h('span', { className: 'mx-room-sub' }, room.subtitle)),
-              h('span', { className: 'mx-room-trailing' }, h('span', { className: 'mx-room-count' }, room.count), h(TaskIcons.ChevronRight, { className: 'w-4 h-4' }))))),
-          h('p', { className: 'mx-note' }, text('Vetëm biseda në grupe. Mesazhe private nuk ka.', 'Group chats only. There are no private messages.')))
+              h('span', { className: 'mx-room-trailing', 'aria-hidden': true }, h(TaskIcons.ChevronRight, { className: 'w-4 h-4' }))))),
+          h('p', { className: 'mx-note' }, text('Bisedat janë pamje demonstrative.', 'Conversations are a demo preview.')))
       )
     ) : h(React.Fragment, null,
       h('div', { ref: logRef, className: 'unit-messages-log', role: 'log', tabIndex: 0, 'aria-live': 'polite', 'aria-relevant': 'additions', 'aria-label': text('Biseda e grupit · Shembull', 'Group conversation · Example') },
@@ -7484,7 +7510,7 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
         h('div', { className: 'unit-messages-compose-row' },
           h('textarea', { ref: draftRef, id: 'unit-group-message-draft', rows: 1, maxLength: 1000, value: draft, placeholder: text('Shkruaj në grup…', 'Write to the group…'), onChange: event => { setDrafts(previous => ({ ...previous, [selectedId]: event.target.value })); setNotice(''); } }),
           h('button', { type: 'submit', className: 'unit-messages-send', disabled: !draft.trim(), 'aria-label': text('Shto mesazhin në provën lokale', 'Add message to the local preview') }, h(TaskIcons.ArrowUp, { className: 'w-5 h-5' }))),
-        h('p', { className: 'text-xs text-secondary mt-2', role: 'status' }, notice || text('Provë Demo — jo dërgim real.', 'Demo preview — not a real send.'))))
+        h('p', { className: 'text-xs text-secondary mt-2', role: 'status' }, notice || text('Provë lokale · nuk dërgohet online.', 'Local preview · not sent online.'))))
   )));
 };
 const dateKey = (value = new Date()) => {
@@ -37896,6 +37922,7 @@ Nënshkrimi: _____________________`;
     groupTitle: studentGroupId,
     studentName,
     language: uiLanguage,
+    unreadCount: groupMessageUnreadCount,
     classPresidentHub: renderClassPresidentHub(),
     hubComposing: colloquiumFormOpen || pollFormOpen,
     hubComposeTitle: pollFormOpen ? 'Sondazh i ri' : (colloquiumDraft.label === 'Provim' ? 'Provim i ri' : 'Kolokfium i ri'),

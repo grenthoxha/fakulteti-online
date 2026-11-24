@@ -74,6 +74,34 @@ ok(!nodes(t).some(n=>n.props.className==='mx-sec'),'no repeated group heading bl
 nodes(t).find(n=>n.props.className==='mx-room').props.onClick();
 ok(stateSetters.some(x=>x[0]===0&&x[1]==='group'),'group selection still works');
 ok(nodes(t).some(n=>n.props.role==='tab'&&text(n)==='Njoftime'),'notices remain accessible in messages');
+ok(text(nodes(t).find(n=>n.props.role==='tab'))==='Bisedat','chat tab appears first');
+ok(!nodes(t).some(n=>n.props.className==='mx-room-count'),'no fabricated member counts in list');
+
+const messageState=[];let hook=0, effects=[];
+const mc=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',nativeCreateElement:h,TaskIcons:new Proxy({},{get:()=> 'Icon'}),
+ useState:value=>{const key=hook++;if(!(key in messageState))messageState[key]=value;return[messageState[key],next=>{messageState[key]=typeof next==='function'?next(messageState[key]):next;}];},
+ useRef:()=>({current:null}),useEffect:fn=>effects.push(fn),fetch:()=>{throw new Error('Messages must remain local');}});
+vm.runInContext(section('const GroupMessagesPreview =','const dateKey =')+'this.render=GroupMessagesPreview;',mc);
+const mp={branchTitle:'Psikologji',yearTitle:'Viti I',groupTitle:'Grupi 1',studentName:'Arta',language:'sq',classPresidentHub:'Hub',unreadCount:2,onClose:()=>messageState.push('closed')};
+const renderMessages=()=>{hook=0;effects=[];return mc.render(mp);};
+t=renderMessages();ok(text(find(t,'mx-unread-count'))==='2','actual notice unread count appears in tab');
+nodes(t).find(n=>n.props.id==='unit-message-tab-hub').props.onClick();t=renderMessages();
+ok(text(nodes(t).find(n=>n.props.role==='tabpanel'))==='Hub','notices open the existing group hub');
+nodes(t).find(n=>n.props.id==='unit-message-tab-chat').props.onClick();t=renderMessages();
+find(t,'mx-room').props.onClick();t=renderMessages();
+ok(find(t,'unit-messages-log')&&find(t,'mx-conversation-avatar'),'room opens conversation with group identity');
+ok(!text(find(t,'unit-messages-head')).includes('48'),'conversation header does not invent member counts');
+nodes(t).find(n=>n.type==='textarea').props.onChange({target:{value:'Pyetje për kapitullin e parë'}});t=renderMessages();
+ok(!find(t,'unit-messages-send').props.disabled,'typing enables local preview send');
+let prevented=false;find(t,'unit-messages-compose').props.onSubmit({preventDefault(){prevented=true;}});t=renderMessages();
+ok(prevented&&text(find(t,'unit-messages-log')).includes('Pyetje për kapitullin e parë'),'submit adds local message');
+ok(nodes(t).find(n=>n.type==='textarea').props.value==='','sent draft clears');
+ok(find(t,'unit-messages-send').props.disabled,'empty draft cannot submit');
+ok(text(nodes(t).find(n=>n.props.role==='status')).includes('provën lokale'),'local preview remains clearly identified');
+nodes(t).find(n=>n.props['aria-label']==='Kthehu te grupet').props.onClick();t=renderMessages();
+ok(nodes(t).filter(n=>n.props.className==='mx-room').length===5,'back restores all group destinations');
+find(t,'mx-room').props.onClick();t=renderMessages();
+ok(text(find(t,'unit-messages-log')).includes('Pyetje për kapitullin e parë'),'local conversation survives back and reopen');
 
 // One lock survives switching panels; viewport changes leave room for the keyboard.
 const cssValues={}, listeners=new Map();let cleanup;
