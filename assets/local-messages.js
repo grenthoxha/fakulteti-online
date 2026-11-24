@@ -18,6 +18,8 @@
     return result;
   };
   const uid = () => root.crypto.randomUUID();
+  const DEFAULT_GROUP_PHOTO='./assets/fakulteti-online-logo.png';
+  const groupPhoto=value=>!value||value===DEFAULT_GROUP_PHOTO?DEFAULT_GROUP_PHOTO:photo(value);
   function createStore() {
     const accounts=root.FakultetiLocalAccounts, actor=accounts?.current();
     if(!actor?.id)fail('SESSION_CHANGED');
@@ -63,7 +65,7 @@
     }
     const getRoom=(tx,step,id,fn)=>{
       tx.objectStore('rooms').get(id).onsuccess=step(room=>{
-        if(!room||!room.members.some(m=>m.id===actor.id))fail('GROUP_NOT_FOUND');fn(room);
+        if(!room||!room.members.some(m=>m.id===actor.id))fail('GROUP_NOT_FOUND');if(!room.photo)room.photo=DEFAULT_GROUP_PHOTO;fn(room);
       });
     };
     const requireOwner=room=>{if(room.ownerId!==actor.id)fail('OWNER_REQUIRED');};
@@ -71,17 +73,17 @@
     const api={
       scope,actorId:actor.id,
       subscribe(fn){subscribers.add(fn);return()=>subscribers.delete(fn);},
-      list:()=>transaction(['rooms'],'readonly',(tx,step,done)=>{tx.objectStore('rooms').getAll().onsuccess=step(rooms=>done(rooms.filter(r=>r.members.some(m=>m.id===actor.id)).sort((a,b)=>b.updatedAt-a.updatedAt)));}),
+      list:()=>transaction(['rooms'],'readonly',(tx,step,done)=>{tx.objectStore('rooms').getAll().onsuccess=step(rooms=>done(rooms.filter(r=>r.members.some(m=>m.id===actor.id)).map(r=>({...r,photo:r.photo||DEFAULT_GROUP_PHOTO})).sort((a,b)=>b.updatedAt-a.updatedAt)));}),
       create:details=>transaction(['rooms'],'readwrite',(tx,step,done)=>{
         const store=tx.objectStore('rooms');
         store.count().onsuccess=step(count=>{
           if(count>=50)fail('GROUP_LIMIT');
-          const now=Date.now(),room={id:uid(),name:clean(details.name,80,true),description:clean(details.description,500),photo:photo(details.photo),members:[me()],ownerId:actor.id,createdAt:now,updatedAt:now,lastMessage:null};
+          const now=Date.now(),room={id:uid(),name:clean(details.name,80,true),description:clean(details.description,500),photo:groupPhoto(details.photo),members:[me()],ownerId:actor.id,createdAt:now,updatedAt:now,lastMessage:null};
           store.add(room);done(room);
         });
       }),
       update:(id,details)=>transaction(['rooms'],'readwrite',(tx,step,done)=>getRoom(tx,step,id,room=>{
-        requireOwner(room);room={...room,name:clean(details.name,80,true),description:clean(details.description,500),photo:photo(details.photo),updatedAt:Date.now()};tx.objectStore('rooms').put(room);done(room);
+        requireOwner(room);room={...room,name:clean(details.name,80,true),description:clean(details.description,500),photo:groupPhoto(details.photo),updatedAt:Date.now()};tx.objectStore('rooms').put(room);done(room);
       })),
       saveMember:(id,details,memberId)=>transaction(['rooms'],'readwrite',(tx,step,done)=>getRoom(tx,step,id,room=>{
         requireOwner(room);if(memberId===room.ownerId)fail('OWNER_REQUIRED');
@@ -151,5 +153,5 @@
       fail('PHOTO_TOO_LARGE');
     }finally{root.URL.revokeObjectURL(url);}
   }
-  root.FakultetiLocalMessages=Object.freeze({createStore,preparePhoto});
+  root.FakultetiLocalMessages=Object.freeze({createStore,preparePhoto,DEFAULT_GROUP_PHOTO});
 })(window);

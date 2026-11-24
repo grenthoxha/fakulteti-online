@@ -36,10 +36,14 @@ const input=(t,label)=>{const field=nodes(t).find(n=>n.type==='label'&&text(n.ch
  ok(text(tree).includes('Grupi yt i parë'),'new account starts empty, without demo people or messages');
  ok(!nodes(tree).some(n=>n.props.role==='tab'),'group notices stay outside messages');
  aria(tree,'Krijo grup').props.onClick();tree=render();
+ ok(nodes(tree).some(n=>n.type==='img'&&n.props.src==='./assets/fakulteti-online-logo.png'),'new group form previews app logo before upload');
  input(tree,'Emri i grupit').props.onChange({target:{value:'Grupi i studimit'}});tree=render();
  input(tree,'Përshkrimi').props.onChange({target:{value:'Përsëritje para provimit'}});tree=render();
  await nodes(tree).find(n=>n.type==='input'&&n.props.type==='file').props.onChange({target:{files:[{type:'image/png'}],value:'file'}});tree=render();
  ok(nodes(tree).some(n=>n.type==='img'&&n.props.src===jpg),'group photo is previewed before saving');
+ nodes(tree).find(n=>n.type==='button'&&text(n)==='Përdor logon').props.onClick();tree=render();
+ ok(nodes(tree).some(n=>n.type==='img'&&n.props.src==='./assets/fakulteti-online-logo.png'),'custom photo can be reset to logo');
+ await nodes(tree).find(n=>n.type==='input'&&n.props.type==='file').props.onChange({target:{files:[{type:'image/png'}],value:'file'}});tree=render();
  nodes(tree).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});await tick();tree=render();
  ok(calls.includes('create')&&cls(tree,'fm-chat-log'),'creating group opens its conversation');
  ok(current.name==='Grupi i studimit'&&current.photo===jpg,'actual name and photo reach local storage');

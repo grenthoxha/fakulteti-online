@@ -3,6 +3,8 @@ const storage=new Map(),events={},root={navigator:{},addEventListener:(k,f)=>eve
 const context=vm.createContext({window:root,Intl,Date,console,Event:class{},CustomEvent:class{},setTimeout,clearTimeout});
 vm.runInContext(fs.readFileSync('assets/android-widgets.js','utf8'),context);vm.runInContext(fs.readFileSync('assets/notifications.js','utf8'),context);
 const api=root.FakultetiNotifications,now=Date.parse('2026-11-24T09:00:00Z'),base={settings:{enabled:true,exams:true,deadlines:true,schedule:true,routines:true},allow:{exams:true,home:true,schedule:true},getSessions:()=>[],deadlines:[],routines:[],routineDone:{}};
+assert.equal(api.settings().enabled,true,'reminders start enabled as requested');
+api.update({enabled:false});assert.equal(api.settings().enabled,false,'explicit opt-out is preserved');storage.delete('u_notification_settings_v1');
 const plan=options=>JSON.parse(JSON.stringify(api.plan({...base,...options},now)));
 assert.equal(plan({}).length,0);assert.equal(plan({settings:{...base.settings,enabled:false},deadlines:[{id:'x',type:'exam',date:'2026-11-25',time:'12:00'}]}).length,0);
 const exams=[{id:'exam-a',type:'exam',title:'Provimi im',date:'2026-11-25',time:'12:00',room:'Salla 103'}];
@@ -42,5 +44,5 @@ page.FakultetiNotifications.useBridge({...base,scope:'notifications-a'});const c
 assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,true);
 account={id:'b',importedLegacy:false};await tick();assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,false);assert.equal(JSON.parse(writes.at(-1).slice(16)).jobs.length,0);
 account=null;await tick();assert.equal(JSON.parse(writes.at(-1).slice(16)).enabled,false);cleanups.forEach(f=>f?.());
-console.log('PASS: real exam timings, CET/CEST, future dates, category/recurrence filters, selected timetable, deduplication, rescheduling, mobile service-worker notifications, explicit consent and local-only payloads.');
+console.log('PASS: reminder defaults, saved opt-out, real exam timings, CET/CEST, recurrence, deduplication, rescheduling, OS permissions and local-only payloads.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -3,7 +3,7 @@
   'use strict';
   const HOUR=3600000,DAY=24*HOUR,ZONE='Europe/Tirane',KEY='u_notification_settings_v1';
   const clean=(v,n=180)=>String(v||'').replace(/\s+/g,' ').trim().slice(0,n);
-  const defaults={enabled:false,exams:true,deadlines:true,schedule:true,routines:true};
+  const defaults={enabled:true,exams:true,deadlines:true,schedule:true,routines:true};
   const settings=()=>{try{return {...defaults,...JSON.parse(root.FakultetiLocalAccounts.storage.getItem(KEY)||'{}')};}catch{return {...defaults};}};
   const update=value=>{root.FakultetiLocalAccounts.storage.setItem(KEY,JSON.stringify({...settings(),...value}));root.dispatchEvent(new Event('fakulteti:reminder-settings'));};
   root.addEventListener('fakulteti:reminders-permission',event=>{if(event.detail?.granted)update({enabled:true});});
@@ -106,7 +106,10 @@
     const save=next=>{root.FakultetiLocalAccounts.storage.setItem(KEY,JSON.stringify(next));setPrefs(next);root.dispatchEvent(new Event('fakulteti:reminder-settings'));};
     useEffect(()=>{const granted=e=>{if(e.detail?.granted){save({...settings(),enabled:true});setNotice(e.detail.exact===false?'Njoftimet janë aktive. Lejo “Alarmet dhe kujtesat” për kohë më të saktë.':'Kujtesat u aktivizuan.');}else setNotice('Lejo njoftimet te cilësimet e telefonit.');};const error=e=>setNotice(e.detail);root.addEventListener('fakulteti:reminders-permission',granted);root.addEventListener('fakulteti:reminder-error',error);return()=>{root.removeEventListener('fakulteti:reminders-permission',granted);root.removeEventListener('fakulteti:reminder-error',error);};},[]);
     const toggle=async()=>{if(prefs.enabled){save({...prefs,enabled:false});setNotice('Kujtesat u ndalën.');return;}try{const result=await permission();if(result==='granted'){save({...prefs,enabled:true});setNotice('Kujtesat u aktivizuan.');}else if(result!=='pending')setNotice(result==='unsupported'?'Ky browser nuk mbështet njoftime. Përdor APK-në e përditësuar.':'Lejo njoftimet te cilësimet e browser-it.');}catch{setNotice('Leja e njoftimeve nuk u aktivizua.');}};
+    const native=Boolean(root.fakultetiAndroid?.scheduledRemindersSupported||root.fakultetiFlutter);
+    const allow=async()=>{try{const result=await permission();if(result==='granted'){save({...prefs,enabled:true});setNotice('Kujtesat u aktivizuan.');}else if(result!=='pending')setNotice(result==='unsupported'?'Ky browser nuk mbështet njoftime.':'Lejo njoftimet te cilësimet e telefonit ose browser-it.');}catch{setNotice('Leja e njoftimeve nuk u aktivizua.');}};
     return h('div',{className:'notification-demo-actions',style:{flexWrap:'wrap'}},h('button',{type:'button',onClick:toggle,'aria-pressed':prefs.enabled},prefs.enabled?'Ndali kujtesat':'Aktivizo kujtesat'),
+      prefs.enabled&&(native||root.Notification?.permission!=='granted')&&h('button',{type:'button',onClick:allow},'Lejo njoftimet'),
       prefs.enabled&&['exams','deadlines','schedule','routines'].map((key,i)=>h('label',{key,style:{display:'inline-flex',gap:'6px',alignItems:'center',fontSize:'13px'}},h('input',{type:'checkbox',checked:prefs[key],onChange:e=>save({...prefs,[key]:e.target.checked})}),['Provimet','Afatet','Orari','Detyrat'][i])),
       h('small',{style:{flexBasis:'100%',lineHeight:1.4}},root.fakultetiAndroid?.scheduledRemindersSupported||root.fakultetiFlutter?'Kujtesat ruhen në telefon.':'Në browser kujtesat kontrollohen ndërsa app-i është i hapur. Për kujtesa me app-in të mbyllur përdor APK-në.'),notice&&h('small',{role:'status',style:{flexBasis:'100%'}},notice));
   }

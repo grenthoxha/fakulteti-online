@@ -5,6 +5,7 @@
   const icon=name=>h('svg',{viewBox:'0 0 24 24',width:19,height:19,fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true},h('path',{d:paths[name]}));
   const initials=name=>String(name||'G').trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase();
   const avatar=(name,photo,size='')=>h('span',{className:'fm-avatar '+size},photo?h('img',{src:photo,alt:'',draggable:false}):initials(name));
+  const defaultGroupPhoto=root.FakultetiLocalMessages.DEFAULT_GROUP_PHOTO||'./assets/fakulteti-online-logo.png';
   const emptyDraft=()=>({name:'',description:'',photo:'',email:'',role:'member'});
   function Screen({branchTitle,yearTitle,language,onClose,Portal=React.Fragment}) {
     const t=(sq,en)=>language==='en'?en:sq;
@@ -76,7 +77,10 @@
     const count=room?`${room.members.length} ${room.members.length===1?t('anëtar','member'):t('anëtarë','members')}`:'';
     const title=page==='list'?t('Mesazhet','Messages'):page==='create'?t('Grup i ri','New group'):page==='edit'?t('Ndrysho grupin','Edit group'):page==='member'?(memberId?t('Anëtari','Member'):t('Shto anëtar','Add member')):page==='info'?t('Detajet e grupit','Group details'):page==='photo'?t('Fotografia','Photo'):room?.name||t('Mesazhet','Messages');
     const field=(label,key,props={})=>h('label',{className:'fm-field'},h('span',null,label),h(props.multiline?'textarea':'input',{...props,multiline:undefined,value:form[key],onChange:e=>setForm({...form,[key]:e.target.value}),disabled:busy}));
-    const photoEditor=()=>h('div',{className:'fm-photo-editor'},h('button',{type:'button',className:'fm-photo-pick',onClick:()=>photoInput.current?.click(),disabled:busy,'aria-label':t('Zgjidh fotografinë','Choose photo')},avatar(form.name,form.photo,'fm-avatar-large'),h('span',null,icon('camera'),form.photo?t('Ndrysho foton','Change photo'):t('Shto foto','Add photo'))),form.photo&&h('button',{type:'button',className:'fm-text-button',disabled:busy,onClick:()=>setForm({...form,photo:''})},t('Hiqe foton','Remove photo')),h('input',{type:'file',accept:'image/jpeg,image/png,image/webp,image/gif',ref:photoInput,hidden:true,onChange:e=>choosePhoto(e,'avatar')}));
+    const photoEditor=()=>{
+      const isGroup=page==='create'||page==='edit',image=form.photo||(isGroup?defaultGroupPhoto:'');
+      return h('div',{className:'fm-photo-editor'},h('button',{type:'button',className:'fm-photo-pick',onClick:()=>photoInput.current?.click(),disabled:busy,'aria-label':t('Zgjidh fotografinë','Choose photo')},avatar(form.name,image,'fm-avatar-large'),h('span',null,icon('camera'),image?t('Ndrysho foton','Change photo'):t('Shto foto','Add photo'))),image&&(!isGroup||image!==defaultGroupPhoto)&&h('button',{type:'button',className:'fm-text-button',disabled:busy,onClick:()=>setForm({...form,photo:isGroup?defaultGroupPhoto:''})},isGroup?t('Përdor logon','Use logo'):t('Hiqe foton','Remove photo')),h('input',{type:'file',accept:'image/jpeg,image/png,image/webp,image/gif',ref:photoInput,hidden:true,onChange:e=>choosePhoto(e,'avatar')}));
+    };
     let body;
     if(page==='list'){
       const folded=v=>v.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');const list=rooms.filter(r=>folded(r.name+' '+r.description).includes(folded(query)));

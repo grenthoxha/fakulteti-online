@@ -26,7 +26,7 @@ APK-ja 1.0.9 më sipër ngarkon app-in e përditësuar nga GitHub Pages. Ndryshi
 
 ## Mesazhet lokale
 
-Te **Mesazhet → +** mund të krijosh grup, të vendosësh foto dhe përshkrim, të shtosh kontakte me emër/email e rol dhe të ruash mesazhe e foto në bisedë. Prek emrin e grupit për detajet dhe anëtarët. Fotot hapen veçmas; ndryshimi dhe fshirja e grupit bëhen nga detajet, me konfirmim para fshirjes.
+Te **Mesazhet → +** mund të krijosh grup me logon e app-it si foto fillestare, ta ndryshosh foton dhe përshkrimin, të shtosh kontakte me emër/email e rol dhe të ruash mesazhe e foto në bisedë. Prek emrin e grupit për detajet dhe anëtarët. Fotot hapen veçmas; ndryshimi dhe fshirja e grupit bëhen nga detajet, me konfirmim para fshirjes.
 
 Grupet, kontaktet, fotot, bisedat dhe draftet ruhen në IndexedDB, veçmas për çdo llogari në këtë pajisje/browser. Nuk dërgohen ftesa ose mesazhe te pajisje të tjera. Fshirja e të dhënave të browser-it ose çinstalimi mund t'i largojë; ato nuk përfshihen në backup-in e vjetër të localStorage.
 
@@ -36,7 +36,7 @@ Grupet, kontaktet, fotot, bisedat dhe draftet ruhen në IndexedDB, veçmas për 
 
 ## Kujtesat në telefon
 
-Për provime, afate, orar dhe detyra instalo **APK 1.0.9** si përditësim mbi versionin ekzistues. Hape zilen → **Aktivizo kujtesat** dhe lejo njoftimet. Zgjidh kategoritë që dëshiron; për kohë më të saktë lejo edhe **Alarmet dhe kujtesat**. Pomodoro ka çelësin e vet të njoftimeve te cilësimet e kohëmatësit.
+Për provime, afate, orar dhe detyra instalo **APK 1.0.9** si përditësim mbi versionin ekzistues. Hape zilen → **Cilësimet e njoftimeve → Lejo njoftimet**. Kujtesat janë aktive si zgjedhje fillestare; ndalimi ose kategoritë që i ke ndryshuar vetë ruhen. Zgjidh kategoritë që dëshiron; për kohë më të saktë lejo edhe **Alarmet dhe kujtesat**. Pomodoro ka çelësin e vet të njoftimeve te cilësimet e kohëmatësit.
 
 Kujtesat ruhen në telefon dhe mund të shfaqen kur APK-ja është në prapavijë. Provimet njoftohen një ditë dhe një orë përpara; orari pa orë të provimit përdor kujtesë në 09:00. Orari dhe detyrat e përsëritura rifreskohen për 14 ditët e ardhshme kur e hap app-in. Në browser kujtesat kontrollohen ndërsa faqja është e hapur; push nga serveri dhe mesazhe online nuk janë aktivizuar.
 

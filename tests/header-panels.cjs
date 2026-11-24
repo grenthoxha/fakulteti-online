@@ -11,7 +11,7 @@ const ok = (v,m) => {assert(v,m); checks++;};
 function notificationFixture(extra={}) {
  const actions=[];
  const c=vm.createContext({React:{createElement:h},ModalPortal:'Portal',window:{FakultetiNotifications:{Settings:'Settings'},fakultetiAndroid:{demoRepeatSupported:true}},androidNativeReady:true,androidDemoRepeating:false,
- notificationPreviewOpen:true,notificationCenterOpen:false,notificationTab:'all',notificationUnreadCount:2,groupMessageUnreadCount:0,renderClassPresidentHub:()=>h('section',{id:'class-president-hub'},'Group notices'),
+ notificationPreviewOpen:true,notificationCenterOpen:false,notificationTab:'all',notificationSettingsOpen:false,notificationUnreadCount:2,groupMessageUnreadCount:0,renderClassPresidentHub:()=>h('section',{id:'class-president-hub'},'Group notices'),setNotificationSettingsOpen:value=>{c.notificationSettingsOpen=value;},
  notificationFeed:Array.from({length:6},(_,i)=>({id:String(i),group:i<3?'today':'week',title:'Title '+i,sub:'Detail '+i,time:'Sot',unread:i<2,action:()=>actions.push(['open',i])})),
  unitUiIcon:()=>null,UNIT_UI_ICONS:{},setNotificationPreviewOpen:v=>actions.push(['preview',v]),setNotificationCenterOpen:v=>actions.push(['center',v]),markNotificationsRead:v=>actions.push(['read',...v]),setNotificationTab:v=>actions.push(['tab',v]),setView:v=>actions.push(['view',v]),...extra});
  vm.runInContext(section('  const renderNotificationCenter =','  /* ── 12')+'this.render=renderNotificationCenter;',c);
@@ -20,15 +20,20 @@ function notificationFixture(extra={}) {
 let f=notificationFixture(), t=f.render();
 ok(find(t,'notification-screen'),'notifications fill the screen below app header');
 ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===6,'bell opens all notifications directly');
-ok(nodes(t).some(n=>n.type==='Settings'),'notification settings remain accessible');
-ok(text(t).includes('Provo çdo 5 min'),'native demo remains accessible');
+ok(!nodes(t).some(n=>n.type==='Settings'),'reminder controls stay out of main notification list');
+ok(!text(t).includes('Provo çdo 5 min'),'native demo stays out of main notification list');
+nodes(t).find(n=>n.type==='button'&&text(n)==='Cilësimet e njoftimeve').props.onClick();t=f.render();
+ok(nodes(t).some(n=>n.type==='Settings')&&text(t).includes('Provo çdo 5 min'),'settings open reminder controls and preserve demo functions');
+ok(!nodes(t).some(n=>n.props.className?.includes('notification-row')),'settings are a separate screen');
+nodes(t).find(n=>n.props['aria-label']==='Kthehu te njoftimet').props.onClick();t=f.render();
+ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===6,'back restores notification list');
 nodes(t).find(n=>n.props['aria-label']==='Mbyll njoftimet').props.onClick();
 ok(JSON.stringify(f.actions)==='[["center",false],["preview",false]]','close exits current and legacy notification opening paths');
 f.actions.length=0;find(t,'notification-row').props.onClick();
 ok(JSON.stringify(f.actions)==='[["center",false],["preview",false],["read","0"],["open",0]]','item closes screen, marks read and navigates');
 f=notificationFixture({notificationPreviewOpen:false,notificationCenterOpen:true});t=f.render();
-ok(nodes(t).some(n=>n.type==='Settings'),'full center retains reminder settings');
-ok(text(t).includes('Provo çdo 5 min'),'full center retains native demo');
+ok(!nodes(t).some(n=>n.type==='Settings'),'full center opens with minimal list');
+ok(!text(t).includes('Provo çdo 5 min'),'full center does not expose demo controls by default');
 ok(nodes(t).filter(n=>n.props.className?.includes('notification-row')).length===6,'full center retains all items');
 f=notificationFixture({notificationFeed:[]});ok(text(f.render()).includes('Nuk ka njoftime'),'notification empty state');
 f=notificationFixture({notificationPreviewOpen:false,notificationCenterOpen:true,notificationTab:'group'});t=f.render();

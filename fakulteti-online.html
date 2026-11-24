@@ -1563,6 +1563,27 @@
     .notification-screen .notification-header { padding: 14px; }
     .notification-screen .notification-content { padding-bottom: 1rem; }
     @media (prefers-reduced-motion: reduce) { .notification-screen .notification-panel { animation: none; } }
+    .notification-screen .notification-panel { background: var(--surface); }
+    .notification-screen .notification-heading-copy h1 { font-size: 16px; letter-spacing: -.02em; }
+    .notification-screen .notification-control { width: 34px; height: 34px; background: transparent; }
+    .notification-screen .notification-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 0; margin-top: 12px; gap: 6px; border: 0; background: transparent; }
+    .notification-screen .notification-tabs button { flex: 0 0 auto; min-height: 34px; padding: 6px 10px; font-size: 12px; }
+    .notification-screen .notification-tabs button.is-active { color: var(--notification-accent); background: rgba(var(--brand-rgb),.07); box-shadow: none; }
+    .notification-screen .notification-content { padding: 4px 16px 16px; }
+    .notification-screen .notification-section + .notification-section { margin-top: 20px; }
+    .notification-screen .notification-section-heading { padding: 12px 0 3px; }
+    .notification-screen .notification-section-heading h2 { font-size: 11px; }
+    .notification-screen .notification-list { gap: 0; }
+    .notification-screen .notification-row { padding: 13px 0; border: 0; border-radius: 0; background: transparent; }
+    .notification-screen .notification-row + .notification-row { border-top: 1px solid var(--line); }
+    .notification-screen .notification-row:hover { background: var(--surface-muted); }
+    .notification-screen .notification-icon { width: 34px; height: 34px; border-radius: 11px; }
+    .notification-screen .notification-item-detail { -webkit-line-clamp: 2; margin-top: 3px; }
+    .notification-screen .notification-item-meta { margin-top: 5px; }
+    .notification-screen .notification-item-meta > svg:first-child { display: none; }
+    .notification-screen .notification-footer { padding-top: 6px; padding-bottom: max(6px,env(safe-area-inset-bottom,0px)); }
+    .notification-preferences { max-width: 560px; margin: 0 auto; padding: 14px 0; }
+    .notification-preferences > .notification-demo-actions:first-child { gap: 12px; padding-bottom: 18px; }
     .notification-group-hub { color: var(--ink); }
     .notification-group-hub .mx-hub { padding-bottom: 8px; }
     .notification-tabs { flex-wrap: wrap; }
@@ -1652,9 +1673,9 @@
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
-  <script src="./assets/notifications.js?v=2"></script>
-  <script src="./assets/local-messages.js?v=1"></script>
-  <script src="./assets/group-messages-ui.js?v=1"></script>
+  <script src="./assets/notifications.js?v=3"></script>
+  <script src="./assets/local-messages.js?v=2"></script>
+  <script src="./assets/group-messages-ui.js?v=2"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
@@ -11381,6 +11402,7 @@ function AcademyApp({
   }, []);
   const notificationBellRef = useRef(null);
   const [notificationTab, setNotificationTab] = useState('all');
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
     try { const stored = JSON.parse(unitStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
@@ -32825,7 +32847,7 @@ Nënshkrimi: _____________________`;
   const renderNotificationCenter = () => {
     if (!notificationCenterOpen && !notificationPreviewOpen) return null;
     const ce = React.createElement;
-    const closeNotifications = () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(false); };
+    const closeNotifications = () => { setNotificationSettingsOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(false); };
     const unreadDot = item => ce('span', {
       className: 'notification-unread-dot', 'aria-label': item.unread ? 'I palexuar' : undefined,
       style: { visibility: item.unread ? 'visible' : 'hidden' }
@@ -32843,25 +32865,27 @@ Nënshkrimi: _____________________`;
       ce('span', { className: 'notification-icon' }, unitUiIcon(UNIT_UI_ICONS.check, 'w-6 h-6')),
       ce('h2', null, unreadOnly ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'),
       ce('p', null, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'));
+    const preferences = ce('section', { className: 'notification-preferences', 'aria-label': 'Cilësimet e njoftimeve' },
+          ce(window.FakultetiNotifications.Settings),
+            androidNativeReady && ce('div', { className: 'notification-demo-actions' },
+              ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
+              window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')));
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
     return ce('div', { className: 'notification-layer notification-screen' },
       ce('section', { id: 'notification-center', className: 'notification-panel', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-center-title' },
         ce('header', { className: 'notification-header' },
           ce('div', { className: 'notification-heading-row' },
-            ce('button', { type: 'button', onClick: closeNotifications, 'aria-label': 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
-            ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, 'Njoftimet'), ce('p', null, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
-            ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
-          ce(window.FakultetiNotifications.Settings),
-            androidNativeReady && ce('div', { className: 'notification-demo-actions' },
-              ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
-              window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
-          ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount], ['group', 'Nga grupi', groupMessageUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
-        ce('div', { className: 'notification-content' }, notificationTab === 'group' ? ce('div', { className: 'notification-group-hub' }, renderClassPresidentHub()) : groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
+            ce('button', { type: 'button', onClick: notificationSettingsOpen ? () => setNotificationSettingsOpen(false) : closeNotifications, 'aria-label': notificationSettingsOpen ? 'Kthehu te njoftimet' : 'Mbyll njoftimet', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.back)),
+            ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, notificationSettingsOpen ? 'Cilësimet e njoftimeve' : 'Njoftimet'), !notificationSettingsOpen && notificationUnreadCount > 0 && ce('p', null, `${notificationUnreadCount} të palexuara`)),
+            !notificationSettingsOpen && ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
+          !notificationSettingsOpen && ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount], ['group', 'Nga grupi', groupMessageUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
+        ce('div', { className: 'notification-content' }, notificationSettingsOpen ? preferences : notificationTab === 'group' ? ce('div', { className: 'notification-group-hub' }, renderClassPresidentHub()) : groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
           ce('div', { className: 'notification-list' }, group.items.map(row)))) : empty(notificationTab === 'unread')),
-        ce('footer', { className: 'notification-footer' }, ce('button', {
-    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("week")) ? 'true' : undefined, type: 'button', onClick: () => { closeNotifications(); setView('week'); } }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
+        !notificationSettingsOpen && ce('footer', { className: 'notification-footer' }, ce('button', {
+          type: 'button', onClick: () => setNotificationSettingsOpen(true)
+        }, unitUiIcon(UNIT_UI_ICONS.settings, 'w-4 h-4'), 'Cilësimet e njoftimeve', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4 notification-chevron')))));
   };
 
   /* ── 12 · KARTELA DIGJITALE ── */
@@ -35631,7 +35655,7 @@ Nënshkrimi: _____________________`;
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     ref: notificationBellRef,
-    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationPreviewOpen(false); setNotificationCenterOpen(open => !open); },
+    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationPreviewOpen(false); setNotificationSettingsOpen(false); setNotificationCenterOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
     title: "Njoftimet",
     "aria-haspopup": "dialog",
