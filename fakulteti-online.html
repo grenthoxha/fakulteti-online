@@ -1573,21 +1573,21 @@
     .header-quick-layer .mx-room { width: calc(100% - 24px); margin: 0 12px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
     .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
     .header-quick-layer .mx-room-count { background: transparent; }
-    .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 60px rgba(7,20,42,.18); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
+    .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 24px rgba(7,20,42,.1); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
     .app-header.is-searching { gap: 12px; }
     .app-header.is-searching > .app-header-actions { display: none!important; }
-    .app-header.is-searching > .app-header-identity { flex: 0 1 auto; max-width: 48%; }
+    .app-header.is-searching > .app-header-identity { flex: 1; }
     .app-header.is-searching .unit-brand-mark { flex-shrink: 0; }
     .app-header.is-searching .unit-brand-name { flex: 1; min-width: 0; }
     @media (min-width: 1024px) { .app-header.is-searching > .app-header-identity { display: none; } }
-    .app-header.is-searching > .header-search-heading { display: flex; flex: 1; min-width: 0; padding: 0; border: 0; animation: notification-preview-enter .18s ease-out both; }
-    .app-header.is-searching .header-search-field { min-height: 40px; }
-    .app-header.is-searching .notification-control { width: 36px; height: 36px; }
+    .app-header.is-searching > .header-search-heading { display: flex; flex: 0 1 45%; max-width: 260px; min-width: 0; padding: 0; border: 0; animation: notification-preview-enter .18s ease-out both; }
+    .app-header.is-searching .header-search-field { min-height: 36px; gap: 4px; padding: 0 4px 0 10px; border: 0; border-radius: 10px; background: rgba(var(--brand-rgb),.045); }
+    .app-header.is-searching .notification-control { width: 32px; height: 32px; background: transparent; }
     @media (max-width: 420px) {
       .app-header.is-searching { gap: 8px; }
       .app-header.is-searching > .header-search-heading { gap: 4px; }
-      .app-header.is-searching .header-search-field { gap: 6px; padding-inline: 8px; }
-      .app-header.is-searching .notification-control { width: 32px; height: 36px; }
+      .app-header.is-searching .header-search-field { gap: 2px; padding: 0 2px 0 8px; }
+      .app-header.is-searching .notification-control { width: 28px; height: 32px; }
     }
     .header-search-heading { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); flex: none; }
     .header-search-field { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
@@ -32713,7 +32713,6 @@ Nënshkrimi: _____________________`;
     const ce = React.createElement;
     return ce('div', { className: 'header-search-heading', role: 'search', 'aria-label': 'Kërkimi në aplikacion' },
           ce('label', { className: 'header-search-field' },
-            unitUiIcon(UNIT_UI_ICONS.search, "w-[18px] h-[18px] text-tertiary shrink-0"),
             ce("input", {
               id: "unit-search-input",
               type: "text",
@@ -32728,10 +32727,10 @@ Nënshkrimi: _____________________`;
               "aria-label": "Kërko",
               className: "flex-1 min-w-0 bg-transparent text-base text-primary focus:outline-none placeholder:text-tertiary"
             }),
-            search && ce("button", { type: "button", onClick: () => setSearch(''), "aria-label": "Fshi tekstin", className: "w-6 h-6 rounded-full bg-black/10 dark:bg-white/15 text-secondary flex items-center justify-center shrink-0 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.close, "w-3 h-3"))),
-          ce('button', { type: 'button', onClick: closeSearchPage, 'aria-label': 'Mbyll kërkimin', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4')));
+            ce('button', { type: 'button', onClick: closeSearchPage, 'aria-label': 'Mbyll kërkimin', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))));
   };
   const renderSearchPage = () => {
+    if (!search.trim() && !recentSearches.length) return null;
     const ce = React.createElement;
     const groups = buildSearchGroups();
     const total = groups.reduce((sum, g) => sum + g.items.length, 0);

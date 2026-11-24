@@ -59,7 +59,8 @@ ok(searchActions.at(-1)[1]==='courses','search category filter retained');
 find(t,'header-quick-backdrop').props;find(t,'header-quick-layer').props.onClick();
 ok(searchActions.at(-1)==='close','outside tap closes search');
 c.buildSearchGroups=()=>[];ok(text(c.render()).includes('Asnjë rezultat'),'search no-results state');
-c.search='';ok(text(c.render()).includes('Kërko në lëndët'),'search initial state');
+c.search='';ok(c.render()===null,'empty search opens only the light header field');
+ok(nodes(headerInput).filter(n=>n.type==='button').length===1,'header field has a single close button');
 
 const stateSetters=[], initial=[];
 const m=vm.createContext({React:{createElement:h,Fragment:'Fragment'},ModalPortal:'Portal',nativeCreateElement:h,TaskIcons:new Proxy({},{get:()=> 'Icon'}),
