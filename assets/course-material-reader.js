@@ -90,11 +90,11 @@
     return h('div', { className: 'cm-archive-list' }, h('p', null, 'Përmbajtja e skedarit SPSS'), data.entries.map((entry, i) => h('div', { key: i }, h('span', null, entry.name), h('small', null, Math.ceil(entry.size / 1024) + ' KB'))), h('p', null, 'Analizat interaktive të këtij formati hapen në SPSS. Origjinali mund të shkarkohet.'));
   }
   function Reader({ file, storage }) {
-    const [zoom, setZoom] = React.useState(false), [failed, setFailed] = React.useState(false);
+    const [zoom, setZoom] = React.useState(false), [failed, setFailed] = React.useState(false), [loaded, setLoaded] = React.useState(false);
     const url = safePreview(file);
     if (!url) return h('div', { className: 'cm-reader-error', role: 'alert' }, 'Pamja e materialit nuk është në dispozicion.');
     if (file.preview.type === 'pdf') return h(PdfReader, { key: file.id, file, storage });
-    if (file.preview.type === 'image') return h('div', { className: 'cm-photo-reader' + (zoom ? ' is-zoomed' : '') }, failed ? h('div', { className: 'cm-reader-error', role: 'alert' }, 'Fotoja nuk u hap. Kontrollo lidhjen.', button('Provo përsëri', 'Provo përsëri', { onClick: () => setFailed(false) })) : h('img', { src: url, alt: file.title, decoding: 'async', onDoubleClick: () => setZoom(value => !value), onError: () => setFailed(true), draggable: false }), button(zoom ? 'Përshtat fotografinë' : 'Zmadho fotografinë', zoom ? '−' : '+', { className: 'cm-photo-zoom', onClick: () => setZoom(value => !value) }));
+    if (file.preview.type === 'image') return h('div', { className: 'cm-photo-reader' + (zoom ? ' is-zoomed' : '') }, !loaded && !failed && h('div', { className: 'cm-reader-status', role: 'status' }, 'Duke hapur fotografinë…'), failed ? h('div', { className: 'cm-reader-error', role: 'alert' }, 'Fotoja nuk u hap. Kontrollo lidhjen.', button('Provo përsëri', 'Provo përsëri', { onClick: () => { setLoaded(false); setFailed(false); } })) : h('img', { src: url, alt: file.title, decoding: 'async', onLoad: () => setLoaded(true), onDoubleClick: () => setZoom(value => !value), onError: () => setFailed(true), draggable: false }), button(zoom ? 'Përshtat fotografinë' : 'Zmadho fotografinë', zoom ? '−' : '+', { className: 'cm-photo-zoom', onClick: () => setZoom(value => !value) }));
     return h(DataReader, { key: file.id, file });
   }
   global.FakultetiMaterialReader = { Reader, PdfReader, DataReader, safePreview, readPosition, savePosition };
