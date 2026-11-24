@@ -1548,6 +1548,44 @@
   <link rel="stylesheet" href="./assets/writing-materials.css?v=20261006-1">
   <link rel="stylesheet" href="./assets/requested-refinements.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/video-viewer.css?v=20261108-youtube-native">
+  <style id="header-quick-panels">
+    /* Header quick panels share the app palette and leave the current page visible. */
+    .header-quick-layer { position: fixed; inset: var(--header-quick-top,calc(var(--app-header-height,64px) + 8px)) 0 0; z-index: 95; }
+    .header-quick-backdrop { position: absolute; inset: -8px 0 0; background: rgba(8,15,30,.08); }
+    .header-quick-layer .notification-preview { top: 0; right: 10px; width: min(400px,calc(100vw - 20px)); max-height: min(560px,var(--header-quick-height,calc(100dvh - 88px))); border-radius: 18px; }
+    .header-quick-layer .notification-preview-list { display: block; padding: 0 12px; }
+    .header-quick-layer .notification-row { border: 0; border-radius: 0; background: transparent; padding: 13px 2px; }
+    .header-quick-layer .notification-row + .notification-row { border-top: 1px solid var(--line); }
+    .header-quick-layer .notification-row:hover { background: var(--surface-muted); }
+    .header-quick-layer .notification-row.is-unread .notification-icon { background: rgba(var(--brand-rgb),.12); }
+    .header-quick-layer .notification-item-meta { margin-top: 5px; }
+    .header-quick-layer .notification-item-meta svg { display: none; }
+    .header-quick-layer .notification-preview-footer { padding: 8px 12px; }
+    .header-quick-layer .notification-view-all { background: transparent; min-height: 36px; }
+    .unit-messages-overlay.header-quick-layer { align-items: flex-start; padding: 0 10px; background: transparent; backdrop-filter: none; }
+    .header-quick-layer .unit-messages-panel { position: relative; width: min(400px,100%); height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); max-height: var(--header-quick-height,calc(100dvh - 88px)); border: 1px solid var(--line); border-radius: 18px; }
+    .header-quick-layer .unit-messages-panel.is-groups { height: auto; }
+    .header-quick-layer .unit-messages-head { padding: 12px; }
+    .header-quick-layer .unit-messages-head h2 { font-size: 16px; }
+    .header-quick-layer .unit-messages-heading-icon { display: none; }
+    .header-quick-layer .mx-tabs { margin: 8px 12px; }
+    .header-quick-layer .mx-body { padding-bottom: 8px; }
+    .header-quick-layer .mx-room { width: calc(100% - 24px); margin: 0 12px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+    .header-quick-layer .mx-room-letter { width: 38px; height: 38px; border-radius: 50%; }
+    .header-quick-layer .mx-room-count { background: transparent; }
+    .header-search-panel { position: absolute; top: 0; right: 10px; display: flex; flex-direction: column; width: min(520px,calc(100vw - 20px)); max-height: min(600px,var(--header-quick-height,calc(100dvh - 88px))); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 60px rgba(7,20,42,.18); overflow: hidden; animation: notification-preview-enter .18s ease-out both; }
+    .header-search-heading { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); flex: none; }
+    .header-search-field { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
+    .header-search-field:focus-within { border-color: rgba(var(--brand-rgb),.45); }
+    #unit-search-input { background: transparent!important; border: 0!important; padding: 0!important; box-shadow: none!important; border-radius: 0!important; min-height: 0!important; }
+    .header-search-results { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 14px 14px; }
+    .header-search-results > div:first-child { margin-top: 12px; }
+    .header-search-results section { margin-top: 14px; }
+    .header-search-results section > div:last-of-type { border: 0; padding: 0; background: transparent; }
+    .header-search-results section button { overflow-wrap: anywhere; }
+    @media (prefers-reduced-motion: reduce) { .header-search-panel { animation: none; } }
+
+  </style>
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -7338,7 +7376,7 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     { id: 'programme-all', section: null, letter: 'D', title: text(`${branchTitle} · të tre vitet`, `${branchTitle} · all three years`), subtitle: text('5 fakultete, Viti I, II, III', '5 faculties, Year I, II, III'), count: '6.8k', members: text('5 fakultete · 6.8k anëtarë', '5 faculties · 6.8k members'), wide: true }
   ];
   const [selectedId, setSelectedId] = useState(null);
-  const [panelTab, setPanelTab] = useState(classPresidentHub ? 'hub' : 'chat');
+  const [panelTab, setPanelTab] = useState('chat');
   const [drafts, setDrafts] = useState({});
   const [messages, setMessages] = useState({});
   const [notice, setNotice] = useState('');
@@ -7360,11 +7398,6 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     { id: 'sample-2', author: 'Driton Berisha', body: text('Po! Secili mund të sjellë nga tri pyetje për diskutim.', 'Yes! Each of us can bring three questions to discuss.') }
   ]) : [];
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, []);
-  useEffect(() => {
     if (selectedId) headingRef.current?.focus({ preventScroll: true });
     else if (lastRoomRef.current) roomButtons.current[lastRoomRef.current]?.focus({ preventScroll: true });
   }, [selectedId]);
@@ -7381,6 +7414,7 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
     draftRef.current?.focus({ preventScroll: true });
     setNotice(text('Mesazhi u dërgua në grup.', 'Message sent to the group.'));
   };
+  useEffect(() => { if (hubComposing) setPanelTab('hub'); }, [hubComposing]);
   const composingNow = Boolean(hubComposing) && panelTab === 'hub' && !selectedGroup;
   const tabButton = (id, label) => h('button', {
     type: 'button', role: 'tab', 'aria-selected': panelTab === id ? 'true' : 'false',
@@ -7388,11 +7422,11 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
   }, label);
 
   return h(ModalPortal, null, h('div', {
-    className: 'unit-messages-overlay',
+    className: 'unit-messages-overlay header-quick-layer',
     id: 'unit-group-messages',
     'aria-label': text('Mesazhet në grupe', 'Group messages'),
     onClick: onClose
-  }, h('section', {
+  }, h('div', { className: 'header-quick-backdrop', 'aria-hidden': true }), h('section', {
     className: `unit-messages-panel${selectedGroup ? '' : ' is-groups'}`,
     onClick: event => event.stopPropagation()
   },
@@ -7414,7 +7448,6 @@ const GroupMessagesPreview = ({ branchTitle, yearTitle, groupTitle, studentName,
       ) : (
         h('div', { className: 'mx-body' },
           rooms.map(room => h(React.Fragment, { key: room.id },
-            room.section && h('div', { className: 'mx-sec' }, room.section),
             h('button', {
               type: 'button', className: 'mx-room',
               ref: element => { roomButtons.current[room.id] = element; },
@@ -11389,30 +11422,7 @@ function AcademyApp({
     if (next === false || !window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) setNotificationPreviewOpenRaw(next);
   }, []);
   const notificationBellRef = useRef(null);
-  const [notificationPreviewPosition, setNotificationPreviewPosition] = useState({ top: 64, right: 12 });
-  useEffect(() => {
-    if (!notificationPreviewOpen) return;
-    const position = () => {
-      const bell = notificationBellRef.current;
-      if (!bell) return;
-      const rect = bell.getBoundingClientRect();
-      const width = Math.min(380, window.innerWidth - 24);
-      const top = Math.max(8, Math.min(rect.bottom + 10, window.innerHeight - 140));
-      const right = Math.max(12, Math.min(window.innerWidth - rect.right, window.innerWidth - width - 12));
-      setNotificationPreviewPosition(previous => previous.top === top && previous.right === right ? previous : { top, right });
-    };
-    position();
-    window.addEventListener('resize', position);
-    window.addEventListener('scroll', position, true);
-    return () => { window.removeEventListener('resize', position); window.removeEventListener('scroll', position, true); };
-  }, [notificationPreviewOpen]);
   const [notificationTab, setNotificationTab] = useState('all');
-  useEffect(() => {
-    if (!notificationCenterOpen && !notificationPreviewOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previous; };
-  }, [notificationCenterOpen, notificationPreviewOpen]);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
     try { const stored = JSON.parse(unitStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
   });
@@ -11689,7 +11699,7 @@ function AcademyApp({
         setScheduleInsightsOpen(false);
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setSearchOpen(true);
+        openHeaderSearch();
       }
     };
     window.addEventListener('keydown', handleGlobalKey);
@@ -11934,6 +11944,39 @@ function AcademyApp({
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('all');
+  const openHeaderSearch = () => {
+    setNotificationPreviewOpen(false);
+    setNotificationCenterOpen(false);
+    setGroupMessagesOpen(false);
+    setSearchOpen(true);
+  };
+  const headerPanelOpen = notificationCenterOpen || notificationPreviewOpen || groupMessagesOpen || searchOpen;
+  useEffect(() => {
+    if (!headerPanelOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const root = document.documentElement.style;
+    const measure = () => {
+      const viewport = window.visualViewport;
+      const bottom = (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight);
+      const headerBottom = document.querySelector('header.app-header')?.getBoundingClientRect().bottom || 64;
+      const top = Math.max(8, Math.min(headerBottom + 8, bottom - 100));
+      root.setProperty('--header-quick-top', `${top}px`);
+      root.setProperty('--header-quick-height', `${Math.max(80, bottom - top - 12)}px`);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('scroll', measure);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('scroll', measure);
+      root.removeProperty('--header-quick-top');
+      root.removeProperty('--header-quick-height');
+    };
+  }, [headerPanelOpen]);
   const [recentSearches, setRecentSearches] = useState(() => {
     try { const stored = JSON.parse(unitStorage.getItem('u_recent_searches') || '[]'); return Array.isArray(stored) ? stored.filter(item => typeof item === 'string').slice(0, 6) : []; } catch { return []; }
   });
@@ -32656,12 +32699,12 @@ Nënshkrimi: _____________________`;
     const total = groups.reduce((sum, g) => sum + g.items.length, 0);
     const visible = groups.filter(g => g.items.length && (searchFilter === 'all' || searchFilter === g.id));
     const chips = [{ id: 'all', label: 'Të gjitha', count: total }].concat(groups.map(g => ({ id: g.id, label: g.label, count: g.items.length })));
-    return ce("div", { className: "fixed inset-0 z-[95] overflow-y-auto anim-fade-in", style: { background: 'var(--page)' }, role: "dialog", "aria-modal": "true", "aria-label": "Kërkimi në aplikacion" },
-      ce("div", { className: "w-full max-w-xl mx-auto px-4 sm:px-5 pb-16", style: { paddingTop: 'max(16px, env(safe-area-inset-top, 0px))' } },
-        ce("div", { className: "flex items-center gap-2.5" },
-          ce("label", { className: "flex-1 h-12 rounded-2xl card-surface border-2 border-brand-500/70 flex items-center gap-2.5 px-3.5 min-w-0" },
+    return ce(ModalPortal, null, ce('div', { className: 'header-quick-layer', onClick: closeSearchPage, 'aria-label': 'Kërkimi në aplikacion' },
+      ce('div', { className: 'header-quick-backdrop', 'aria-hidden': true }),
+      ce('section', { id: 'header-search', className: 'header-search-panel', onClick: event => event.stopPropagation() },
+        ce('div', { className: 'header-search-heading' },
+          ce('label', { className: 'header-search-field' },
             unitUiIcon(UNIT_UI_ICONS.search, "w-[18px] h-[18px] text-tertiary shrink-0"),
-            ce("style", null, "#root #unit-search-input{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;border-radius:0!important;min-height:0!important}"),
             ce("input", {
               id: "unit-search-input",
               type: "text",
@@ -32677,9 +32720,9 @@ Nënshkrimi: _____________________`;
               className: "flex-1 min-w-0 bg-transparent text-base text-primary focus:outline-none placeholder:text-tertiary"
             }),
             search && ce("button", { type: "button", onClick: () => setSearch(''), "aria-label": "Fshi tekstin", className: "w-6 h-6 rounded-full bg-black/10 dark:bg-white/15 text-secondary flex items-center justify-center shrink-0 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.close, "w-3 h-3"))),
-          ce("button", { type: "button", onClick: closeSearchPage, className: "h-12 px-1.5 text-[15px] font-medium text-brand-600 dark:text-brand-300 cursor-pointer shrink-0" }, "Anulo")),
-        search.trim() ? ce(React.Fragment, null,
-          ce("div", { className: "mt-4 -mx-4 sm:-mx-5 px-4 sm:px-5 flex gap-2 overflow-x-auto no-scrollbar" },
+          ce('button', { type: 'button', onClick: closeSearchPage, 'aria-label': 'Mbyll kërkimin', className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
+        ce('div', { className: 'header-search-results' }, search.trim() ? ce(React.Fragment, null,
+          ce("div", { className: "mt-3 flex gap-2 overflow-x-auto no-scrollbar" },
             chips.filter(ch => ch.id === 'all' || ch.count > 0).map(ch => ce("button", {
               key: ch.id,
               type: "button",
@@ -32711,7 +32754,7 @@ Nënshkrimi: _____________________`;
               ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, "Kërkimet e fundit"),
               ce("button", { type: "button", onClick: () => { setRecentSearches([]); try { unitStorage.removeItem('u_recent_searches'); } catch (e) {} }, className: "text-[13px] text-tertiary hover:text-primary cursor-pointer" }, "Pastro")),
             ce("div", { className: "flex flex-wrap gap-2" }, recentSearches.map(item => ce("button", { key: item, type: "button", onClick: () => setSearch(item), className: "h-8 px-3 rounded-[10px] card-surface border border-default text-[13px] text-secondary flex items-center gap-1.5 cursor-pointer" }, unitUiIcon(UNIT_UI_ICONS.history, "w-3.5 h-3.5 text-tertiary"), item)))),
-          ce("p", { className: "text-sm text-tertiary leading-relaxed" }, "Kërko në lëndët, kapitujt, videot, materialet, kartelat dhe shënimet e tua."))));
+          ce("p", { className: "text-sm text-tertiary leading-relaxed" }, "Kërko në lëndët, videot dhe shënimet e tua."))))));
   };
 
   /* ── 11 · NJOFTIMET ── */
@@ -32798,25 +32841,20 @@ Nënshkrimi: _____________________`;
       ce('h2', null, unreadOnly ? 'Nuk ke njoftime të palexuara' : 'Nuk ka njoftime për momentin'),
       ce('p', null, 'Të rejat për lëndët, orarin dhe afatet do të shfaqen këtu.'));
     if (notificationPreviewOpen && !notificationCenterOpen) {
-      const recent = notificationFeed.slice(0, 3);
-      return ce('div', { className: 'notification-layer notification-preview-layer' },
-        ce('div', { className: 'notification-backdrop', onClick: () => setNotificationPreviewOpen(false), 'aria-hidden': true }),
+      const recent = notificationFeed.slice(0, 4);
+      return ce(ModalPortal, null, ce('div', { className: 'notification-layer notification-preview-layer header-quick-layer', onClick: () => setNotificationPreviewOpen(false), 'aria-label': 'Njoftimet' },
+        ce('div', { className: 'header-quick-backdrop', 'aria-hidden': true }),
         ce('section', {
-          id: 'notification-preview', className: 'notification-preview', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'notification-preview-title',
-          style: { top: notificationPreviewPosition.top, right: notificationPreviewPosition.right, '--notification-preview-top': `${notificationPreviewPosition.top}px` }
+          id: 'notification-preview', className: 'notification-preview', 'aria-labelledby': 'notification-preview-title',
+          onClick: event => event.stopPropagation()
         },
           ce('header', { className: 'notification-preview-heading' },
-            ce('span', { className: 'notification-icon' }, unitUiIcon('M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4')),
             ce('div', { className: 'notification-preview-title' }, ce('h2', { id: 'notification-preview-title' }, 'Njoftimet'), notificationUnreadCount > 0 && ce('span', { className: 'notification-preview-count', 'aria-label': `${notificationUnreadCount} të palexuara` }, notificationUnreadCount)),
             ce('button', { type: 'button', 'aria-label': 'Mbyll njoftimet', onClick: () => setNotificationPreviewOpen(false), className: 'notification-control' }, unitUiIcon(UNIT_UI_ICONS.close, 'w-4 h-4'))),
           ce('div', { className: 'notification-preview-list' }, recent.length ? recent.map(row) : empty(false)),
           ce('footer', { className: 'notification-preview-footer' },
-            ce(window.FakultetiNotifications.Settings),
-            androidNativeReady && ce('div', { className: 'notification-demo-actions' },
-              ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
-              window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
             ce('button', {
-    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined, type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4')))));
+    "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined, type: 'button', className: 'notification-view-all', onClick: () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); } }, 'Shiko të gjitha', unitUiIcon(UNIT_UI_ICONS.chev, 'w-4 h-4'))))));
     }
     const shown = notificationFeed.filter(item => notificationTab === 'all' || item.unread);
     const groups = [{ id: 'today', label: 'Sot' }, { id: 'week', label: 'Këtë javë' }].map(group => ({ ...group, items: shown.filter(item => item.group === group.id) })).filter(group => group.items.length);
@@ -32829,6 +32867,9 @@ Nënshkrimi: _____________________`;
             ce('div', { className: 'notification-heading-copy' }, ce('h1', { id: 'notification-center-title' }, 'Njoftimet'), ce('p', null, notificationUnreadCount ? `${notificationUnreadCount} të palexuara` : 'Je në dijeni me gjithçka')),
             ce('button', { type: 'button', disabled: !notificationUnreadCount, onClick: () => markNotificationsRead(notificationFeed.map(item => item.id)), 'aria-label': 'Shëno të gjitha si të lexuara', title: 'Shëno të gjitha si të lexuara', className: 'notification-control' }, unitUiIcon('M4 12l4 4L18 6M12 16l8-8'))),
           ce(window.FakultetiNotifications.Settings),
+            androidNativeReady && ce('div', { className: 'notification-demo-actions' },
+              ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-notification') }, 'Dërgo njoftim provë'),
+              window.fakultetiAndroid?.demoRepeatSupported && ce('button', { type: 'button', onClick: () => window.fakultetiAndroid?.send('demo-repeat-toggle') }, androidDemoRepeating ? 'Ndale provën' : 'Provo çdo 5 min')),
           ce('div', { className: 'notification-tabs', role: 'tablist', 'aria-label': 'Filtro njoftimet' }, [['all', 'Të gjitha', notificationFeed.length], ['unread', 'Të palexuara', notificationUnreadCount]].map(([id,label,count]) => ce('button', { key: id, type: 'button', role: 'tab', 'aria-selected': notificationTab === id, 'aria-label': label, onClick: () => setNotificationTab(id), className: notificationTab === id ? 'is-active' : '' }, label, ce('span', { className: 'notification-tab-count', 'aria-hidden': true }, count))))),
         ce('div', { className: 'notification-content' }, groups.length ? groups.map(group => ce('section', { key: group.id, className: 'notification-section' },
           ce('div', { className: 'notification-section-heading' }, ce('h2', null, group.label), ce('span', { 'aria-label': `${group.items.length} njoftime` }, group.items.length)),
@@ -35581,7 +35622,10 @@ Nënshkrimi: _____________________`;
   }, "Online")])), /*#__PURE__*/React.createElement("div", {
     className: `app-header-actions flex items-center gap-2${isInstructorAccount ? '' : ' app-header-actions--student shrink-0'}`
   }, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setSearchOpen(true),
+    onClick: openHeaderSearch,
+    "aria-haspopup": "dialog",
+    "aria-expanded": searchOpen,
+    "aria-controls": searchOpen ? "header-search" : undefined,
     className: "hidden lg:flex w-56 xl:w-64 items-center gap-2.5 px-3 py-2 rounded-xl input-bg border border-default text-secondary hover:border-brand-300 hover:text-primary transition-colors text-left"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "w-4 h-4 flex-shrink-0",
@@ -35602,7 +35646,7 @@ Nënshkrimi: _____________________`;
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     ref: notificationBellRef,
-    onClick: () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(open => !open); },
+    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
     title: "Njoftimet",
     "aria-haspopup": "dialog",
@@ -35624,7 +35668,7 @@ Nënshkrimi: _____________________`;
   }, notificationUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     type: "button",
-    onClick: () => { setNotificationPreviewOpen(false); setGroupMessagesOpen(true); },
+    onClick: () => { setSearchOpen(false); setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(open => !open); },
     "aria-label": groupMessageUnreadCount === 1 ? "Mesazhet, 1 shkrim i palexuar" : groupMessageUnreadCount > 1 ? `Mesazhet, ${groupMessageUnreadCount} shkrime të palexuara` : "Mesazhet",
     "aria-haspopup": "dialog",
     "aria-expanded": groupMessagesOpen,
@@ -35635,7 +35679,10 @@ Nënshkrimi: _____________________`;
     "aria-hidden": "true",
     className: "absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
   }, groupMessageUnreadCount > 99 ? "99+" : groupMessageUnreadCount)), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setSearchOpen(true),
+    onClick: openHeaderSearch,
+    "aria-haspopup": "dialog",
+    "aria-expanded": searchOpen,
+    "aria-controls": searchOpen ? "header-search" : undefined,
     "aria-label": "K\xEBrko l\xEBnd\xEB, kapitull ose koncept",
     className: "md:hidden p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors"
   }, /*#__PURE__*/React.createElement("svg", {
