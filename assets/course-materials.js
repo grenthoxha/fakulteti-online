@@ -91,10 +91,11 @@
   }
   function Section({ courseId, storage, Portal }) {
     const info = source.courses[courseId];
+    const [expanded, setExpanded] = React.useState(false);
     const [data, setData] = React.useState(() => catalogues.get(courseId) || null);
     const [error, setError] = React.useState(false), [retry, setRetry] = React.useState(0);
     const [category, setCategory] = React.useState('all'), [query, setQuery] = React.useState(''), [limit, setLimit] = React.useState(5), [selection, setSelection] = React.useState(null), [recent, setRecent] = React.useState(null);
-    React.useEffect(() => { let alive = true; setError(false); setData(catalogues.get(courseId) || null); load(courseId).then(value => { if (alive) setData(value); }).catch(() => { if (alive) setError(true); }); return () => { alive = false; }; }, [courseId, retry]);
+    React.useEffect(() => { if (!expanded) return; let alive = true; setError(false); setData(catalogues.get(courseId) || null); load(courseId).then(value => { if (alive) setData(value); }).catch(() => { if (alive) setError(true); }); return () => { alive = false; }; }, [courseId, retry, expanded]);
     React.useEffect(() => { try { setRecent(JSON.parse(storage?.getItem(RECENT_KEY) || '{}')[courseId] || null); } catch { setRecent(null); } }, [courseId, storage]);
     const entries = React.useMemo(() => buildEntries(data?.files || []), [data]);
     const shown = React.useMemo(() => filterEntries(entries, category, query), [entries, category, query]);
@@ -102,8 +103,11 @@
     const visit = file => { setRecent(file.id); try { const saved = JSON.parse(storage?.getItem(RECENT_KEY) || '{}'); storage?.setItem(RECENT_KEY, JSON.stringify({ ...saved, [courseId]: file.id })); } catch {} };
     const open = (entry, start = 0) => setSelection({ ...entry, start });
     const recentFile = data?.files.find(file => file.id === recent);
-    return h('section', { className: 'course-library', 'aria-label': 'Materialet e lëndës' },
-      h('div', { className: 'cl-heading' }, h('h2', null, 'Materialet', h('span', { className: 'cl-count' }, info.count))),
+    return h('section', { className: 'course-library', 'aria-label': 'Everything for Psychology' },
+      h('button', { type: 'button', className: 'cl-library-toggle', 'aria-expanded': expanded, 'aria-controls': 'course-library-' + courseId, onClick: () => setExpanded(value => !value) },
+        h('span', { className: 'cl-file-icon' }, icon('book')),
+        h('span', { className: 'cl-library-title' }, h('strong', null, 'Everything for Psychology'), h('small', null, `${info.count} ${info.count === 1 ? 'material' : 'materiale'}`)), icon('next')),
+      expanded && h('div', { id: 'course-library-' + courseId, className: 'cl-library-content' },
       h('label', { className: 'cl-search' }, icon('search'), h('span', { className: 'sr-only' }, 'Kërko material në këtë lëndë'), h('input', { type: 'search', value: query, placeholder: 'Kërko material', onChange: event => { setQuery(event.target.value); setLimit(5); } })),
       h('div', { className: 'cl-filters', role: 'group', 'aria-label': 'Lloji i materialit' }, [['all', 'Të gjitha'], ...ORDER.filter(id => info.categories[id]).map(id => [id, CATEGORIES[id]])].map(([id, label]) => h('button', { key: id, type: 'button', 'aria-pressed': category === id, className: category === id ? 'is-active' : '', onClick: () => { setCategory(id); setLimit(5); } }, label))),
       error ? h('div', { className: 'cl-status', role: 'alert' }, h('p', null, 'Lista e materialeve nuk u hap.'), h('button', { type: 'button', onClick: () => setRetry(value => value + 1) }, 'Provo përsëri'))
@@ -114,7 +118,7 @@
               h('span', { className: 'cl-file-icon' }, icon(entry.kind === 'gallery' ? 'photos' : entry.category === 'literature' ? 'book' : 'file')),
               h('span', { className: 'cl-file-copy' }, h('strong', null, entry.title), h('small', null, entry.kind === 'gallery' ? `${entry.files.length} foto · ${CATEGORIES[entry.category]}` : `${formatOf(entry.files[0])} · ${sizeOf(entry.files[0].size)} · ${CATEGORIES[entry.category]}`)), icon('next')))),
             !shown.length && h('p', { className: 'cl-status', role: 'status' }, 'Asnjë material nuk përputhet me kërkimin.'),
-            shown.length > limit && h('button', { type: 'button', className: 'cl-more', onClick: () => setLimit(value => value + 12) }, `Shiko më shumë (${shown.length - limit})`)),
+            shown.length > limit && h('button', { type: 'button', className: 'cl-more', onClick: () => setLimit(value => value + 12) }, `Shiko më shumë (${shown.length - limit})`))),
       selection && h(Viewer, { key: selection.id, selection, onClose: () => setSelection(null), onVisit: visit, Portal, storage }));
   }
   global.FakultetiCourseMaterials = { hasCourse, register, load, buildEntries, filterEntries, previewUrl, Section, Viewer, categories: CATEGORIES };
