@@ -1691,6 +1691,7 @@
     @media (prefers-reduced-motion: reduce) { .header-search-panel,.app-header.is-searching > .header-search-heading { animation: none; } }
 
   </style>
+  <link rel="stylesheet" href="./assets/course-materials.css?v=20261124-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -1707,6 +1708,8 @@
   <script src="./assets/local-messages.js?v=2"></script>
   <script src="./assets/group-messages-ui.js?v=3"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
+  <script src="./assets/course-materials-index.js?v=20261124-1"></script>
+  <script src="./assets/course-materials.js?v=20261124-1"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 
@@ -20411,6 +20414,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           ce('dd', { className: 'min-w-0 text-secondary break-words' }, name || '—'))));
   };
 
+  const renderCourseMaterials = selectedCourse => {
+    const library = window.FakultetiCourseMaterials;
+    return library?.hasCourse(selectedCourse?.id) ? React.createElement(library.Section, {
+      key: `materials:${selectedCourse.id}`, courseId: selectedCourse.id, storage: unitStorage, Portal: ModalPortal
+    }) : null;
+  };
+
   const renderCourseStudyView = () => {
     if (!course) {
       return /*#__PURE__*/React.createElement("div", {
@@ -20425,6 +20435,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       );
     }
 
+    const hasCourseMaterials = Boolean(window.FakultetiCourseMaterials?.hasCourse(course.id));
     const syllabus = getCourseSyllabus(course);
     const chapters = course.chapters || [];
     const cards = (course.cards || []).concat(Array.isArray(customCards[course.id]) ? customCards[course.id] : []);
@@ -20859,7 +20870,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       if (!chapters.length) return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
         lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
         renderCourseTeachingStaff(course),
-        lh("div", { className: "card-surface border border-default rounded-3xl p-6 text-center space-y-4" },
+        hasCourseMaterials ? renderCourseMaterials(course) : lh("div", { className: "card-surface border border-default rounded-3xl p-6 text-center space-y-4" },
           lh("p", { className: "text-secondary" }, "Materialet e kësaj lënde ende nuk janë shtuar."),
           lh("button", { type: "button", onClick: () => goBackOr('courses'), className: "h-11 px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Kthehu mbrapa")));
       const totalMinutes = chapters.reduce((sum, ch) => sum + (parseInt(ch && ch.time, 10) || 0), 0);
@@ -20889,7 +20900,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           lh("div", { className: "flex items-center gap-3.5" },
             lh("div", { className: "w-11 h-11 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
             lh("div", { className: "min-w-0 flex-1" },
-              lh("div", { className: "text-[15px] font-bold text-primary truncate" }, 'Materiali i lëndës'),
+              lh("div", { className: "text-[15px] font-bold text-primary truncate" }, hasCourseMaterials ? 'Mësimi në app' : 'Materiali i lëndës'),
               lh("div", { className: "text-[12.5px] text-tertiary mt-0.5" }, [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · ')))),
           lh("div", { className: "mt-3.5 flex items-center gap-3" },
             lh("div", { className: "flex-1 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden" }, lh("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${progressPct}%` } })),
@@ -20914,6 +20925,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`].filter(Boolean).join(' · ')),
           renderCourseTeachingStaff(course)),
 
+        hasCourseMaterials && renderCourseMaterials(course),
         renderMaterialCard(),
 
         pathTarget && !allChaptersRead ? lh("button", {

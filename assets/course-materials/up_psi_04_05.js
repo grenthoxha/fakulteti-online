@@ -1,0 +1,1 @@
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_04_05","title":"Psikologji e motivimit","semester":4,"sourceUrl":"https://drive.google.com/drive/folders/1N3y8OYnHj07IHvKUiAVfun2POt6dlJyi","files":[]});

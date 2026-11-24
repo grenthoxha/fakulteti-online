@@ -54,7 +54,7 @@ Ngarko përmbajtjen e paketës në repository, jo vetëm skedarin HTML. Ruaje do
 
 Faqja kryesore hap `index.html`. Edhe adresa që mbaron me `/fakulteti-online.html` hap të njëjtin aplikacion.
 
-Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Llogaritë, profilet dhe aprovimet përdorin databazën online; materialet dhe puna e studentit mbeten lokale. Kërkimi i emrit në ASK përdor shërbimin e vet të veçantë. Shih `server/ask-name-validator/README.md`.
+Bibliotekat e jashtme dhe disa integrime kërkojnë internet. Llogaritë, profilet dhe aprovimet përdorin databazën online; materialet e ngarkuara nga studenti dhe puna e tij mbeten lokale. Biblioteka e lidhur e lëndëve hap skedarët origjinalë nga Google Drive. Kërkimi i emrit në ASK përdor shërbimin e vet të veçantë. Shih `server/ask-name-validator/README.md`.
 
 Pas publikimit, testo ngarkimin e materialeve, videot dhe transferimin mes pajisjeve në adresën publike.
 
@@ -68,3 +68,13 @@ Burimi, atribuimi dhe licencat dokumentohen në `assets/brain/README.md`, `asset
 Përmbajtja vendoset te `assets/editorial-content.js`. Lista `articles` pranon artikuj të publikuar me titull, përmbledhje, paragrafë dhe fotografi; skema dokumentohet në skedar. Artikujt me fotografi shfaqen edhe si stories te Kreu. Përfshihet një artikull shembull për kontrollin e punimit para dorëzimit.
 
 Lista `archiveExams` lidh ID-në ekzistuese të lëndës me pyetjet e provimit. Derisa të vendosen pyetjet, zgjedhja e lëndës është e mundshme dhe provimi shfaqet “Në përgatitje”. Nuk përzihen pyetje nga lëndë të tjera.
+
+## Biblioteka e lidhur me Google Drive
+
+Te lëndët e Psikologjisë janë lidhur **1 335 materiale** nga [dosja e dërguar](https://drive.google.com/drive/folders/1TIEseYBOdAL1eU1hXbVZX3UDzHuwoYbN), sipas inventarit të 24 nëntorit 2026. Janë përfshirë 33 dosje lëndësh në gjashtë semestra; 29 kanë skedarë, ndërsa katër janë bosh. U lanë jashtë 11 skedarë `.DS_Store` dhe tri kopje të një imazhi reklamues jashtë dosjeve mësimore.
+
+Origjinalet qëndrojnë në Drive dhe lejet e tyre respektohen. App-i publikon vetëm katalogun dhe lidhjet: literaturë, slajde, shënime, teste, ushtrime dhe të dhëna. Fotot e të njëjtës dosje grupohen në galeri; hapet vetëm një skedar njëherësh. Dosja origjinale dhe çdo material kanë lidhjen për hapje në Drive nëse pamja e brendshme kërkon hyrje ose leje. Për hapjen nga Drive nevojitet internet. Këto materiale nuk krijojnë vetvetiu provime të planifikuara ose nota.
+
+`assets/course-materials-index.js` përmban hartën e lëndëve; `assets/course-materials/` përmban katalogë të veçantë, që ngarkohen vetëm kur hapet lënda. Punojnë edhe nga versioni lokal `file://`. Ndryshimi i përmbajtjes së një skedari ekzistues në Drive shfaqet nga burimi; për skedarë të rinj ose të larguar duhet përditësuar katalogu. Skedari i hapur së fundi ruhet lokalisht, veçmas sipas llogarisë.
+
+Kontrollet e bibliotekës: `node tests/course-materials.cjs`. Ato verifikojnë mbulimin e skedarëve, përputhjen me lëndët, ngarkimin sipas nevojës, kërkimin, galeritë dhe ruajtjen lokale sipas llogarisë.

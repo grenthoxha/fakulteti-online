@@ -1,0 +1,52 @@
+.course-library { min-width:0; border:1px solid var(--line); border-radius:18px; padding:14px; background:var(--surface); color:var(--ink); }
+.course-library .cl-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.cl-heading h2 { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:650; }
+.cl-count { display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 6px; border-radius:7px; color:rgb(var(--brand-rgb)); background:rgba(var(--brand-rgb),.07); font-size:11px; font-weight:600; }
+.cl-drive-link { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:40px; color:rgb(var(--brand-rgb)); font-size:12px; font-weight:600; flex-shrink:0; }
+.cl-drive-link svg,.cl-inline-link svg { width:14px; height:14px; }
+.cl-search { display:flex; align-items:center; gap:8px; padding:0 10px; height:42px; border:1px solid var(--line); border-radius:11px; background:var(--surface-muted); color:var(--muted); }
+.cl-search input { width:100%; min-width:0; height:100%; padding:0!important; margin:0!important; border:0!important; border-radius:0!important; box-shadow:none!important; background:transparent!important; color:var(--ink); outline:none; font:inherit; font-size:16px; }
+.cl-search:focus-within { outline:2px solid rgba(var(--brand-rgb),.45); outline-offset:2px; }
+.cl-filters { display:flex; overflow-x:auto; scrollbar-width:none; gap:6px; padding:10px 0; }
+.cl-filters button { min-height:38px; flex-shrink:0; border:1px solid var(--line); border-radius:10px; padding:6px 10px; color:var(--muted); font-size:12px; font-weight:500; }
+.cl-filters button.is-active { background:rgba(var(--brand-rgb),.08); border-color:rgba(var(--brand-rgb),.2); color:rgb(var(--brand-rgb)); }
+.cl-list { display:grid; }
+.cl-row { display:flex; align-items:center; gap:10px; width:100%; min-height:66px; padding:12px 0; text-align:left; }
+.cl-row + .cl-row { border-top:1px solid var(--line); }
+.cl-row:hover .cl-file-copy strong { color:rgb(var(--brand-rgb)); }
+.cl-file-icon { display:grid; place-items:center; width:36px; height:40px; flex-shrink:0; border-radius:10px; color:rgb(var(--brand-rgb)); background:rgba(var(--brand-rgb),.065); }
+.cl-file-copy { flex:1; min-width:0; }
+.cl-file-copy strong { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; font-size:13px; font-weight:600; line-height:1.45; }
+.cl-file-copy small { display:block; margin-top:4px; color:var(--muted); font-size:11px; line-height:1.4; }
+.cl-row > svg { width:15px; height:15px; flex-shrink:0; color:var(--muted); }
+.cl-more { display:block; width:100%; min-height:42px; margin-top:6px; border-top:1px solid var(--line); color:rgb(var(--brand-rgb)); font-size:12px; font-weight:600; }
+.cl-status { padding:18px 4px; color:var(--muted); font-size:13px; line-height:1.5; }
+.cl-status button { min-height:40px; padding:8px; color:rgb(var(--brand-rgb)); font-weight:600; }
+.cl-recent { display:flex; gap:9px; align-items:center; width:100%; padding:10px; border-radius:11px; background:rgba(var(--brand-rgb),.05); text-align:left; margin:4px 0 6px; color:rgb(var(--brand-rgb)); }
+.cl-recent > span { min-width:0; flex:1; }
+.cl-recent small { display:block; font-size:10px; color:var(--muted); }
+.cl-recent strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; margin-top:2px; }
+.cl-viewer { position:fixed; z-index:75; top:var(--app-header-height,64px); bottom:var(--app-mobile-nav-space,70px); left:0; right:0; display:flex; flex-direction:column; min-height:0; background:var(--page); color:var(--ink); }
+.cl-viewer-heading { display:flex; align-items:center; gap:8px; flex:none; min-height:62px; padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--line); }
+.cl-icon-button { display:grid; place-items:center; width:40px; height:40px; border-radius:50%; flex-shrink:0; color:var(--muted); }
+.cl-icon-button:hover { background:var(--surface-muted); }
+.cl-viewer-title { flex:1; min-width:0; }
+.cl-viewer-title h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:650; }
+.cl-viewer-title p { margin-top:3px; font-size:11px; color:var(--muted); }
+.cl-viewer-stage { position:relative; min-height:0; flex:1; display:flex; background:var(--surface-muted); }
+.cl-viewer-stage iframe { border:0; width:100%; height:100%; position:absolute; inset:0; }
+.cl-preview-loading { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:13px; pointer-events:none; }
+.cl-viewer-note { margin:auto; padding:24px; max-width:420px; text-align:center; line-height:1.6; color:var(--muted); font-size:13px; }
+.cl-viewer-note > svg { margin:0 auto 12px; width:32px; height:32px; color:rgb(var(--brand-rgb)); }
+.cl-viewer-note h3 { font-size:15px; color:var(--ink); overflow-wrap:anywhere; }
+.cl-open-drive { display:inline-flex; min-height:44px; align-items:center; justify-content:center; gap:8px; margin-top:16px; padding:10px 16px; border-radius:11px; color:white; background:rgb(var(--brand-rgb)); font-weight:600; }
+.cl-viewer-footer { flex:none; padding:8px 14px; border-top:1px solid var(--line); background:var(--surface); }
+.cl-gallery-controls { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:6px; }
+.cl-gallery-controls button { width:42px; height:42px; border:1px solid var(--line); border-radius:50%; display:grid; place-items:center; }
+.cl-gallery-controls button:disabled { opacity:.3; }
+.cl-gallery-position select { min-height:40px; padding:4px 8px; border:1px solid var(--line); border-radius:9px; font-size:14px; background:var(--surface-muted); color:var(--ink); }
+.cl-viewer-help { text-align:center; color:var(--muted); font-size:11px; line-height:1.5; }
+.cl-inline-link { display:inline-flex; align-items:center; gap:4px; color:rgb(var(--brand-rgb)); font-weight:600; min-height:24px; }
+:is(.course-library,.cl-viewer) :is(button,a,select):focus-visible { outline:2px solid rgb(var(--brand-rgb)); outline-offset:2px; }
+.dark :is(.cl-count,.cl-drive-link,.cl-filters button.is-active,.cl-file-icon,.cl-more,.cl-recent,.cl-inline-link) { color:#a2c9f2; }
+@media(min-width:1024px) { .cl-viewer { bottom:0; left:256px; } }

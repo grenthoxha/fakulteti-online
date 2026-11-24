@@ -1,0 +1,1 @@
+window.FakultetiCourseMaterials.register({"courseId":"up_psi_06_02","title":"Psikometri","semester":6,"sourceUrl":"https://drive.google.com/drive/folders/1HCNOYnM1Od6mRe6-dvIeLntaelJRl1fy","files":[]});
