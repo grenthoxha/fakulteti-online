@@ -11412,7 +11412,7 @@ function AcademyApp({
     if (next === false || !window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) setNotificationPreviewOpenRaw(next);
   }, []);
   const notificationBellRef = useRef(null);
-  const [notificationTab, setNotificationTab] = useState('all');
+  const [notificationTab, setNotificationTab] = useState('unread');
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
   const [notificationReadIds, setNotificationReadIds] = useState(() => {
     try { const stored = JSON.parse(unitStorage.getItem('u_notifications_read') || '[]'); return Array.isArray(stored) ? stored : []; } catch { return []; }
@@ -14787,7 +14787,7 @@ function AcademyApp({
     if (screen === 'profile-settings') return page(t('Cilësimet', 'Settings'), h(React.Fragment, null,
       menu([
         row(t('Llogaria dhe të dhënat', 'Account and data'), 'M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM9 12l2 2 4-4', () => setView('profile-account'), undefined, 'account'),
-        (!window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) && row(t('Njoftimet', 'Notifications'), 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4', () => { setNotificationPreviewOpen(false); setNotificationCenterOpen(true); }, undefined, 'notifications')]),
+        (!window.FakultetiApprovals || window.FakultetiApprovals.can('messages')) && row(t('Njoftimet', 'Notifications'), 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4', () => { setNotificationPreviewOpen(false); setNotificationSettingsOpen(false); setNotificationTab('unread'); setNotificationCenterOpen(true); }, undefined, 'notifications')]),
       h('section', { className: 'profile-menu-group' }, label(t('Pamja dhe gjuha', 'Appearance and language')), menu([
         h('button', { key: 'theme', type: 'button', role: 'switch', 'aria-checked': !!isDark, onClick: () => setIsDark(!isDark), className: 'profile-native-row profile-menu-row w-full text-left text-primary' },
           icon('M20 14a8 8 0 0 1-10-10 9 9 0 1 0 10 10z'), h('span', { className: 'flex-1' }, t('Tema e errët', 'Dark theme')),
@@ -32842,7 +32842,7 @@ Nënshkrimi: _____________________`;
       setCourseVideoFeedOpen(false);setSearchOpen(false);setGroupMessagesOpen(false);
       if (item) { current.markNotificationsRead([item.id]); item.action(); }
       else if(String(event.detail).startsWith('reminder:')) {setNotificationCenterOpen(false);const kind=String(event.detail).split(':')[1];setView(kind==='schedule'?'week':(kind==='routine'||kind==='pomodoro')?'home':'student');if(kind==='exam'||kind==='deadline')setStudentTab('exams');if(kind==='pomodoro')setPomoOpen(true);}
-      else setNotificationCenterOpen(true);
+      else { setNotificationSettingsOpen(false); setNotificationTab('unread'); setNotificationCenterOpen(true); }
     };
     window.addEventListener('fakulteti:notification-open', open);
     return () => window.removeEventListener('fakulteti:notification-open', open);
@@ -35677,7 +35677,7 @@ Nënshkrimi: _____________________`;
   }, "Ctrl K")), null, !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.can("messages")) ? 'true' : undefined,
     ref: notificationBellRef,
-    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationPreviewOpen(false); setNotificationSettingsOpen(false); setNotificationCenterOpen(open => !open); },
+    onClick: () => { setSearchOpen(false); setGroupMessagesOpen(false); setNotificationPreviewOpen(false); setNotificationSettingsOpen(false); setNotificationTab('unread'); setNotificationCenterOpen(open => !open); },
     "aria-label": `${notificationUnreadCount} njoftime të palexuara`,
     title: "Njoftimet",
     "aria-haspopup": "dialog",
