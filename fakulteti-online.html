@@ -1503,6 +1503,29 @@
     .dark .courses-page .course-progress-ring { background: rgba(255,255,255,.045); }
     @media(prefers-reduced-motion:reduce) { .courses-page .course-summary-card { transition: none; } }
     .course-detail-page { min-width: 0; }
+    .course-overview{max-width:640px;display:grid;gap:16px;padding-top:4px}
+    .course-overview-heading h1{font-size:clamp(21px,4.4vw,27px);line-height:1.25;font-weight:750;letter-spacing:-.025em;color:var(--ink);overflow-wrap:anywhere}
+    .course-overview-meta{margin-top:6px;font-size:12px;color:var(--muted)}
+    .course-overview .course-teaching-staff{margin-top:10px;font-size:12px;line-height:18px}
+    .course-overview-entries{display:grid;gap:10px}
+    .course-overview-learning,.course-overview-personal-book,.course-overview-tools{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
+    .course-overview-learning{background:linear-gradient(110deg,rgba(var(--brand-rgb),.055),var(--surface));border-color:rgba(var(--brand-rgb),.17)}
+    .course-overview-row{display:flex;align-items:center;gap:11px;width:100%;min-height:74px;padding:14px;text-align:left;color:var(--ink)}
+    .course-overview-row:hover{background:rgba(var(--brand-rgb),.035)}
+    .course-overview-icon{display:grid;place-items:center;width:36px;height:40px;flex:none;border-radius:10px;color:rgb(var(--brand-rgb));background:rgba(var(--brand-rgb),.065)}
+    .course-overview-copy{flex:1;min-width:0}
+    .course-overview-copy strong{display:block;font-size:14.5px;line-height:20px;font-weight:650;overflow-wrap:anywhere}
+    .course-overview-copy small{display:block;margin-top:3px;font-size:11px;line-height:16px;color:var(--muted)}
+    .course-overview-progress{display:flex;align-items:center;gap:9px;flex:none;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+    .course-overview-track{height:3px;margin:0 14px 12px;border-radius:3px;background:rgba(var(--brand-rgb),.09);overflow:hidden}
+    .course-overview-track span{display:block;height:100%;background:rgb(var(--brand-rgb));border-radius:inherit}
+    .course-overview-tools .course-overview-row{min-height:54px;padding-block:9px}
+    .course-overview-tools .course-overview-row+.course-overview-row{border-top:1px solid var(--line)}
+    .course-overview-tools .course-overview-icon{width:30px;height:32px;background:transparent}
+    .course-overview-tools .course-overview-copy strong{font-size:13px;font-weight:550}
+    .course-overview-empty{padding:16px 0;color:var(--muted);font-size:13px;line-height:1.6}
+    .course-overview-row:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:-3px}
+
     .course-detail-body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
     .course-detail-body h1, .course-detail-body h2, .course-detail-body h3 { color: var(--ink); font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; }
     .course-detail-body p { margin-bottom: 0.75rem; line-height: 1.7; }
@@ -1691,7 +1714,7 @@
     @media (prefers-reduced-motion: reduce) { .header-search-panel,.app-header.is-searching > .header-search-heading { animation: none; } }
 
   </style>
-  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-4">
+  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-5">
   <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-4">
 </head>
 <body class="min-h-screen">
@@ -1711,7 +1734,7 @@
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/course-materials-index.js?v=20261124-4"></script>
   <script src="./assets/course-material-reader.js?v=20261125-4"></script>
-  <script src="./assets/course-materials.js?v=20261125-4"></script>
+  <script src="./assets/course-materials.js?v=20261125-5"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 
@@ -19169,7 +19192,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const cardCount = (c.cards || []).length;
       const safeChapter = chapterCount > 0 ? Math.min(Math.max(0, savedChapter), chapterCount - 1) : 0;
       const safeCard = cardCount > 0 ? Math.min(Math.max(0, savedFc), cardCount - 1) : 0;
-      const validTabs = ['overview', 'path', 'syllabus', 'notes', 'flashcards', 'quiz', 'cases', 'cheatsheet', 'tutor'];
+      const validTabs = ['overview', 'path', 'study', 'syllabus', 'notes', 'flashcards', 'quiz', 'cases', 'cheatsheet', 'tutor'];
+      if (window.FakultetiCourseMaterials?.hasCourse(c.id)) validTabs.push('materials');
       if (c.id === BRAIN_COURSE_ID) validTabs.push('brain');
       const safeTab = validTabs.includes(savedTab) && savedTab !== 'syllabus' && savedTab !== 'overview' ? savedTab : 'path';
       setTab(safeTab);
@@ -19211,11 +19235,19 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }
     setSidebarOpen(false);
   };
+  const scrollCoursePageToTop = () => {
+    window.requestAnimationFrame?.(() => {
+      document.querySelector('.app-main')?.scrollTo?.({ top: 0 });
+      window.scrollTo({ top: 0 });
+      document.querySelector('.course-detail-page h1')?.focus({ preventScroll: true });
+    });
+  };
   const openCourseSection = (selectedCourse, nextTab = 'syllabus') => {
     if (!selectedCourse?.id) return;
     openCourse(selectedCourse, true);
     setTab(nextTab);
     unitStorage.setItem(`u_course_tab_${selectedCourse.id}`, nextTab);
+    if (nextTab === 'materials' || nextTab === 'study') scrollCoursePageToTop();
   };
   const buildMockExamQuestions = (selectedCourse, limit = 10, difficulty = 'mixed') => {
     if (!selectedCourse) return [];
@@ -20459,17 +20491,19 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       courses: ownerSemester?.courses || [selectedCourse]
     });
     const ce = React.createElement;
+    if (!staff.professor && !staff.assistant) return null;
     return ce('dl', { className: 'course-teaching-staff mt-3 space-y-1 text-[12px] leading-[18px]', 'aria-label': uiLanguage === 'en' ? 'Teaching staff' : 'Stafi i lëndës' },
-      [[uiLanguage === 'en' ? 'Professor' : 'Profesori/ja', staff.professor], [uiLanguage === 'en' ? 'Assistant' : 'Asistenti/ja', staff.assistant]].map(([label, name]) =>
+      [[uiLanguage === 'en' ? 'Professor' : 'Profesori/ja', staff.professor], [uiLanguage === 'en' ? 'Assistant' : 'Asistenti/ja', staff.assistant]].filter(([, name]) => name).map(([label, name]) =>
         ce('div', { key: label, className: 'flex items-baseline gap-2' },
           ce('dt', { className: 'w-[84px] shrink-0 text-tertiary' }, label),
           ce('dd', { className: 'min-w-0 text-secondary break-words' }, name || '—'))));
   };
 
-  const renderCourseMaterials = selectedCourse => {
+  const renderCourseMaterials = (selectedCourse, page = false) => {
     const library = window.FakultetiCourseMaterials;
     return library?.hasCourse(selectedCourse?.id) ? React.createElement(library.Section, {
-      key: `materials:${selectedCourse.id}`, courseId: selectedCourse.id, storage: unitStorage, Portal: ModalPortal
+      key: `materials:${selectedCourse.id}`, courseId: selectedCourse.id, storage: unitStorage, Portal: ModalPortal,
+      page, onOpen: () => openCourseSection(selectedCourse, 'materials')
     }) : null;
   };
 
@@ -20502,6 +20536,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const openCourseTab = nextTab => {
       setTab(nextTab);
       unitStorage.setItem(`u_course_tab_${course.id}`, nextTab);
+      if (nextTab === 'materials' || nextTab === 'study' || nextTab === 'path') scrollCoursePageToTop();
     };
 
     // Speech synthesis helper
@@ -20565,7 +20600,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
     /* ── Pamje mësimi në stilin "Brilliant": një kapitull në ekran, pa zhurmë ── */
     const studyTabs = [
-      { id: 'path', label: 'Rruga e lëndës', meta: chapters.length ? `${progressPct}%` : null },
+      { id: 'path', label: 'Lënda' },
+      ...(chapters.length ? [{ id: 'study', label: 'Mësimi në app', meta: `${progressPct}%` }] : []),
+      ...(hasCourseMaterials ? [{ id: 'materials', label: 'Materiale nga studentët' }] : []),
       ...(courseBooks[course.id] ? [{ id: 'book', label: 'Libri (faqe për faqe)' }, { id: 'read', label: 'Teksti i kapitullit' }] : [{ id: 'read', label: 'Lexo' }]),
       { id: 'syllabus', label: 'Mësimi', meta: chapters.length ? `${readCount}/${chapters.length}` : null },
       { id: 'flashcards', label: 'Kartelat', meta: cards.length || null },
@@ -20901,12 +20938,32 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const READ_ICONS = { book: "M3 5h6a3 3 0 013 3v12a2 2 0 00-2-2H3zM21 5h-6a3 3 0 00-3 3v12a2 2 0 012-2h7z", bulb: "M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0012 3z", list: "M5 6h14M5 12h14M5 18h9", bolt: "M13 3L5 14h6l-1 7 8-11h-6z" };
     const practiceSub = [cards.length ? `${cards.length} kartela` : null, quizzes.length ? `${quizzes.length} pyetje` : null].filter(Boolean).join(' · ') || 'Së shpejti';
     const renderCoursePath = () => {
-      if (!chapters.length) return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
-        lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
-        renderCourseTeachingStaff(course),
-        hasCourseMaterials ? renderCourseMaterials(course) : lh("div", { className: "card-surface border border-default rounded-3xl p-6 text-center space-y-4" },
-          lh("p", { className: "text-secondary" }, "Materialet e kësaj lënde ende nuk janë shtuar."),
-          lh("button", { type: "button", onClick: () => goBackOr('courses'), className: "h-11 px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold cursor-pointer" }, "Kthehu mbrapa")));
+      const totalMinutes = chapters.reduce((sum, item) => sum + (parseInt(item && item.time, 10) || 0), 0);
+      const row = (key, title, subtitle, drawing, onClick, extra) => lh('button', {
+        key, type: 'button', className: 'course-overview-row', onClick
+      }, lh('span', { className: 'course-overview-icon' }, lessonIcon(drawing, 'w-5 h-5')),
+        lh('span', { className: 'course-overview-copy' }, lh('strong', null, title), subtitle && lh('small', null, subtitle)),
+        extra || lessonIcon(LESSON_ICONS.chev, 'w-4 h-4 text-tertiary shrink-0'));
+      return lh('div', { className: 'course-overview mx-auto anim-fade-up' },
+        lh('header', { className: 'course-overview-heading' },
+          lh('h1', { tabIndex: -1 }, course.title),
+          course.ects ? lh('p', { className: 'course-overview-meta' }, `${course.ects} ECTS`) : null,
+          renderCourseTeachingStaff(course)),
+        lh('div', { className: 'course-overview-entries' },
+          chapters.length > 0 && lh('section', { className: 'course-overview-learning' },
+            row('study', 'Mësimi në app', [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · '), READ_ICONS.book, () => openCourseTab('study'),
+              lh('span', { className: 'course-overview-progress' }, `${progressPct}%`, lessonIcon(LESSON_ICONS.chev, 'w-4 h-4'))),
+            lh('div', { className: 'course-overview-track', role: 'progressbar', 'aria-label': 'Progresi i mësimit', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': progressPct }, lh('span', { style: { width: `${progressPct}%` } }))),
+          hasCourseMaterials && renderCourseMaterials(course),
+          courseBook && lh('section', { className: 'course-overview-personal-book' }, row('book', courseBook.name, `${courseBook.pages} faqe · Libri yt`, READ_ICONS.book, openCourseBook))),
+        (chapters.length > 0 || cards.length > 0 || quizzes.length > 0) && lh('section', { className: 'course-overview-tools', 'aria-label': 'Mjetet e lëndës' },
+          chapters.length > 0 && row('summary', 'Përmbledhja', null, READ_ICONS.list, () => openCourseTab('cheatsheet')),
+          (cards.length > 0 || quizzes.length > 0) && row('practice', 'Praktiko', practiceSub, READ_ICONS.bolt, openCoursePractice),
+          row('notes', 'Shënimet e mia', null, 'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5', () => openCourseTab('notes'))),
+        !chapters.length && !hasCourseMaterials && !courseBook && lh('p', { className: 'course-overview-empty' }, 'Materialet e kësaj lënde ende nuk janë shtuar.'));
+    };
+    const renderCourseLearning = () => {
+      if (!chapters.length) return lh('p', { className: 'course-overview-empty' }, 'Mësimi në app nuk është shtuar ende për këtë lëndë.');
       const totalMinutes = chapters.reduce((sum, ch) => sum + (parseInt(ch && ch.time, 10) || 0), 0);
       const readTarget = allChaptersRead ? 0 : pathTargetIdx;
       const renderMaterialCard = () => {
@@ -20934,7 +20991,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           lh("div", { className: "flex items-center gap-3.5" },
             lh("div", { className: "w-11 h-11 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
             lh("div", { className: "min-w-0 flex-1" },
-              lh("div", { className: "text-[15px] font-bold text-primary truncate" }, hasCourseMaterials ? 'Mësimi në app' : 'Materiali i lëndës'),
+              lh("div", { className: "text-[15px] font-bold text-primary truncate" }, 'Leximi i kapitujve'),
               lh("div", { className: "text-[12.5px] text-tertiary mt-0.5" }, [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · ')))),
           lh("div", { className: "mt-3.5 flex items-center gap-3" },
             lh("div", { className: "flex-1 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden" }, lh("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${progressPct}%` } })),
@@ -20955,11 +21012,10 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
         lh("input", { type: "file", accept: "application/pdf,.pdf", className: "hidden", ref: bookInputRef, "aria-hidden": "true", tabIndex: -1, onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
         lh("div", null,
-          lh("h1", { className: "text-[26px] sm:text-3xl font-extrabold tracking-tight text-primary leading-tight" }, course.title),
+          lh("h1", { tabIndex: -1, className: "text-[22px] sm:text-2xl font-bold tracking-tight text-primary leading-tight" }, course.title),
           lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`].filter(Boolean).join(' · ')),
-          renderCourseTeachingStaff(course)),
+          null),
 
-        hasCourseMaterials && renderCourseMaterials(course),
         renderMaterialCard(),
 
         pathTarget && !allChaptersRead ? lh("button", {
@@ -21274,10 +21330,10 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           onClick: () => { if (currentTab === 'path') goBackOr('courses'); else { setCourseLessonDone(null); openCourseTab('path'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
           "aria-label": currentTab === 'path' ? `Kthehu te ${navPreviousLabel() || 'Lëndët'}` : currentTab === 'syllabus' ? "Mbyll mësimin" : "Kthehu te lënda",
           title: currentTab === 'path' ? `Kthehu te ${navPreviousLabel() || 'Lëndët'}` : currentTab === 'syllabus' ? "Mbyll mësimin" : "Kthehu te lënda",
-          className: currentTab === 'path' ? "h-10 pl-1.5 pr-3 -ml-1.5 rounded-full flex items-center gap-1 text-[14px] font-medium text-brand-600 dark:text-brand-300 hover-surface transition-colors cursor-pointer shrink-0" : iconBtn
+          className: (currentTab === 'path' || currentTab === 'materials') ? "h-10 pl-1.5 pr-3 -ml-1.5 rounded-full flex items-center gap-1 text-[14px] font-medium text-brand-600 dark:text-brand-300 hover-surface transition-colors cursor-pointer shrink-0" : iconBtn
         }, /*#__PURE__*/React.createElement("svg", {
           className: "w-5 h-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round"
-        }, /*#__PURE__*/React.createElement("path", { d: currentTab === 'syllabus' ? "M6 6l12 12M18 6L6 18" : "M15 18l-6-6 6-6" })), currentTab === 'path' && (navPreviousLabel() || "Lëndët")),
+        }, /*#__PURE__*/React.createElement("path", { d: currentTab === 'syllabus' ? "M6 6l12 12M18 6L6 18" : "M15 18l-6-6 6-6" })), (currentTab === 'path' || currentTab === 'materials') && (currentTab === 'materials' ? "Lënda" : navPreviousLabel() || "Lëndët")),
 
         currentTab === 'syllabus' && activeChapter && !lessonDone && lessonSteps.length > 0
           ? lh("div", { className: "flex-1 flex items-center gap-3 min-w-0" },
@@ -21295,7 +21351,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
                   }`
                 })))),
               lh("span", { className: "text-[13px] font-semibold text-tertiary tabular-nums shrink-0" }, `${lessonStepIdx + 1}/${lessonSteps.length}`))
-          : /*#__PURE__*/React.createElement("div", { className: "flex-1 text-center text-sm font-semibold text-primary truncate" }, currentTab === 'path' ? '' : currentTab === 'syllabus' ? course.title : activeTabLabel),
+          : /*#__PURE__*/React.createElement("div", { className: "flex-1 text-center text-sm font-semibold text-primary truncate" }, (currentTab === 'path' || currentTab === 'materials') ? '' : currentTab === 'syllabus' ? course.title : activeTabLabel),
 
         null,
 
@@ -21347,7 +21403,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
 
       /* RRUGA E LËNDËS (A) · MËSIMI HAP PAS HAPI (B) · FUNDI I KAPITULLIT (C) */
       currentTab === 'path' && renderCoursePath(),
-      currentTab === 'path' && courseSheet && renderCourseSheet(),
+      currentTab === 'materials' && renderCourseMaterials(course, true),
+      currentTab === 'study' && renderCourseLearning(),
+      (currentTab === 'path' || currentTab === 'study') && courseSheet && renderCourseSheet(),
       currentTab === 'read' && renderCourseReader(),
       currentTab === 'book' && courseBook && renderCourseBook(),
       currentTab === 'syllabus' && (activeChapter ? (lessonDone ? renderLessonDone() : renderLessonStep()) : renderCoursePath()),

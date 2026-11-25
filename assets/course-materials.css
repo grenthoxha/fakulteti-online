@@ -56,3 +56,15 @@
 .cl-viewer.is-fullscreen .cl-viewer-heading{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
 .cl-viewer.is-fullscreen .cl-viewer-stage{padding-bottom:env(safe-area-inset-bottom)}
 @media(max-width:380px){.cl-viewer-heading{gap:4px;padding-inline:8px}.cl-viewer-heading .cl-icon-button{width:36px}.cl-viewer-title h2{font-size:13px}}
+
+.course-library--entry{padding:14px;border-radius:16px}
+.course-library--entry .cl-library-toggle{min-height:46px}
+.course-library--page{max-width:640px;margin:0 auto;padding:4px 0 0;border:0;border-radius:0;background:transparent}
+.cl-page-heading{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.cl-page-heading>div{min-width:0;flex:1}
+.cl-page-heading h1{font-size:20px;line-height:26px;font-weight:700;letter-spacing:-.02em;color:var(--ink);overflow-wrap:anywhere}
+.cl-page-heading p{margin-top:5px;font-size:12px;line-height:18px;color:var(--muted);overflow-wrap:anywhere}
+.cl-page-heading .cl-count{margin-top:3px;flex:none}
+.course-library--page .cl-library-content{margin:0;padding:0;border:0}
+.course-library--page .cl-list{margin-top:2px;padding:0 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.course-library--page .cl-more{border:0;margin-top:6px}

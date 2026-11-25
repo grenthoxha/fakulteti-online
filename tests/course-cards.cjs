@@ -61,9 +61,21 @@ ok(calledYear===2,'opened course determines teaching year rather than current st
 Object.assign(c,{hasCourseMaterials:false,lh:h,course,chapters:course.chapters,cards:[],quizzes:[],allChaptersRead:false,pathTargetIdx:0,pathTarget:null,pathTargetPlan:{steps:[]},pathTargetStep:0,pathStarted:false,progressPct:0,courseBook:null,bookBusy:false,bookInputRef:{},pickCourseBook(){},READ_ICONS:{},LESSON_ICONS:{},lessonIcon:()=>null,practiceSub:'Së shpejti',openCoursePractice(){},chapterKeyOf:idx=>course.id+'_'+course.chapters[idx].id,chapterTitleOf:()=> 'Kapitulli i parë'});
 vm.runInContext(part('    const renderCoursePath =','    const sheetRow =')+'this.path=renderCoursePath;',c);
 let detail=c.path(),detailNodes=nodes(detail),staffIndex=detailNodes.findIndex(n=>n.props.className?.includes('course-teaching-staff'));
-ok(staffIndex>=0&&staffIndex<detailNodes.findIndex(n=>n.type==='button'&&text(n).includes('Fillo leximin')),'teaching staff precedes learning actions');
+ok(staffIndex>=0&&staffIndex<detailNodes.findIndex(n=>n.type==='button'&&text(n).includes('Mësimi në app')),'teaching staff precedes the separate learning entry');
 ok(!text(detail).includes('Sipas caktimit'),'generic professor placeholder is not duplicated in course subtitle');
 c.chapters=[];detail=c.path();ok(text(detail).includes('Linda Hoxha')&&text(detail).indexOf('Linda Hoxha')<text(detail).indexOf('Materialet e kësaj lënde'),'course without chapters still displays staff first');
+// The overview separates material browsing from the existing learning tools.
+const courseTabs=[];Object.assign(c,{chapters:course.chapters,hasCourseMaterials:true,unitStorage:{},ModalPortal:'Portal',openCourseTab:id=>courseTabs.push(id),openCourseSection:(selected,tab)=>courseTabs.push(tab)});
+c.window.FakultetiCourseMaterials={hasCourse:()=>true,Section:'MaterialEntry'};
+detail=c.path();ok(nodes(detail).filter(n=>n.props.className==='course-overview-learning').length===1&&nodes(detail).some(n=>n.type==='MaterialEntry'),'overview exposes separate learning and material entries');
+ok(!text(detail).includes('Si dëshiron ta mësosh')&&!text(detail).includes('Fillo leximin')&&!nodes(detail).some(n=>n.type==='input'),'overview leaves chapter tools and uploads inside learning');
+nodes(detail).find(n=>n.type==='button'&&text(n).includes('Mësimi në app')).props.onClick();ok(courseTabs.at(-1)==='study','learning entry opens the dedicated study section');
+nodes(detail).find(n=>n.type==='MaterialEntry').props.onOpen();ok(courseTabs.at(-1)==='materials','student-material entry navigates to the separate material page');
+vm.runInContext('this.learning=renderCourseLearning;',c);
+Object.assign(c,{iconBtn:'button',unitReadJson:()=>({}),UNIT_BOOK_POS:'book-position',formatLastStudied:()=>'',READ_ICONS:{book:'book'},renderCourseMaterials:()=>null});
+const learning=c.learning();ok(text(learning).includes('Fillo leximin')&&text(learning).includes('Si dëshiron ta mësosh')&&nodes(learning).some(n=>n.type==='input'&&n.props.type==='file'),'learning keeps chapter reading, study choices and personal PDF upload');
+ok(!nodes(learning).some(n=>n.type==='MaterialEntry')&&!nodes(learning).some(n=>n.props.className?.includes('course-teaching-staff')),'learning does not duplicate staff or the material browser');
+ok(html.includes("currentTab === 'materials' && renderCourseMaterials(course, true)")&&html.includes("currentTab === 'study' && renderCourseLearning()"),'course routes render both pages inside the existing app shell');
 for(const mirror of ['github-publish/index.html','github-publish/fakulteti-online.html'])ok(fs.readFileSync(path.join(root,mirror),'utf8')===html,'HTML mirror matches');
 console.log(`PASS: ${checks} course card checks — staff roles, programme/year/group scope, missing names, progress and navigation.`);
 module.exports={html,h,nodes,text,context:c,selected,course};
