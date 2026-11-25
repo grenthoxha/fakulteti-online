@@ -63,6 +63,11 @@
     const words = fold(query).trim().split(/\s+/).filter(Boolean);
     return entries.filter(entry => (category === 'all' || entry.category === category) && words.every(word => fold(entry.title + ' ' + entry.files.map(file => file.title + ' ' + file.folder).join(' ')).includes(word)));
   };
+  function relatedEntries(entries, chapter) {
+    const ids = new Set(Array.isArray(chapter.materialIds) ? chapter.materialIds : []);
+    const titles = [chapter.title, ...(Array.isArray(chapter.resourceTitles) ? chapter.resourceTitles : [])].filter(Boolean).map(value => fold(labelOf({ title: value })));
+    return entries.filter(entry => ids.has(entry.id) || entry.files.some(file => ids.has(file.id)) || titles.includes(fold(entry.title)) || entry.files.some(file => titles.includes(fold(labelOf(file)))));
+  }
   const PATHS = { book: 'M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z', file: 'M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6', photos: 'M4 4h16v16H4zM4 16l5-5 4 4 3-3 4 4M15 8h.01', search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM16 16l5 5', back: 'M15 18l-6-6 6-6', next: 'M9 6l6 6-6 6', external: 'M14 3h7v7M21 3l-9 9M10 3H3v18h18v-7', close: 'M6 6l12 12M18 6L6 18', folder: 'M3 6h7l2 2h9v12H3z', fullscreen: 'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5', shrink: 'M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3' };
   const icon = name => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: PATHS[name] || PATHS.file }));
   function Viewer({ selection, onClose, onVisit, Portal, storage }) {
@@ -100,6 +105,17 @@
         !online ? h('div', { className: 'cl-viewer-note', role: 'status' }, 'Për ta hapur materialin nevojitet internet.')
           : h(global.FakultetiMaterialReader.Reader, { key: selection.id, file, files: gallery ? selection.files : undefined, start: selection.start || 0, onPosition: gallery ? setPosition : undefined, storage })));
     return Portal ? h(Portal, null, panel) : global.ReactDOM.createPortal(panel, document.body);
+  }
+  function RelatedMaterials({ courseId, chapter, storage, Portal }) {
+    const [data, setData] = React.useState(() => catalogues.get(courseId) || null), [selection, setSelection] = React.useState(null);
+    React.useEffect(() => { let active = true; load(courseId).then(value => { if (active) setData(value); }).catch(() => {}); return () => { active = false; }; }, [courseId]);
+    const entries = React.useMemo(() => relatedEntries(buildEntries(data?.files || []), chapter), [data, chapter.key, chapter.title, JSON.stringify(chapter.materialIds), JSON.stringify(chapter.resourceTitles)]);
+    if (!entries.length) return null;
+    const visit = file => { try { const saved = JSON.parse(storage?.getItem(RECENT_KEY) || '{}'); storage?.setItem(RECENT_KEY, JSON.stringify({ ...saved, [courseId]: file.id })); } catch {} };
+    return h('div', { className: 'cl-related-materials', 'aria-label': 'Materialet e kapitullit' },
+      entries.map(entry => h('button', { key: entry.id, type: 'button', className: 'cl-related-row', onClick: () => { const match = entry.files.findIndex(file => Array.isArray(chapter.materialIds) && chapter.materialIds.includes(file.id)); setSelection({ ...entry, start: Math.max(0, match) }); } },
+        icon(entry.kind === 'gallery' ? 'photos' : 'file'), h('span', null, h('strong', null, entry.title), h('small', null, entry.kind === 'gallery' ? `${entry.files.length} foto` : formatOf(entry.files[0]))), icon('next'))),
+      selection && h(Viewer, { key: selection.id, selection, onClose: () => setSelection(null), onVisit: visit, Portal, storage }));
   }
   function Section({ courseId, storage, Portal, page = false, onOpen }) {
     const info = source.courses[courseId];
@@ -140,5 +156,5 @@
             shown.length > limit && h('button', { type: 'button', className: 'cl-more', onClick: () => setLimit(value => value + 12) }, `Shiko më shumë (${shown.length - limit})`))),
       selection && h(Viewer, { key: selection.id, selection, onClose: () => setSelection(null), onVisit: visit, Portal, storage }));
   }
-  global.FakultetiCourseMaterials = { hasCourse, register, load, buildEntries, filterEntries, previewUrl, Section, Viewer, categories: CATEGORIES };
+  global.FakultetiCourseMaterials = { hasCourse, register, load, buildEntries, filterEntries, previewUrl, relatedEntries, RelatedMaterials, Section, Viewer, categories: CATEGORIES };
 })(window);

@@ -1714,9 +1714,9 @@
     @media (prefers-reduced-motion: reduce) { .header-search-panel,.app-header.is-searching > .header-search-heading { animation: none; } }
 
   </style>
-  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-5">
+  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-6">
   <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-4">
-  <link rel="stylesheet" href="./assets/course-learning-path.css?v=20261125-1">
+  <link rel="stylesheet" href="./assets/course-learning-path.css?v=20261125-2">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -1735,8 +1735,8 @@
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/course-materials-index.js?v=20261124-4"></script>
   <script src="./assets/course-material-reader.js?v=20261125-4"></script>
-  <script src="./assets/course-materials.js?v=20261125-5"></script>
-  <script src="./assets/course-learning-path.js?v=20261125-1"></script>
+  <script src="./assets/course-materials.js?v=20261125-6"></script>
+  <script src="./assets/course-learning-path.js?v=20261125-2"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 
@@ -11662,6 +11662,14 @@ function AcademyApp({
       return {};
     }
   });
+  const [courseActivityRecords, setCourseActivityRecords] = useState(() => {
+    try { const saved = JSON.parse(unitStorage.getItem('u_course_learning_activities_v1') || '{}'); return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}; } catch { return {}; }
+  });
+  useEffect(() => { try { unitStorage.setItem('u_course_learning_activities_v1', JSON.stringify(courseActivityRecords)); } catch {} }, [courseActivityRecords]);
+  const recordCourseActivity = (key, completed = false, details = {}) => {
+    const now = Date.now();
+    setCourseActivityRecords(previous => window.FakultetiLearningPath.updateActivity(previous, key, completed, now, details));
+  };
   const [courseQuizIdx, setCourseQuizIdx] = useState(0);
   const [courseQuizScore, setCourseQuizScore] = useState(0);
   const [courseQuizFinished, setCourseQuizFinished] = useState(false);
@@ -16019,7 +16027,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const courseLearningModel = window.FakultetiLearningPath.usePlan({
     course: view === 'course' ? course : null, scope: course ? `${learningAccount}:${branchId}:${learningYear}:${learningOwnerSemester?.id || semesterId}:${course.id}` : '',
     storage: unitStorage, preview: isInstructorAccount, active: !isInstructorAccount && view === 'course' && ['study', 'read', 'syllabus'].includes(tab),
-    read: readChapters, topics: course ? getCourseSyllabus(course).topics || [] : [],
+    read: readChapters, activities: courseActivityRecords, topics: course ? getCourseSyllabus(course).topics || [] : [],
     sessionsForWeek: (start, end) => {
       if (!course) return [];
       const output = [];
@@ -20656,6 +20664,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const goToChapter = idx => {
       if (!canOpenLearningChapter(idx)) return;
+      recordCourseActivity(`${chapterKeyOf(idx)}:read`);
       setActiveCourseChapterIdx(idx);
       unitStorage.setItem(`u_course_chapter_${course.id}`, idx);
       setCourseLessonStep(0);
@@ -20670,6 +20679,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       const updated = { ...readChapters, [key]: true };
       setReadChapters(updated);
       unitStorage.setItem('u_read_chapters', JSON.stringify(updated));
+      recordCourseActivity(`${key}:read`, true);
     };
     const isLastChapter = activeCourseChapterIdx >= chapters.length - 1;
 
@@ -20685,6 +20695,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const lessonAnswer = courseLessonAnswer && courseLessonAnswer.key === lessonKey ? courseLessonAnswer : null;
     const lessonDone = courseLessonDone && courseLessonDone.key === lessonKey ? courseLessonDone : null;
     const saveLessonStep = (chapterIdx, step) => {
+      recordCourseActivity(`${chapterKeyOf(chapterIdx)}:lesson`, false, { step });
       try { unitStorage.setItem(`u_course_step_${course.id}`, JSON.stringify({ chapter: chapterIdx, step })); } catch (e) {}
     };
     const studyDayKey = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
@@ -20723,8 +20734,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const startLesson = (idx, fromStart, atStep) => {
       if (!canOpenLearningChapter(idx)) return;
-      const resume = !fromStart && idx === activeCourseChapterIdx;
-      const nextStep = typeof atStep === 'number' ? atStep : resume ? courseLessonStep : 0;
+      const savedActivity = courseActivityRecords[`${chapterKeyOf(idx)}:lesson`];
+      const savedStep = Number.isInteger(savedActivity?.step) ? savedActivity.step : idx === activeCourseChapterIdx ? courseLessonStep : 0;
+      const nextStep = typeof atStep === 'number' ? atStep : fromStart ? 0 : savedStep;
       setActiveCourseChapterIdx(idx);
       unitStorage.setItem(`u_course_chapter_${course.id}`, idx);
       setCourseLessonStep(nextStep);
@@ -20744,12 +20756,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const finishLesson = () => {
       if (!canOpenLearningChapter(activeCourseChapterIdx)) return;
       const wasRead = activeChapterRead;
+      recordCourseActivity(`${chapterKeyOf(activeCourseChapterIdx)}:lesson`, true);
       logStudyTime();
       markActiveRead();
       const afterCount = readCount + (wasRead ? 0 : 1);
       const after = chapters.length ? Math.round((afterCount / chapters.length) * 100) : 0;
       const minutes = courseLessonStartedAt ? Math.max(1, Math.round((Date.now() - courseLessonStartedAt) / 60000)) : null;
-      setCourseLessonDone({ key: lessonKey, before: readinessFor(readCount), after: readinessFor(afterCount), minutes, answer: lessonAnswer, question: lessonPlan.question });
+      setCourseLessonDone({ key: lessonKey, before: progressPct, after, minutes, answer: lessonAnswer, question: lessonPlan.question });
       setCourseLessonStep(0);
       saveLessonStep(activeCourseChapterIdx, 0);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -20960,6 +20973,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const openCourseReader = idx => {
       if (!canOpenLearningChapter(idx)) return;
       if (idx !== activeCourseChapterIdx) goToChapter(idx);
+      else recordCourseActivity(`${chapterKeyOf(idx)}:read`);
       setCourseSheet(null);
       openCourseTab('read');
     };
@@ -21003,7 +21017,8 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
         lh(window.FakultetiLearningPath.View, { key: course.id, model: courseLearningModel,
           onChapter: idx => { if (canOpenLearningChapter(idx)) setCourseSheet({ type: 'chapter', idx }); },
-          onContinue: idx => startLesson(idx), book: courseBook, onBook: openCourseBook, onUpload: pickCourseBook, busy: bookBusy }));
+          onRead: openCourseReader, onLesson: idx => startLesson(idx), onContinue: openCourseReader,
+          renderResources: item => hasCourseMaterials && lh(window.FakultetiCourseMaterials.RelatedMaterials, { key: item.key, courseId: course.id, chapter: item, storage: unitStorage, Portal: ModalPortal }), book: courseBook, onBook: openCourseBook, onUpload: pickCourseBook, busy: bookBusy }));
     };
     const sheetRow = (key, title, sub, icon, onClick, first) => lh("button", { key, type: "button", onClick, className: `w-full flex items-center gap-3.5 py-3.5 text-left cursor-pointer ${first ? '' : 'border-t border-black/5 dark:border-white/10'}` },
       lh("span", { className: "w-11 h-11 rounded-xl bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0" }, lessonIcon(icon, "w-5 h-5")),
@@ -21244,7 +21259,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         lh("div", { className: "grid grid-cols-3 card-surface border border-default rounded-2xl" },
           statBox('time', summary.minutes ? `${summary.minutes} min` : (activeChapter.time || '—'), 'kohë', false, true),
           statBox('question', summary.answer ? `${summary.answer.correct ? 1 : 0}/1` : '—', 'pyetja e shpejtë'),
-          statBox('progress', `${summary.before}→${summary.after}%`, 'gati për provim', true)),
+          statBox('progress', `${summary.before}→${summary.after}%`, 'progresi i leximit', true)),
         lh("div", { className: "card-surface border border-default rounded-2xl px-4 py-3.5 space-y-3" },
           lh("div", { className: "flex items-center justify-between" },
             lh("span", { className: "text-sm font-semibold text-primary" }, '7 ditët e fundit'),
@@ -21353,6 +21368,10 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       ),
 
       currentTab === 'brain' && course.id === BRAIN_COURSE_ID && React.createElement(BrainStudyModule, { language: uiLanguage, isDark }),
+
+      !['read', 'book', 'syllabus', 'brain'].includes(currentTab) && lh(window.FakultetiLearningPath.Navigation, {
+        active: currentTab, hasLearning: chapters.length > 0, hasMaterials: hasCourseMaterials, onNavigate: nextTab => { setCourseSheet(null); setCourseMenuOpen(false); openCourseTab(nextTab); }
+      }),
 
       /* RRUGA E LËNDËS (A) · MËSIMI HAP PAS HAPI (B) · FUNDI I KAPITULLIT (C) */
       currentTab === 'path' && renderCoursePath(),

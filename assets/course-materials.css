@@ -68,3 +68,11 @@
 .course-library--page .cl-library-content{margin:0;padding:0;border:0}
 .course-library--page .cl-list{margin-top:2px;padding:0 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
 .course-library--page .cl-more{border:0;margin-top:6px}
+.cl-related-materials{padding:0 10px;border-top:1px solid var(--line)}
+.cl-related-row{display:flex;align-items:center;gap:9px;width:100%;min-height:54px;padding:9px 0;text-align:left}
+.cl-related-row+.cl-related-row{border-top:1px solid var(--line)}
+.cl-related-row>svg{width:16px;height:16px;flex:none;color:rgb(var(--brand-rgb))}.cl-related-row>svg:last-child{width:13px;color:var(--muted)}
+.cl-related-row>span{flex:1;min-width:0}.cl-related-row strong{display:block;font-size:12px;font-weight:550;line-height:18px;overflow-wrap:anywhere;color:var(--ink)}
+.cl-related-row small{display:block;margin-top:2px;font-size:10px;color:var(--muted)}
+.cl-related-row:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:-2px}
+.dark .cl-related-row>svg{color:#a2c9f2}

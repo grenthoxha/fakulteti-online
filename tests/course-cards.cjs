@@ -73,7 +73,7 @@ ok(!text(detail).includes('Si dëshiron ta mësosh')&&!text(detail).includes('Fi
 nodes(detail).find(n=>n.type==='button'&&text(n).includes('Ligjërata dhe kapituj')).props.onClick();ok(courseTabs.at(-1)==='study','learning entry opens the dedicated study section');
 nodes(detail).find(n=>n.type==='MaterialEntry').props.onOpen();ok(courseTabs.at(-1)==='materials','student-material entry navigates to the separate material page');
 vm.runInContext('this.learning=renderCourseLearning;',c);
-Object.assign(c,{iconBtn:'button',unitReadJson:()=>({}),openCourseBook(){},UNIT_BOOK_POS:'book-position',formatLastStudied:()=>'',READ_ICONS:{book:'book'},renderCourseMaterials:()=>null});
+Object.assign(c,{iconBtn:'button',unitReadJson:()=>({}),openCourseBook(){},openCourseReader(){},UNIT_BOOK_POS:'book-position',formatLastStudied:()=>'',READ_ICONS:{book:'book'},renderCourseMaterials:()=>null});
 const learning=c.learning();ok(nodes(learning).some(n=>n.type==='LearningPath')&&nodes(learning).some(n=>n.type==='input'&&n.props.type==='file'),'study renders the weekly learning path and preserves personal PDF upload');
 ok(nodes(learning).find(n=>n.type==='LearningPath').props.model===c.courseLearningModel,'weekly view uses the account-scoped progression model');
 ok(!nodes(learning).some(n=>n.type==='MaterialEntry')&&!nodes(learning).some(n=>n.props.className?.includes('course-teaching-staff')),'learning does not duplicate staff or the material browser');
