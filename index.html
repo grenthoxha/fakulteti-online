@@ -1503,29 +1503,32 @@
     .dark .courses-page .course-progress-ring { background: rgba(255,255,255,.045); }
     @media(prefers-reduced-motion:reduce) { .courses-page .course-summary-card { transition: none; } }
     .course-detail-page { min-width: 0; }
-    .course-overview{max-width:640px;display:grid;gap:16px;padding-top:4px}
-    .course-overview-heading h1{font-size:clamp(21px,4.4vw,27px);line-height:1.25;font-weight:750;letter-spacing:-.025em;color:var(--ink);overflow-wrap:anywhere}
+    .course-overview{max-width:640px;display:grid;gap:15px;padding-top:4px}
+    .course-overview-heading h1{font-size:clamp(21px,4.2vw,25px);line-height:1.25;font-weight:700;letter-spacing:-.025em;color:var(--ink);overflow-wrap:anywhere}
     .course-overview-meta{margin-top:6px;font-size:12px;color:var(--muted)}
     .course-overview .course-teaching-staff{margin-top:10px;font-size:12px;line-height:18px}
-    .course-overview-entries{display:grid;gap:10px}
-    .course-overview-learning,.course-overview-personal-book,.course-overview-tools{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
-    .course-overview-learning{background:linear-gradient(110deg,rgba(var(--brand-rgb),.055),var(--surface));border-color:rgba(var(--brand-rgb),.17)}
-    .course-overview-row{display:flex;align-items:center;gap:11px;width:100%;min-height:74px;padding:14px;text-align:left;color:var(--ink)}
+    .course-overview-entries{display:grid;gap:0;border-top:1px solid var(--line)}
+    .course-overview-learning,.course-overview-personal-book{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow:hidden}
+    .course-overview-tools{border:0;border-radius:0;background:transparent;overflow:hidden}
+    .course-overview-row{display:flex;align-items:center;gap:11px;width:100%;min-height:65px;padding:12px 0;text-align:left;color:var(--ink)}
     .course-overview-row:hover{background:rgba(var(--brand-rgb),.035)}
-    .course-overview-icon{display:grid;place-items:center;width:36px;height:40px;flex:none;border-radius:10px;color:rgb(var(--brand-rgb));background:rgba(var(--brand-rgb),.065)}
+    .course-overview-icon{display:grid;place-items:center;width:28px;height:30px;flex:none;color:rgb(var(--brand-rgb));background:transparent}
     .course-overview-copy{flex:1;min-width:0}
-    .course-overview-copy strong{display:block;font-size:14.5px;line-height:20px;font-weight:650;overflow-wrap:anywhere}
+    .course-overview-copy strong{display:block;font-size:14px;line-height:20px;font-weight:600;overflow-wrap:anywhere}
     .course-overview-copy small{display:block;margin-top:3px;font-size:11px;line-height:16px;color:var(--muted)}
     .course-overview-progress{display:flex;align-items:center;gap:9px;flex:none;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
-    .course-overview-track{height:3px;margin:0 14px 12px;border-radius:3px;background:rgba(var(--brand-rgb),.09);overflow:hidden}
+    .course-overview-track{height:2px;margin:0 0 12px 39px;border-radius:3px;background:rgba(var(--brand-rgb),.09);overflow:hidden}
     .course-overview-track span{display:block;height:100%;background:rgb(var(--brand-rgb));border-radius:inherit}
-    .course-overview-tools .course-overview-row{min-height:54px;padding-block:9px}
+    .course-overview-tools .course-overview-row{min-height:49px;padding:9px 0}
     .course-overview-tools .course-overview-row+.course-overview-row{border-top:1px solid var(--line)}
     .course-overview-tools .course-overview-icon{width:30px;height:32px;background:transparent}
     .course-overview-tools .course-overview-copy strong{font-size:13px;font-weight:550}
     .course-overview-empty{padding:16px 0;color:var(--muted);font-size:13px;line-height:1.6}
     .course-overview-row:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:-3px}
-
+    .course-overview .course-library--entry{padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+    .course-overview .cl-library-toggle{min-height:70px;gap:11px}
+    .course-overview .cl-file-icon{width:28px;height:30px;background:transparent;border-radius:0}
+    .course-overview .cl-library-title strong{font-size:14px;font-weight:600}
     .course-detail-body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
     .course-detail-body h1, .course-detail-body h2, .course-detail-body h3 { color: var(--ink); font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; }
     .course-detail-body p { margin-bottom: 0.75rem; line-height: 1.7; }
@@ -1716,7 +1719,7 @@
   </style>
   <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-6">
   <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-4">
-  <link rel="stylesheet" href="./assets/course-learning-path.css?v=20261125-2">
+  <link rel="stylesheet" href="./assets/course-learning-path.css?v=20261125-3">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -1736,7 +1739,7 @@
   <script src="./assets/course-materials-index.js?v=20261124-4"></script>
   <script src="./assets/course-material-reader.js?v=20261125-4"></script>
   <script src="./assets/course-materials.js?v=20261125-6"></script>
-  <script src="./assets/course-learning-path.js?v=20261125-2"></script>
+  <script src="./assets/course-learning-path.js?v=20261125-3"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 

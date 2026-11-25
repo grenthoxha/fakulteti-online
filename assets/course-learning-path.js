@@ -130,29 +130,29 @@
     const openActivity = (item, mode) => (mode === 'lesson' ? onLesson || onContinue : onRead || onChapter || onContinue)?.(item.index);
     const statusLabel = status => status === 'done' ? 'Përfunduar' : status === 'in-progress' ? 'Në vazhdim' : 'Pa nisur';
     const activity = (item, mode, title, icon, status) => h('button', { key: mode, type: 'button', className: 'learning-path-activity' + (mode === 'read' ? ' learning-path-chapter' : ''), disabled: !item.available, onClick: () => openActivity(item, mode) },
-      h('span', { className: 'learning-path-chapter-mark' }, pathIcon(!item.available ? 'lock' : icon, 17)), h('span', { className: 'learning-path-activity-copy' }, h('strong', null, title), h('small', null, mode === 'read' ? item.time || 'Teksti i kapitullit' : 'Mëso me hapa të shkurtër')),
-      h('span', { className: 'learning-path-activity-status is-' + status }, status === 'done' && pathIcon('check', 15), h('span', { className: status === 'done' ? 'sr-only' : undefined }, statusLabel(status))), item.available && pathIcon('next', 13));
+      h('span', { className: 'learning-path-chapter-mark' }, pathIcon(!item.available ? 'lock' : icon, 17)), h('span', { className: 'learning-path-activity-copy' }, h('strong', null, title), h('small', { className: 'sr-only' }, mode === 'read' ? item.time || 'Teksti i kapitullit' : 'Mëso me hapa të shkurtër')),
+      h('span', { className: 'learning-path-activity-status is-' + status }, status === 'done' && pathIcon('check', 15), h('span', { className: status === 'done' || status === 'not-started' ? 'sr-only' : undefined }, statusLabel(status))), item.available && pathIcon('next', 13));
     return h('div', { className: 'learning-path anim-fade-up' },
-      h('header', { className: 'learning-path-heading' }, h('h1', { tabIndex: -1 }, 'Ligjërata dhe kapituj'), h('p', null, model.title), h('p', { className: 'learning-path-requirement' }, 'Përfundo leximin ose mësimin e çdo kapitulli.'),
+      h('header', { className: 'learning-path-heading' }, h('h1', { tabIndex: -1 }, 'Përmbajtja e lëndës'), h('p', null, model.title), h('p', { className: 'learning-path-requirement sr-only' }, 'Përfundo leximin ose mësimin e çdo kapitulli.'),
         h('div', { className: 'learning-path-progress' }, h('span', null, `${model.completed} nga ${model.total} kapituj`), h('span', null, `${Math.round(model.completed / Math.max(1, model.total) * 100)}%`)),
         h('div', { className: 'learning-path-track', role: 'progressbar', 'aria-label': 'Kapitujt e përfunduar', 'aria-valuemin': 0, 'aria-valuemax': model.total, 'aria-valuenow': model.completed }, h('span', { style: { width: model.completed / Math.max(1, model.total) * 100 + '%' } }))),
       model.next && h('section', { className: 'learning-path-next' }, h('div', null, h('small', null, `Java ${model.next.week} · Ligjërata ${model.next.lecture}`), h('strong', null, model.next.title)), h('button', { type: 'button', onClick: () => openActivity(model.next, continueMode) }, model.next.readStatus === 'in-progress' || model.next.lessonStatus === 'in-progress' ? 'Vazhdo' : 'Fillo', pathIcon('next', 16))),
       model.allDone && h('p', { className: 'learning-path-complete', role: 'status' }, pathIcon('check'), 'I ke përfunduar të gjithë kapitujt. Mund t’i rilexosh kur të duash.'),
       h('div', { className: 'learning-path-weeks' }, model.groups.map(group => {
         const open = expanded === group.id, sectionId = `learning-${encodeURIComponent(model.courseId)}-${encodeURIComponent(group.id)}`;
-        const message = group.reason === 'preview' ? 'Pamje e plotë e lëndës' : group.reason === 'saved' ? 'Hapur më parë · progresi yt ruhet' : group.reason === 'reading' ? 'Hapur nga leximi paraprak' : group.reason === 'schedule' ? 'Hapur sipas orarit të përfunduar' : group.reason === 'first' ? 'Hapi i parë' : group.scheduled ? `Hapet pas orës më ${shortDate(group.scheduled.date)}, ${group.scheduled.end}, ose pasi ta përfundosh ligjëratën paraprake.` : 'Hapet pasi ta përfundosh ligjëratën paraprake; lidhet edhe me orarin kur ka ligjërata të planifikuara.';
+        const message = group.reason === 'preview' ? 'Pamje e plotë e lëndës' : group.reason === 'saved' ? 'Hapur më parë · progresi yt ruhet' : group.reason === 'reading' ? 'Hapur nga leximi paraprak' : group.reason === 'schedule' ? 'Hapur sipas orarit të përfunduar' : group.reason === 'first' ? 'Hapi i parë' : group.scheduled ? `Hapet më ${shortDate(group.scheduled.date)}, ${group.scheduled.end}, ose pas leximit paraprak.` : 'Përfundo ligjëratën paraprake për ta hapur.';
         return h('section', { key: group.id, className: 'learning-path-week' + (group.done ? ' is-done' : !group.available ? ' is-locked' : '') },
           h('button', { type: 'button', className: 'learning-path-week-toggle', 'aria-expanded': open, 'aria-controls': sectionId, onClick: () => setExpanded(open ? null : group.id) },
-            h('span', { className: 'learning-path-marker' }, group.done ? pathIcon('check') : !group.available ? pathIcon('lock', 16) : group.number),
-            h('span', { className: 'learning-path-week-copy' }, h('strong', null, group.title || `Ligjërata ${group.number}`), h('small', null, `Java ${group.week} · ${shortDate(group.start)}–${shortDate(group.end)}`)),
+            h('span', { className: 'learning-path-marker' }, group.done ? pathIcon('check') : !group.available ? pathIcon('lock', 15) : pathIcon('book', 16)),
+            h('span', { className: 'learning-path-week-copy' }, h('strong', null, group.title || (model.groups.filter(item => item.week === group.week).length > 1 ? `Java ${group.week} · Ligjërata ${group.number}` : `Java ${group.week}`)), h('small', null, `${group.title ? 'Java ' + group.week + ' · ' : ''}${shortDate(group.start)}–${shortDate(group.end)}`)),
             h('span', { className: 'learning-path-week-status' }, group.done ? 'Kryer' : `${group.chapters.filter(item => item.done).length}/${group.chapters.length}`), pathIcon('next', 15)),
           open && h('div', { id: sectionId, className: 'learning-path-week-body' },
-            h('p', { className: 'learning-path-release' }, message),
+            !group.available && h('p', { className: 'learning-path-release' }, message),
             group.chapters.map((item, index) => h('section', { key: item.key, className: 'learning-path-topic' },
-              h('div', { className: 'learning-path-topic-heading' }, h('strong', null, item.title), h('small', null, item.done ? 'Kryer' : !item.available ? 'I mbyllur' : `Kapitulli ${item.index + 1}`)),
+              h('div', { className: 'learning-path-topic-heading' }, h('strong', null, item.title), h('small', { className: 'sr-only' }, item.done ? 'Kryer' : !item.available ? 'I mbyllur' : `Kapitulli ${item.index + 1}`)),
               !item.available && item.reason === 'chapter' && h('p', { className: 'learning-path-release' }, 'Përfundo kapitullin paraprak.'),
-              activity(item, 'read', 'Leximi i kapitullit', 'book', item.readStatus),
-              activity(item, 'lesson', 'Mësim hap pas hapi', 'next', item.lessonStatus),
+              activity(item, 'read', 'Lexim', 'book', item.readStatus),
+              activity(item, 'lesson', 'Mësim', 'next', item.lessonStatus),
               item.available && renderResources?.(item)))));
 
       })),
