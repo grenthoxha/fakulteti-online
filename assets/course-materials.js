@@ -63,30 +63,43 @@
     const words = fold(query).trim().split(/\s+/).filter(Boolean);
     return entries.filter(entry => (category === 'all' || entry.category === category) && words.every(word => fold(entry.title + ' ' + entry.files.map(file => file.title + ' ' + file.folder).join(' ')).includes(word)));
   };
-  const PATHS = { book: 'M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z', file: 'M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6', photos: 'M4 4h16v16H4zM4 16l5-5 4 4 3-3 4 4M15 8h.01', search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM16 16l5 5', back: 'M15 18l-6-6 6-6', next: 'M9 6l6 6-6 6', external: 'M14 3h7v7M21 3l-9 9M10 3H3v18h18v-7', close: 'M6 6l12 12M18 6L6 18', folder: 'M3 6h7l2 2h9v12H3z' };
+  const PATHS = { book: 'M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z', file: 'M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6', photos: 'M4 4h16v16H4zM4 16l5-5 4 4 3-3 4 4M15 8h.01', search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM16 16l5 5', back: 'M15 18l-6-6 6-6', next: 'M9 6l6 6-6 6', external: 'M14 3h7v7M21 3l-9 9M10 3H3v18h18v-7', close: 'M6 6l12 12M18 6L6 18', folder: 'M3 6h7l2 2h9v12H3z', fullscreen: 'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5', shrink: 'M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3' };
   const icon = name => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: PATHS[name] || PATHS.file }));
   function Viewer({ selection, onClose, onVisit, Portal, storage }) {
-    const [position, setPosition] = React.useState(selection.start || 0);
+    const [position, setPosition] = React.useState(selection.start || 0), [fullscreen, setFullscreen] = React.useState(false);
+    const shell = React.useRef(null), nativeFullscreen = React.useRef(false);
     const file = selection.files[position], gallery = selection.files.length > 1;
     const [online, setOnline] = React.useState(() => global.navigator?.onLine !== false);
     const title = selection.kind === 'gallery' ? selection.title : labelOf(file);
     React.useEffect(() => { const previous = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = previous; }; }, []);
     React.useEffect(() => { const update = () => setOnline(global.navigator?.onLine !== false); global.addEventListener('online', update); global.addEventListener('offline', update); return () => { global.removeEventListener('online', update); global.removeEventListener('offline', update); }; }, []);
     React.useEffect(() => { onVisit(file); }, [file.id]);
-    const move = delta => setPosition(value => Math.max(0, Math.min(selection.files.length - 1, value + delta)));
-    const panel = h('section', { className: 'cl-viewer', onClick: event => { if (event.target === event.currentTarget) onClose(); }, role: 'dialog', 'aria-modal': true, 'aria-label': title },
-      h('header', { className: 'cl-viewer-heading' },
+    const leaveFullscreen = () => {
+      setFullscreen(false);
+      if (document.fullscreenElement === shell.current) Promise.resolve(document.exitFullscreen?.()).catch(() => {});
+    };
+    const toggleFullscreen = () => {
+      if (fullscreen) { leaveFullscreen(); return; }
+      setFullscreen(true);
+      try { Promise.resolve(shell.current?.requestFullscreen?.()).catch(() => {}); } catch {}
+    };
+    React.useEffect(() => {
+      const change = () => {
+        if (document.fullscreenElement === shell.current && shell.current) { nativeFullscreen.current = true; setFullscreen(true); }
+        else if (nativeFullscreen.current) { nativeFullscreen.current = false; setFullscreen(false); }
+      };
+      document.addEventListener?.('fullscreenchange', change);
+      return () => { document.removeEventListener?.('fullscreenchange', change); if (document.fullscreenElement && document.fullscreenElement === shell.current) Promise.resolve(document.exitFullscreen?.()).catch(() => {}); };
+    }, []);
+    const panel = h('section', { className: 'cl-viewer' + (fullscreen ? ' is-fullscreen' : ''), onClick: event => { if (event.target === event.currentTarget) { if (fullscreen) leaveFullscreen(); else onClose(); } }, role: 'dialog', 'aria-modal': true, 'aria-label': title },
+      h('header', { className: 'cl-viewer-heading', ref: node => { shell.current = node?.parentElement || null; } },
         h('button', { type: 'button', className: 'cl-icon-button', onClick: onClose, 'aria-label': 'Mbyll materialin' }, icon('back')),
         h('div', { className: 'cl-viewer-title' }, h('h2', null, title), h('p', null, gallery ? `Foto ${position + 1} nga ${selection.files.length}` : formatOf(file) + ' · ' + sizeOf(file.size))),
+        h('button', { type: 'button', className: 'cl-icon-button', onClick: toggleFullscreen, 'aria-pressed': fullscreen, 'aria-label': fullscreen ? 'Dil nga ekrani i plotë' : 'Ekran i plotë' }, icon(fullscreen ? 'shrink' : 'fullscreen')),
         h('a', { href: safeReleaseUrl(file.url), target: '_blank', rel: 'noopener noreferrer', className: 'cl-download', 'aria-label': 'Shkarko origjinalin: ' + file.title, title: 'Shkarko origjinalin' }, h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, 'aria-hidden': true }, h('path', { d: 'M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5' })))),
       h('div', { className: 'cl-viewer-stage' },
         !online ? h('div', { className: 'cl-viewer-note', role: 'status' }, 'Për ta hapur materialin nevojitet internet.')
-          : h(global.FakultetiMaterialReader.Reader, { key: file.id, file, storage })),
-      gallery && h('footer', { className: 'cl-viewer-footer' },
-        gallery && h('div', { className: 'cl-gallery-controls' },
-          h('button', { type: 'button', onClick: () => move(-1), disabled: position === 0, 'aria-label': 'Fotoja paraprake' }, icon('back')),
-          h('label', { className: 'cl-gallery-position' }, h('span', { className: 'sr-only' }, 'Zgjidh fotografinë'), h('select', { value: position, onChange: event => setPosition(Number(event.target.value)) }, selection.files.map((item, i) => h('option', { key: item.id, value: i }, `${i + 1} / ${selection.files.length}`)))),
-          h('button', { type: 'button', onClick: () => move(1), disabled: position === selection.files.length - 1, 'aria-label': 'Fotoja tjetër' }, icon('next')))));
+          : h(global.FakultetiMaterialReader.Reader, { key: selection.id, file, files: gallery ? selection.files : undefined, start: selection.start || 0, onPosition: gallery ? setPosition : undefined, storage })));
     return Portal ? h(Portal, null, panel) : global.ReactDOM.createPortal(panel, document.body);
   }
   function Section({ courseId, storage, Portal }) {
@@ -96,6 +109,12 @@
     const [error, setError] = React.useState(false), [retry, setRetry] = React.useState(0);
     const [category, setCategory] = React.useState('all'), [query, setQuery] = React.useState(''), [limit, setLimit] = React.useState(5), [selection, setSelection] = React.useState(null), [recent, setRecent] = React.useState(null);
     React.useEffect(() => { if (!expanded) return; let alive = true; setError(false); setData(catalogues.get(courseId) || null); load(courseId).then(value => { if (alive) setData(value); }).catch(() => { if (alive) setError(true); }); return () => { alive = false; }; }, [courseId, retry, expanded]);
+    React.useEffect(() => {
+      if (!expanded) return;
+      const warm = () => { if (global.navigator?.connection?.saveData) return; global.FakultetiMaterialReader?.warm?.(); };
+      if (global.requestIdleCallback) { const id = global.requestIdleCallback(warm, { timeout: 1500 }); return () => global.cancelIdleCallback(id); }
+      const id = setTimeout(warm, 450); return () => clearTimeout(id);
+    }, [expanded]);
     React.useEffect(() => { try { setRecent(JSON.parse(storage?.getItem(RECENT_KEY) || '{}')[courseId] || null); } catch { setRecent(null); } }, [courseId, storage]);
     const entries = React.useMemo(() => buildEntries(data?.files || []), [data]);
     const shown = React.useMemo(() => filterEntries(entries, category, query), [entries, category, query]);
