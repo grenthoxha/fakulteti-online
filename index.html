@@ -1716,6 +1716,7 @@
   </style>
   <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-5">
   <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-4">
+  <link rel="stylesheet" href="./assets/course-learning-path.css?v=20261125-1">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -1735,6 +1736,7 @@
   <script src="./assets/course-materials-index.js?v=20261124-4"></script>
   <script src="./assets/course-material-reader.js?v=20261125-4"></script>
   <script src="./assets/course-materials.js?v=20261125-5"></script>
+  <script src="./assets/course-learning-path.js?v=20261125-1"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 
@@ -6733,7 +6735,7 @@ const unitWrapHighlight = (root, text) => {
   }
   return false;
 };
-const UnitChapterReader = ({ courseTitle, chapters, chapterIdx, html, fontSize, isRead, hlKey, posKey, onClose, onMode, onChapter, onFinish, onFontSize, onAction, onNotice }) => {
+const UnitChapterReader = ({ courseTitle, chapters, chapterIdx, chapterAccess, html, fontSize, isRead, hlKey, posKey, onClose, onMode, onChapter, onFinish, onFontSize, onAction, onNotice }) => {
   const h = React.createElement;
   const scrollRef = useRef(null);
   const contentRef = useRef(null);
@@ -6906,8 +6908,8 @@ const UnitChapterReader = ({ courseTitle, chapters, chapterIdx, html, fontSize, 
       h('aside', { className: 'hidden lg:block w-[300px] shrink-0 overflow-y-auto border-r border-black/5 dark:border-white/10 p-5' },
         h('div', { className: 'text-[13px] font-semibold text-tertiary mb-3' }, 'Kapitujt'),
         h('div', { className: 'space-y-1' }, chapters.map((ch, i) => h('button', {
-          key: i, type: 'button', onClick: () => i !== chapterIdx && onChapter(i),
-          className: `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer ${i === chapterIdx ? 'bg-brand-600/10' : 'hover-surface'}`
+          key: i, type: 'button', disabled: chapterAccess && !chapterAccess[i], title: chapterAccess && !chapterAccess[i] ? 'Përfundo kapitullin paraprak' : undefined, onClick: () => i !== chapterIdx && onChapter(i),
+          className: `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${i === chapterIdx ? 'bg-brand-600/10' : 'hover-surface'}`
         },
           h('span', { className: `w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${i === chapterIdx ? 'bg-brand-600 text-white' : 'border border-default text-tertiary'}` }, i + 1),
           h('span', { className: `text-[14px] ${i === chapterIdx ? 'font-bold text-primary' : 'text-secondary'}` }, typeof ch === 'string' ? ch : ch.title || `Kapitulli ${i + 1}`))))),
@@ -6920,7 +6922,7 @@ const UnitChapterReader = ({ courseTitle, chapters, chapterIdx, html, fontSize, 
             isRead
               ? h('p', { className: 'flex items-center justify-center gap-2 text-[14px] font-semibold text-brand-600 dark:text-brand-300' }, unitReaderIcon(UNIT_READER_ICONS.ok, 'w-4 h-4'), 'Ky kapitull u lexua')
               : h('button', { type: 'button', onClick: onFinish, className: 'w-full h-12 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-[15px] font-semibold cursor-pointer' }, 'Përfundo kapitullin'),
-            chapterIdx < chapters.length - 1 && h('button', { type: 'button', onClick: () => onChapter(chapterIdx + 1), className: 'w-full min-h-12 px-4 rounded-xl border border-default text-[15px] font-semibold text-primary hover-surface cursor-pointer' }, `Kapitulli ${chapterIdx + 2} · ${typeof chapters[chapterIdx + 1] === 'string' ? chapters[chapterIdx + 1] : (chapters[chapterIdx + 1] && chapters[chapterIdx + 1].title) || ''}`),
+            chapterIdx < chapters.length - 1 && h('button', { type: 'button', disabled: chapterAccess && !chapterAccess[chapterIdx + 1], title: chapterAccess && !chapterAccess[chapterIdx + 1] ? 'Përfundo kapitullin paraprak' : undefined, onClick: () => onChapter(chapterIdx + 1), className: 'w-full min-h-12 px-4 rounded-xl border border-default text-[15px] font-semibold text-primary hover-surface cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' }, `Kapitulli ${chapterIdx + 2} · ${typeof chapters[chapterIdx + 1] === 'string' ? chapters[chapterIdx + 1] : (chapters[chapterIdx + 1] && chapters[chapterIdx + 1].title) || ''}`),
             chapterIdx > 0 && h('button', { type: 'button', onClick: () => onChapter(chapterIdx - 1), className: 'w-full h-10 text-[14px] font-medium text-tertiary hover:text-primary cursor-pointer' }, 'Kapitulli i mëparshëm')))))
     ,
     h('div', { className: 'shrink-0 border-t border-black/5 dark:border-white/10' },
@@ -16009,6 +16011,27 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
   const academicWeekAttendanceRate = recordedAcademicWeekSessions ? Math.round(attendedAcademicWeekSessions / recordedAcademicWeekSessions * 100) : 0;
   const semesterCalendarScopeKey = `${branchId}:${yearId}`;
   const activeSemesterCalendar = semesterCalendars[semesterCalendarScopeKey] || defaultSemesterCalendar(new Date(`${today}T12:00:00`));
+  const learningOwnerYear = course && branchYears.find(year => (year.semesters || []).some(semester => (semester.courses || []).some(item => item.id === course.id)));
+  const learningOwnerSemester = (learningOwnerYear?.semesters || []).find(semester => (semester.courses || []).some(item => item.id === course?.id));
+  const learningYear = learningOwnerYear?.id || yearId;
+  const learningProgram = getFacultyScheduleProgram(branchId, learningYear);
+  const learningAccount = window.FakultetiLocalAccounts?.databaseName('learning') || 'local';
+  const courseLearningModel = window.FakultetiLearningPath.usePlan({
+    course: view === 'course' ? course : null, scope: course ? `${learningAccount}:${branchId}:${learningYear}:${learningOwnerSemester?.id || semesterId}:${course.id}` : '',
+    storage: unitStorage, preview: isInstructorAccount, active: !isInstructorAccount && view === 'course' && ['study', 'read', 'syllabus'].includes(tab),
+    read: readChapters, topics: course ? getCourseSyllabus(course).topics || [] : [],
+    sessionsForWeek: (start, end) => {
+      if (!course) return [];
+      const output = [];
+      for (let day = start; day <= end; day = window.FakultetiLearningPath.addDays(day, 1)) {
+        const dayId = new Date(`${day}T12:00:00`).getDay() || 7;
+        const official = learningProgram ? getFilozofikuProgramSessions(scheduleProgramData, learningProgram, dayId, day) : [];
+        output.push(...window.FakultetiLearningPath.pickSessions({ course, courses: learningOwnerSemester?.courses || [course], branchId, yearId: learningYear,
+          groupId: studentGroupId, programName: learningProgram?.groupName || '', date: day, personal: academicSchedule, official, score: officialCourseMatchScore }));
+      }
+      return output;
+    }
+  });
   const updateSemesterCalendar = (field, value) => {
     setSemesterCalendars(previous => ({
       ...previous,
@@ -20532,7 +20555,9 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const activeChapter = chapters[activeCourseChapterIdx] || chapters[0] || null;
     const activeChapterRead = activeChapter ? Boolean(readChapters[`${course.id}_${activeChapter.id || activeCourseChapterIdx}`]) : false;
 
-    const currentTab = (tab === 'overview' || tab === 'path') ? 'path' : tab;
+    const requestedTab = (tab === 'overview' || tab === 'path') ? 'path' : tab;
+    const activeChapterAvailable = !activeChapter || courseLearningModel.chapters.find(item => item.index === activeCourseChapterIdx)?.available;
+    const currentTab = ['read', 'syllabus'].includes(requestedTab) && !activeChapterAvailable ? 'study' : requestedTab;
     const openCourseTab = nextTab => {
       setTab(nextTab);
       unitStorage.setItem(`u_course_tab_${course.id}`, nextTab);
@@ -20601,7 +20626,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     /* ── Pamje mësimi në stilin "Brilliant": një kapitull në ekran, pa zhurmë ── */
     const studyTabs = [
       { id: 'path', label: 'Lënda' },
-      ...(chapters.length ? [{ id: 'study', label: 'Mësimi në app', meta: `${progressPct}%` }] : []),
+      ...(chapters.length ? [{ id: 'study', label: 'Ligjërata dhe kapituj', meta: `${progressPct}%` }] : []),
       ...(hasCourseMaterials ? [{ id: 'materials', label: 'Materiale nga studentët' }] : []),
       ...(courseBooks[course.id] ? [{ id: 'book', label: 'Libri (faqe për faqe)' }, { id: 'read', label: 'Teksti i kapitullit' }] : [{ id: 'read', label: 'Lexo' }]),
       { id: 'syllabus', label: 'Mësimi', meta: chapters.length ? `${readCount}/${chapters.length}` : null },
@@ -20624,7 +20649,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       /*#__PURE__*/React.createElement("span", null, label),
       opts.meta != null && /*#__PURE__*/React.createElement("span", { className: "text-xs text-tertiary tabular-nums" }, opts.meta)
     );
+    const canOpenLearningChapter = idx => {
+      if (courseLearningModel.chapters.find(item => item.index === idx)?.available) return true;
+      showToast('Përfundo leximin paraprak ose prit hapjen sipas orarit.', 'ℹ️');
+      openCourseTab('study'); return false;
+    };
     const goToChapter = idx => {
+      if (!canOpenLearningChapter(idx)) return;
       setActiveCourseChapterIdx(idx);
       unitStorage.setItem(`u_course_chapter_${course.id}`, idx);
       setCourseLessonStep(0);
@@ -20634,7 +20665,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const markActiveRead = () => {
-      if (!activeChapter || activeChapterRead) return;
+      if (!activeChapter || activeChapterRead || !canOpenLearningChapter(activeCourseChapterIdx)) return;
       const key = `${course.id}_${activeChapter.id || activeCourseChapterIdx}`;
       const updated = { ...readChapters, [key]: true };
       setReadChapters(updated);
@@ -20691,6 +20722,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       return `${date.getDate()}.${date.getMonth() + 1}.`;
     };
     const startLesson = (idx, fromStart, atStep) => {
+      if (!canOpenLearningChapter(idx)) return;
       const resume = !fromStart && idx === activeCourseChapterIdx;
       const nextStep = typeof atStep === 'number' ? atStep : resume ? courseLessonStep : 0;
       setActiveCourseChapterIdx(idx);
@@ -20710,6 +20742,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const finishLesson = () => {
+      if (!canOpenLearningChapter(activeCourseChapterIdx)) return;
       const wasRead = activeChapterRead;
       logStudyTime();
       markActiveRead();
@@ -20745,7 +20778,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     }, 0);
     const firstUnreadIdx = chapters.findIndex((ch, idx) => !readChapters[chapterKeyOf(idx)]);
     const allChaptersRead = chapters.length > 0 && firstUnreadIdx === -1;
-    const pathTargetIdx = activeChapter && !activeChapterRead ? activeCourseChapterIdx : (firstUnreadIdx >= 0 ? firstUnreadIdx : activeCourseChapterIdx);
+    const pathTargetIdx = courseLearningModel.next?.index ?? (allChaptersRead ? 0 : firstUnreadIdx >= 0 ? firstUnreadIdx : 0);
     const pathTarget = chapters[pathTargetIdx] || null;
     const pathTargetPlan = pathTarget ? buildUnitLessonPlan(pathTarget, quizzes, course.title) : { steps: [] };
     const pathTargetStep = pathTargetIdx === activeCourseChapterIdx ? Math.min(Math.max(0, courseLessonStep), Math.max(0, pathTargetPlan.steps.length - 1)) : 0;
@@ -20925,6 +20958,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const pickCourseBook = () => { if (bookInputRef.current) bookInputRef.current.click(); };
     const openCourseBook = () => { setCourseSheet(null); openCourseTab('book'); };
     const openCourseReader = idx => {
+      if (!canOpenLearningChapter(idx)) return;
       if (idx !== activeCourseChapterIdx) goToChapter(idx);
       setCourseSheet(null);
       openCourseTab('read');
@@ -20951,7 +20985,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           renderCourseTeachingStaff(course)),
         lh('div', { className: 'course-overview-entries' },
           chapters.length > 0 && lh('section', { className: 'course-overview-learning' },
-            row('study', 'Mësimi në app', [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · '), READ_ICONS.book, () => openCourseTab('study'),
+            row('study', 'Ligjërata dhe kapituj', [`${courseLearningModel.groups.length} ligjërata`, `${chapters.length} kapituj`].join(' · '), READ_ICONS.book, () => openCourseTab('study'),
               lh('span', { className: 'course-overview-progress' }, `${progressPct}%`, lessonIcon(LESSON_ICONS.chev, 'w-4 h-4'))),
             lh('div', { className: 'course-overview-track', role: 'progressbar', 'aria-label': 'Progresi i mësimit', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': progressPct }, lh('span', { style: { width: `${progressPct}%` } }))),
           hasCourseMaterials && renderCourseMaterials(course),
@@ -20964,94 +20998,12 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     };
     const renderCourseLearning = () => {
       if (!chapters.length) return lh('p', { className: 'course-overview-empty' }, 'Mësimi në app nuk është shtuar ende për këtë lëndë.');
-      const totalMinutes = chapters.reduce((sum, ch) => sum + (parseInt(ch && ch.time, 10) || 0), 0);
-      const readTarget = allChaptersRead ? 0 : pathTargetIdx;
-      const renderMaterialCard = () => {
-        if (courseBook) {
-          const pos = unitReadJson(UNIT_BOOK_POS)[course.id] || {};
-          const bookPage = Math.min(Math.max(1, Number(pos.page) || 1), courseBook.pages || 1);
-          const bookPct = Math.round((bookPage / Math.max(1, courseBook.pages || 1)) * 100);
-          return lh("section", { className: "card-surface border border-default rounded-[22px] p-4 shadow-sm" },
-            lh("div", { className: "flex items-center gap-3.5" },
-              courseBook.cover
-                ? lh("img", { src: courseBook.cover, alt: "", className: "w-14 h-[78px] rounded-[5px] object-cover shadow-md shrink-0 bg-white" })
-                : lh("div", { className: "w-14 h-[78px] rounded-[5px] bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-md" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
-              lh("div", { className: "min-w-0 flex-1" },
-                lh("div", { className: "text-[15px] font-bold text-primary leading-snug line-clamp-2" }, courseBook.name),
-                lh("div", { className: "text-[12.5px] text-tertiary mt-0.5" }, `Libër · PDF · ${courseBook.pages} faqe`),
-                pos.at ? lh("div", { className: "text-[12px] text-tertiary mt-1" }, `Hapur ${formatLastStudied(pos.at)}`) : null),
-              lh("button", { type: "button", onClick: () => setCourseSheet({ type: 'book' }), "aria-label": "Më shumë për librin", title: "Më shumë për librin", className: iconBtn },
-                lh("svg", { className: "w-5 h-5", viewBox: "0 0 24 24", fill: "currentColor" }, lh("circle", { cx: 5, cy: 12, r: 1.8 }), lh("circle", { cx: 12, cy: 12, r: 1.8 }), lh("circle", { cx: 19, cy: 12, r: 1.8 })))),
-            lh("div", { className: "mt-3.5 flex items-center gap-3" },
-              lh("div", { className: "flex-1 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden" }, lh("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${bookPct}%` } })),
-              lh("span", { className: "text-[12.5px] tabular-nums text-tertiary" }, `Faqja ${bookPage} / ${courseBook.pages}`)),
-            lh("button", { type: "button", onClick: openCourseBook, className: "w-full h-11 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold mt-3.5 cursor-pointer" }, pos.at ? `Vazhdo nga faqja ${bookPage} →` : 'Hap librin →'));
-        }
-        return lh("section", { className: "card-surface border border-default rounded-[22px] p-4 shadow-sm" },
-          lh("div", { className: "flex items-center gap-3.5" },
-            lh("div", { className: "w-11 h-11 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm" }, lessonIcon(READ_ICONS.book, "w-6 h-6")),
-            lh("div", { className: "min-w-0 flex-1" },
-              lh("div", { className: "text-[15px] font-bold text-primary truncate" }, 'Leximi i kapitujve'),
-              lh("div", { className: "text-[12.5px] text-tertiary mt-0.5" }, [`${chapters.length} kapituj`, totalMinutes ? `~${totalMinutes} min` : null].filter(Boolean).join(' · ')))),
-          lh("div", { className: "mt-3.5 flex items-center gap-3" },
-            lh("div", { className: "flex-1 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden" }, lh("span", { className: "block h-full rounded-full bg-brand-600", style: { width: `${progressPct}%` } })),
-            lh("span", { className: "text-[12.5px] tabular-nums text-tertiary" }, `${progressPct}%`)),
-          lh("button", { type: "button", onClick: () => openCourseReader(readTarget), className: "w-full h-11 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold mt-3.5 cursor-pointer" },
-            allChaptersRead ? 'Lexo nga fillimi →' : pathStarted ? `Vazhdo me Kapitullin ${pathTargetIdx + 1} →` : 'Fillo leximin →'),
-          lh("button", { type: "button", disabled: bookBusy, onClick: pickCourseBook, title: "Libri ruhet vetëm në pajisjen tënde", className: `w-full h-10 mt-2 rounded-xl border border-dashed border-brand-600/40 text-brand-600 dark:text-brand-300 text-sm font-semibold flex items-center justify-center gap-2 bg-brand-600/5 ${bookBusy ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:border-brand-600/70'}` },
-            lessonIcon("M12 16V4M7 9l5-5 5 5M4 20h16", "w-[18px] h-[18px]"), bookBusy ? 'Duke ngarkuar librin…' : 'Ngarko librin (PDF)'),
-          lh("p", { className: "sr-only" }, 'Libri ruhet vetëm në pajisjen tënde.'));
-      };
-      const tile = (key, title, sub, icon, onClick) => lh("button", {
-        key, type: "button", onClick,
-        className: "text-left card-surface border border-default rounded-2xl p-4 shadow-sm hover:border-brand-300 transition-colors cursor-pointer"
-      },
-        lh("span", { className: "w-10 h-10 rounded-xl bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center" }, lessonIcon(icon, "w-5 h-5")),
-        lh("span", { className: "block text-[15px] font-bold text-primary mt-2" }, title),
-        lh("span", { className: "block text-[12.5px] text-tertiary mt-0.5 leading-snug" }, sub));
-      return lh("div", { className: "max-w-[640px] mx-auto anim-fade-up space-y-3" },
-        lh("input", { type: "file", accept: "application/pdf,.pdf", className: "hidden", ref: bookInputRef, "aria-hidden": "true", tabIndex: -1, onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
-        lh("div", null,
-          lh("h1", { tabIndex: -1, className: "text-[22px] sm:text-2xl font-bold tracking-tight text-primary leading-tight" }, course.title),
-          lh("p", { className: "text-[13.5px] text-secondary mt-1.5" }, [course.ects ? `${course.ects} ECTS` : null, `${chapters.length} kapituj`].filter(Boolean).join(' · ')),
-          null),
-
-        renderMaterialCard(),
-
-        pathTarget && !allChaptersRead ? lh("button", {
-          type: "button",
-          onClick: () => startLesson(pathTargetIdx),
-          className: "w-full flex items-center gap-3 card-surface border border-default rounded-2xl px-3.5 py-2.5 text-left hover:border-brand-300 transition-colors cursor-pointer"
-        },
-          lh("span", { className: "w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0" }, lessonIcon(LESSON_ICONS.arrow, "w-5 h-5")),
-          lh("span", { className: "flex-1 min-w-0" },
-            lh("span", { className: "block text-[11.5px] font-semibold tracking-wider text-brand-600 dark:text-brand-300" }, 'VAZHDO MËSIMIN'),
-            lh("span", { className: "block text-[15px] font-bold text-primary truncate" }, chapterTitleOf(pathTarget, pathTargetIdx)),
-            lh("span", { className: "block text-[13px] text-tertiary mt-0.5" }, `Kapitulli ${pathTargetIdx + 1} · Hapi ${pathTargetStep + 1} nga ${Math.max(1, pathTargetPlan.steps.length)}`)),
-          lessonIcon(LESSON_ICONS.chev, "w-4 h-4 text-tertiary shrink-0")) : null,
-
-
-        lh("section", { className: "space-y-2" },
-          lh("h2", { className: "text-[13px] font-semibold text-tertiary" }, 'Si dëshiron ta mësosh'),
-          lh("div", { className: "grid grid-cols-2 gap-3" },
-            tile('read', 'Lexo', courseBook ? 'Faqe për faqe' : 'Teksti i plotë', READ_ICONS.book, () => courseBook ? openCourseBook() : openCourseReader(readTarget)),
-            tile('lesson', 'Mëso', `Hap pas hapi · ${Math.max(1, (allChaptersRead ? buildUnitLessonPlan(chapters[0], quizzes, course.title) : pathTargetPlan).steps.length)} hapa`, READ_ICONS.bulb, () => startLesson(readTarget, allChaptersRead)),
-            tile('summary', 'Përmbledhje', 'Pikat kryesore', READ_ICONS.list, () => openCourseTab('cheatsheet')),
-            tile('practice', 'Praktiko', practiceSub, READ_ICONS.bolt, openCoursePractice))),
-
-        lh("section", { className: "space-y-2" },
-          lh("h2", { className: "text-[13px] font-semibold text-tertiary" }, 'Kapitujt'),
-          lh("div", { className: "card-surface border border-default rounded-[22px] px-5 shadow-sm" },
-            chapters.map((ch, idx) => {
-              const isRead = Boolean(readChapters[chapterKeyOf(idx)]);
-              const isTarget = idx === pathTargetIdx && !allChaptersRead;
-              return lh("button", { key: ch.id || idx, type: "button", onClick: () => setCourseSheet({ type: 'chapter', idx }), className: `w-full flex items-center gap-3.5 py-3 text-left cursor-pointer ${idx ? 'border-t border-black/5 dark:border-white/10' : ''}` },
-                lh("span", { className: `w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold ${isRead ? 'bg-brand-600 text-white' : isTarget ? 'border-2 border-brand-600 text-brand-600 dark:text-brand-300' : 'border border-black/15 dark:border-white/20 text-tertiary'}` }, isRead ? lessonIcon(LESSON_ICONS.ok, "w-3.5 h-3.5") : idx + 1),
-                lh("span", { className: "flex-1 min-w-0" },
-                  lh("span", { className: "block text-[15px] font-semibold text-primary truncate" }, chapterTitleOf(ch, idx)),
-                  lh("span", { className: "block text-[13px] text-tertiary mt-0.5" }, isRead ? 'Përfunduar' : (ch.time || `Kapitulli ${idx + 1}`))),
-                isTarget ? lh("span", { className: "text-[13px] font-semibold text-brand-600 dark:text-brand-300 shrink-0" }, 'Tani') : lessonIcon(LESSON_ICONS.chev, "w-4 h-4 text-tertiary shrink-0"));
-            }))));
+      return lh(React.Fragment, null,
+        lh('input', { type: 'file', accept: 'application/pdf,.pdf', className: 'hidden', ref: bookInputRef, 'aria-hidden': true, tabIndex: -1,
+          onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
+        lh(window.FakultetiLearningPath.View, { key: course.id, model: courseLearningModel,
+          onChapter: idx => { if (canOpenLearningChapter(idx)) setCourseSheet({ type: 'chapter', idx }); },
+          onContinue: idx => startLesson(idx), book: courseBook, onBook: openCourseBook, onUpload: pickCourseBook, busy: bookBusy }));
     };
     const sheetRow = (key, title, sub, icon, onClick, first) => lh("button", { key, type: "button", onClick, className: `w-full flex items-center gap-3.5 py-3.5 text-left cursor-pointer ${first ? '' : 'border-t border-black/5 dark:border-white/10'}` },
       lh("span", { className: "w-11 h-11 rounded-xl bg-brand-600/10 dark:bg-brand-400/15 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0" }, lessonIcon(icon, "w-5 h-5")),
@@ -21169,12 +21121,13 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
         courseTitle: course.title,
         chapters,
         chapterIdx: activeCourseChapterIdx,
+        chapterAccess: chapters.map((item, idx) => Boolean(courseLearningModel.chapters.find(entry => entry.index === idx)?.available)),
         html: readerHtml,
         fontSize: courseFontSize,
         isRead: activeChapterRead,
         hlKey: `${course.id}_${readerKey}`,
         posKey: `${course.id}_${readerKey}`,
-        onClose: () => openCourseTab('path'),
+        onClose: () => openCourseTab('study'),
         onMode: mode => mode === 'lesson' ? startLesson(activeCourseChapterIdx, false) : mode === 'summary' ? openCourseTab('cheatsheet') : openCoursePractice(),
         onChapter: idx => goToChapter(idx),
         onFinish: () => { markActiveRead(); showToast('Kapitulli u shënua si i lexuar.', '✅'); },
@@ -21315,7 +21268,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           className: "w-full flex items-center gap-2.5 rounded-xl bg-black/[0.04] dark:bg-white/5 px-3.5 py-3 text-left text-sm text-secondary leading-relaxed cursor-pointer"
         }, lessonIcon(LESSON_ICONS.cards, "w-[18px] h-[18px] shrink-0"), `Përforcoje me kartelat e lëndës (${cards.length}) – përsëritja e shpërndarë ndihmon që të mos harrohet.`),
         lh("div", { className: "space-y-2 pt-1" },
-          nextChapter ? lh("button", { type: "button", onClick: () => startLesson(nextIdx, true), className: "w-full h-[50px] rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[0.98] text-white text-base font-semibold transition-all cursor-pointer" }, `Fillo Kapitullin ${nextIdx + 1}${nextChapter.time ? ' · ' + nextChapter.time : ''}`)
+          nextChapter && courseLearningModel.chapters.find(item => item.index === nextIdx)?.available ? lh("button", { type: "button", onClick: () => startLesson(nextIdx, true), className: "w-full h-[50px] rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[0.98] text-white text-base font-semibold transition-all cursor-pointer" }, `Fillo Kapitullin ${nextIdx + 1}${nextChapter.time ? ' · ' + nextChapter.time : ''}`)
             : quizzes.length ? lh("button", { type: "button", onClick: () => { setCourseLessonDone(null); openCourseTab('quiz'); }, className: "w-full h-[50px] rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-base font-semibold cursor-pointer" }, 'Bëj kuizin e lëndës') : null,
           lh("button", { type: "button", onClick: () => { setCourseLessonDone(null); openCourseTab('path'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "w-full h-11 rounded-xl text-[15px] font-medium text-primary hover-surface cursor-pointer" }, 'Mjaft për sot · kthehu te lënda')));
     };
