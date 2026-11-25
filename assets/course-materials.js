@@ -103,10 +103,10 @@
     const visit = file => { setRecent(file.id); try { const saved = JSON.parse(storage?.getItem(RECENT_KEY) || '{}'); storage?.setItem(RECENT_KEY, JSON.stringify({ ...saved, [courseId]: file.id })); } catch {} };
     const open = (entry, start = 0) => setSelection({ ...entry, start });
     const recentFile = data?.files.find(file => file.id === recent);
-    return h('section', { className: 'course-library', 'aria-label': 'Everything for Psychology' },
+    return h('section', { className: 'course-library', 'aria-label': 'Materiale nga studentët' },
       h('button', { type: 'button', className: 'cl-library-toggle', 'aria-expanded': expanded, 'aria-controls': 'course-library-' + courseId, onClick: () => setExpanded(value => !value) },
         h('span', { className: 'cl-file-icon' }, icon('book')),
-        h('span', { className: 'cl-library-title' }, h('strong', null, 'Everything for Psychology'), h('small', null, `${info.count} ${info.count === 1 ? 'material' : 'materiale'}`)), icon('next')),
+        h('span', { className: 'cl-library-title' }, h('strong', null, 'Materiale nga studentët'), h('small', null, `${info.count} ${info.count === 1 ? 'material' : 'materiale'}`)), icon('next')),
       expanded && h('div', { id: 'course-library-' + courseId, className: 'cl-library-content' },
       h('label', { className: 'cl-search' }, icon('search'), h('span', { className: 'sr-only' }, 'Kërko material në këtë lëndë'), h('input', { type: 'search', value: query, placeholder: 'Kërko material', onChange: event => { setQuery(event.target.value); setLimit(5); } })),
       h('div', { className: 'cl-filters', role: 'group', 'aria-label': 'Lloji i materialit' }, [['all', 'Të gjitha'], ...ORDER.filter(id => info.categories[id]).map(id => [id, CATEGORIES[id]])].map(([id, label]) => h('button', { key: id, type: 'button', 'aria-pressed': category === id, className: category === id ? 'is-active' : '', onClick: () => { setCategory(id); setLimit(5); } }, label))),

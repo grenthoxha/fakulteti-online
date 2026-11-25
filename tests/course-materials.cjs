@@ -46,7 +46,7 @@ const tick=()=>new Promise(setImmediate);
  ok(api.buildEntries([{id:'abcdefghijk',title:'PsikoterapisÃ« Jungiane (1).docx',category:'notes',mime:'application/msword'}])[0].title==='Psikoterapisë Jungiane','display names repair source encoding and copy suffixes without renaming originals');
  const store=new Map(),storage={getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v)};
  const screen=mount(env,api.Section,{courseId:'up_psi_03_01',storage,Portal:'Portal'});let tree=screen.render();
- ok(text(tree).includes('Everything for Psychology')&&!nodes(tree).some(n=>n.type==='input'||n.props.className==='cl-row'),'course initially shows a compact named material card');
+ ok(text(tree).includes('Materiale nga studentët')&&!nodes(tree).some(n=>n.type==='input'||n.props.className==='cl-row'),'course initially shows a compact named material card');
  ok(cls(tree,'cl-library-toggle').props['aria-expanded']===false,'material card starts closed');
  cls(tree,'cl-library-toggle').props.onClick();tree=screen.render();await tick();tree=screen.render();
  ok(cls(tree,'cl-library-toggle').props['aria-expanded']===true,'opening the material card reveals its library');
