@@ -76,3 +76,10 @@
 .cl-related-row small{display:block;margin-top:2px;font-size:10px;color:var(--muted)}
 .cl-related-row:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:-2px}
 .dark .cl-related-row>svg{color:#a2c9f2}
+.cl-related-materials--lecture{padding:0;margin-top:24px;border:0}
+.cl-related-materials--lecture h2{margin-bottom:4px}
+.cl-related-materials--lecture .cl-related-row{min-height:57px;gap:14px;border-bottom:1px solid var(--line)}
+.cl-related-materials--lecture .cl-related-row+.cl-related-row{border-top:0}
+.cl-related-materials--lecture .cl-related-row>svg{width:23px;height:23px;color:var(--ink)}
+.cl-related-materials--lecture .cl-related-row>svg:last-child{width:17px;height:17px;color:var(--muted)}
+.cl-related-materials--lecture .cl-related-row strong{font-size:13px;font-weight:450;line-height:20px}

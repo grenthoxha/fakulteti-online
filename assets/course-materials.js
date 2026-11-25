@@ -106,13 +106,14 @@
           : h(global.FakultetiMaterialReader.Reader, { key: selection.id, file, files: gallery ? selection.files : undefined, start: selection.start || 0, onPosition: gallery ? setPosition : undefined, storage })));
     return Portal ? h(Portal, null, panel) : global.ReactDOM.createPortal(panel, document.body);
   }
-  function RelatedMaterials({ courseId, chapter, storage, Portal }) {
+  function RelatedMaterials({ courseId, chapter, storage, Portal, heading, onOpenAll }) {
     const [data, setData] = React.useState(() => catalogues.get(courseId) || null), [selection, setSelection] = React.useState(null);
     React.useEffect(() => { let active = true; load(courseId).then(value => { if (active) setData(value); }).catch(() => {}); return () => { active = false; }; }, [courseId]);
     const entries = React.useMemo(() => relatedEntries(buildEntries(data?.files || []), chapter), [data, chapter.key, chapter.title, JSON.stringify(chapter.materialIds), JSON.stringify(chapter.resourceTitles)]);
-    if (!entries.length) return null;
+    if (!entries.length) return heading && onOpenAll ? h('section', { className: 'cl-related-materials cl-related-materials--lecture', 'aria-label': 'Materialet e lëndës' }, h('h2', null, 'Materialet e lëndës'), h('button', { type: 'button', className: 'cl-related-row', onClick: onOpenAll }, icon('folder'), h('span', null, h('strong', null, 'Shiko materialet e lëndës')), icon('next'))) : null;
     const visit = file => { try { const saved = JSON.parse(storage?.getItem(RECENT_KEY) || '{}'); storage?.setItem(RECENT_KEY, JSON.stringify({ ...saved, [courseId]: file.id })); } catch {} };
-    return h('div', { className: 'cl-related-materials', 'aria-label': 'Materialet e kapitullit' },
+    return h(heading ? 'section' : 'div', { className: 'cl-related-materials' + (heading ? ' cl-related-materials--lecture' : ''), 'aria-label': heading || 'Materialet e kapitullit' },
+      heading && h('h2', null, heading),
       entries.map(entry => h('button', { key: entry.id, type: 'button', className: 'cl-related-row', onClick: () => { const match = entry.files.findIndex(file => Array.isArray(chapter.materialIds) && chapter.materialIds.includes(file.id)); setSelection({ ...entry, start: Math.max(0, match) }); } },
         icon(entry.kind === 'gallery' ? 'photos' : 'file'), h('span', null, h('strong', null, entry.title), h('small', null, entry.kind === 'gallery' ? `${entry.files.length} foto` : formatOf(entry.files[0]))), icon('next'))),
       selection && h(Viewer, { key: selection.id, selection, onClose: () => setSelection(null), onVisit: visit, Portal, storage }));

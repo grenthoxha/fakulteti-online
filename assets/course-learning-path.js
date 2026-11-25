@@ -120,9 +120,30 @@
     }, [active, scope, model?.startedAt, unlockKey]);
     return model;
   }
-  const pathIcon = (type, size = 18) => h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: ({ check: 'M5 12l5 5L20 7', lock: 'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z', next: 'M9 6l6 6-6 6', book: 'M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z' })[type] || 'M9 6l6 6-6 6' }));
+  const pathIcon = (type, size = 18) => h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: ({ check: 'M5 12l5 5L20 7', lock: 'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z', next: 'M9 6l6 6-6 6', info: 'M12 8h.01M12 11v6M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', steps: 'M3 20h18V4h-5v5h-5v5H6v6z', book: 'M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z' })[type] || 'M9 6l6 6-6 6' }));
   const shortDate = key => new Date(key + 'T12:00:00').toLocaleDateString('sq', { day: 'numeric', month: 'short' });
-  function View({ model, onChapter, onContinue, onRead, onLesson, renderResources, book, onBook, onUpload, busy }) {
+  function Lecture({ model, index, readingFraction = 0, onRead, onLesson, renderResources }) {
+    const item = model.chapters.find(chapter => chapter.index === index);
+    if (!item?.available) return h('p', { className: 'learning-path-release', role: 'status' }, 'Kjo ligjëratë nuk është hapur ende.');
+    const fraction = Number(readingFraction), position = item.done ? 100 : Number.isFinite(fraction) ? Math.round(Math.min(1, Math.max(0, fraction)) * 100) : 0;
+    const label = status => status === 'done' ? 'Përfunduar' : status === 'in-progress' ? 'Në vazhdim' : 'Pa nisur';
+    const next = model.chapters[model.chapters.findIndex(chapter => chapter.key === item.key) + 1];
+    const notice = next ? next.available ? 'Kapitulli pasues është i hapur.' : next.lectureId !== item.lectureId ? `Përfundimi hap ligjëratën ${next.lecture}.` : 'Përfundimi hap kapitullin pasues.' : model.allDone ? 'I ke përfunduar kapitujt e lëndës.' : 'Ky është kapitulli i fundit i lëndës.';
+    const row = (mode, title, subtitle, status, action) => h('button', { key: mode, type: 'button', className: 'lms-lecture-activity', onClick: () => action(item.index) },
+      h('span', { className: 'lms-lecture-activity-icon' }, pathIcon(mode === 'read' ? 'book' : 'steps', 25)),
+      h('span', { className: 'lms-lecture-activity-copy' }, h('strong', null, title), h('small', null, subtitle),
+        mode === 'read' && position > 0 && h('span', { className: 'lms-lecture-reading-track', role: 'progressbar', 'aria-label': 'Pozicioni i leximit', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': position }, h('span', { style: { width: position + '%' } }))),
+      status === 'done' ? pathIcon('check', 18) : pathIcon('next', 18));
+    return h('article', { className: 'lms-lecture anim-fade-up', 'aria-label': item.title },
+      h('header', { className: 'lms-lecture-heading' }, h('h1', { tabIndex: -1 }, item.title), h('p', null, `Java ${item.week} · Ligjërata ${item.lecture}`), h('p', { className: 'lms-lecture-intro' }, 'Lexo ose mëso hap pas hapi.')),
+      h('section', { className: 'lms-lecture-activities', 'aria-label': 'Aktivitetet e ligjëratës' }, h('h2', null, 'Aktivitetet'),
+        row('read', 'Lexo kapitullin', [item.time, label(!item.done && position > 0 ? 'in-progress' : item.readStatus)].filter(Boolean).join(' · '), item.readStatus, onRead),
+        row('lesson', 'Mësim hap pas hapi', label(item.lessonStatus), item.lessonStatus, onLesson)),
+      renderResources?.(item),
+      h('p', { className: 'lms-lecture-notice', role: 'status' }, pathIcon('info', 17), notice),
+      h('footer', { className: 'lms-lecture-action' }, h('button', { type: 'button', onClick: () => onRead(item.index) }, item.done ? 'Rilexo kapitullin' : item.readStatus === 'in-progress' || position > 0 ? 'Vazhdo leximin' : 'Fillo leximin')));
+  }
+  function View({ model, onChapter, onContinue, onRead, onLesson, onOpenLecture, renderResources, book, onBook, onUpload, busy }) {
     const activeId = model.next?.lectureId || model.groups.find(group => !group.done)?.id || model.groups[0]?.id;
     const [expanded, setExpanded] = React.useState(activeId);
     React.useEffect(() => { setExpanded(activeId); }, [activeId]);
@@ -136,7 +157,7 @@
       h('header', { className: 'learning-path-heading' }, h('h1', { tabIndex: -1 }, 'Përmbajtja e lëndës'), h('p', null, model.title), h('p', { className: 'learning-path-requirement sr-only' }, 'Përfundo leximin ose mësimin e çdo kapitulli.'),
         h('div', { className: 'learning-path-progress' }, h('span', null, `${model.completed} nga ${model.total} kapituj`), h('span', null, `${Math.round(model.completed / Math.max(1, model.total) * 100)}%`)),
         h('div', { className: 'learning-path-track', role: 'progressbar', 'aria-label': 'Kapitujt e përfunduar', 'aria-valuemin': 0, 'aria-valuemax': model.total, 'aria-valuenow': model.completed }, h('span', { style: { width: model.completed / Math.max(1, model.total) * 100 + '%' } }))),
-      model.next && h('section', { className: 'learning-path-next' }, h('div', null, h('small', null, `Java ${model.next.week} · Ligjërata ${model.next.lecture}`), h('strong', null, model.next.title)), h('button', { type: 'button', onClick: () => openActivity(model.next, continueMode) }, model.next.readStatus === 'in-progress' || model.next.lessonStatus === 'in-progress' ? 'Vazhdo' : 'Fillo', pathIcon('next', 16))),
+      model.next && h('section', { className: 'learning-path-next' }, h('div', null, h('small', null, `Java ${model.next.week} · Ligjërata ${model.next.lecture}`), h('strong', null, model.next.title)), h('button', { type: 'button', onClick: () => onOpenLecture ? onOpenLecture(model.next.index) : openActivity(model.next, continueMode) }, model.next.readStatus === 'in-progress' || model.next.lessonStatus === 'in-progress' ? 'Vazhdo' : 'Fillo', pathIcon('next', 16))),
       model.allDone && h('p', { className: 'learning-path-complete', role: 'status' }, pathIcon('check'), 'I ke përfunduar të gjithë kapitujt. Mund t’i rilexosh kur të duash.'),
       h('div', { className: 'learning-path-weeks' }, model.groups.map(group => {
         const open = expanded === group.id, sectionId = `learning-${encodeURIComponent(model.courseId)}-${encodeURIComponent(group.id)}`;
@@ -149,14 +170,14 @@
           open && h('div', { id: sectionId, className: 'learning-path-week-body' },
             !group.available && h('p', { className: 'learning-path-release' }, message),
             group.chapters.map((item, index) => h('section', { key: item.key, className: 'learning-path-topic' },
-              h('div', { className: 'learning-path-topic-heading' }, h('strong', null, item.title), h('small', { className: 'sr-only' }, item.done ? 'Kryer' : !item.available ? 'I mbyllur' : `Kapitulli ${item.index + 1}`)),
+              h(onOpenLecture ? 'button' : 'div', { type: onOpenLecture ? 'button' : undefined, className: 'learning-path-topic-heading' + (onOpenLecture ? ' is-link' : ''), disabled: onOpenLecture ? !item.available : undefined, onClick: onOpenLecture ? () => onOpenLecture(item.index) : undefined }, h('strong', null, item.title), h('small', { className: onOpenLecture ? undefined : 'sr-only' }, item.done ? 'Kryer' : !item.available ? 'I mbyllur' : `Kapitulli ${item.index + 1}`), onOpenLecture && pathIcon(item.available ? 'next' : 'lock', 15)),
               !item.available && item.reason === 'chapter' && h('p', { className: 'learning-path-release' }, 'Përfundo kapitullin paraprak.'),
-              activity(item, 'read', 'Lexim', 'book', item.readStatus),
-              activity(item, 'lesson', 'Mësim', 'next', item.lessonStatus),
-              item.available && renderResources?.(item)))));
+              !onOpenLecture && activity(item, 'read', 'Lexim', 'book', item.readStatus),
+              !onOpenLecture && activity(item, 'lesson', 'Mësim', 'next', item.lessonStatus),
+              !onOpenLecture && item.available && renderResources?.(item)))));
 
       })),
       (book || onUpload) && h('div', { className: 'learning-path-book' }, h('button', { type: 'button', disabled: busy, onClick: book ? onBook : onUpload }, pathIcon('book'), h('span', null, book ? book.name : busy ? 'Duke ngarkuar librin…' : 'Shto librin tënd (PDF)'), pathIcon('next', 15))));
   }
-  global.FakultetiLearningPath = { build, groupChapters, keyOf, monday, addDays, sessionEnd, pickSessions, loadPlan, usePlan, activityStatus, updateActivity, resumeActivity, Navigation, View };
+  global.FakultetiLearningPath = { build, groupChapters, keyOf, monday, addDays, sessionEnd, pickSessions, loadPlan, usePlan, activityStatus, updateActivity, resumeActivity, Navigation, Lecture, View };
 })(window);
