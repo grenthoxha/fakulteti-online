@@ -1,4 +1,4 @@
-/* Audited materials: app-native previews and original downloads from GitHub Releases. */
+/* Audited materials: app-native reading from GitHub Releases. */
 (function (global) {
   'use strict';
   const React = global.React, h = React.createElement;
@@ -91,12 +91,11 @@
       document.addEventListener?.('fullscreenchange', change);
       return () => { document.removeEventListener?.('fullscreenchange', change); if (document.fullscreenElement && document.fullscreenElement === shell.current) Promise.resolve(document.exitFullscreen?.()).catch(() => {}); };
     }, []);
-    const panel = h('section', { className: 'cl-viewer' + (fullscreen ? ' is-fullscreen' : ''), onClick: event => { if (event.target === event.currentTarget) { if (fullscreen) leaveFullscreen(); else onClose(); } }, role: 'dialog', 'aria-modal': true, 'aria-label': title },
+    const panel = h('section', { className: 'cl-viewer' + (fullscreen ? ' is-fullscreen' : ''), onClick: event => { if (event.target === event.currentTarget) { if (fullscreen) leaveFullscreen(); else onClose(); } }, onContextMenu: event => { if (event.target.closest?.('img,canvas')) event.preventDefault(); }, role: 'dialog', 'aria-modal': true, 'aria-label': title },
       h('header', { className: 'cl-viewer-heading', ref: node => { shell.current = node?.parentElement || null; } },
         h('button', { type: 'button', className: 'cl-icon-button', onClick: onClose, 'aria-label': 'Mbyll materialin' }, icon('back')),
         h('div', { className: 'cl-viewer-title' }, h('h2', null, title), h('p', null, gallery ? `Foto ${position + 1} nga ${selection.files.length}` : formatOf(file) + ' · ' + sizeOf(file.size))),
-        h('button', { type: 'button', className: 'cl-icon-button', onClick: toggleFullscreen, 'aria-pressed': fullscreen, 'aria-label': fullscreen ? 'Dil nga ekrani i plotë' : 'Ekran i plotë' }, icon(fullscreen ? 'shrink' : 'fullscreen')),
-        h('a', { href: safeReleaseUrl(file.url), target: '_blank', rel: 'noopener noreferrer', className: 'cl-download', 'aria-label': 'Shkarko origjinalin: ' + file.title, title: 'Shkarko origjinalin' }, h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, 'aria-hidden': true }, h('path', { d: 'M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5' })))),
+        h('button', { type: 'button', className: 'cl-icon-button', onClick: toggleFullscreen, 'aria-pressed': fullscreen, 'aria-label': fullscreen ? 'Dil nga ekrani i plotë' : 'Ekran i plotë' }, icon(fullscreen ? 'shrink' : 'fullscreen'))),
       h('div', { className: 'cl-viewer-stage' },
         !online ? h('div', { className: 'cl-viewer-note', role: 'status' }, 'Për ta hapur materialin nevojitet internet.')
           : h(global.FakultetiMaterialReader.Reader, { key: selection.id, file, files: gallery ? selection.files : undefined, start: selection.start || 0, onPosition: gallery ? setPosition : undefined, storage })));

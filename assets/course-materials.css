@@ -55,4 +55,4 @@
 .cl-viewer.is-fullscreen{inset:0;left:0;bottom:0;z-index:250;width:100%;height:100%;height:100dvh}
 .cl-viewer.is-fullscreen .cl-viewer-heading{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
 .cl-viewer.is-fullscreen .cl-viewer-stage{padding-bottom:env(safe-area-inset-bottom)}
-@media(max-width:380px){.cl-viewer-heading{gap:4px;padding-inline:8px}.cl-viewer-heading .cl-icon-button,.cl-viewer-heading .cl-download{width:36px}.cl-viewer-title h2{font-size:13px}}
+@media(max-width:380px){.cl-viewer-heading{gap:4px;padding-inline:8px}.cl-viewer-heading .cl-icon-button{width:36px}.cl-viewer-title h2{font-size:13px}}

@@ -1691,8 +1691,8 @@
     @media (prefers-reduced-motion: reduce) { .header-search-panel,.app-header.is-searching > .header-search-heading { animation: none; } }
 
   </style>
-  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-3">
-  <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-3">
+  <link rel="stylesheet" href="./assets/course-materials.css?v=20261125-4">
+  <link rel="stylesheet" href="./assets/course-material-reader.css?v=20261125-4">
 </head>
 <body class="min-h-screen">
   <div id="root"></div>
@@ -1710,8 +1710,8 @@
   <script src="./assets/group-messages-ui.js?v=3"></script>
   <script src="./assets/semester-materials.js?v=20261006-4"></script>
   <script src="./assets/course-materials-index.js?v=20261124-4"></script>
-  <script src="./assets/course-material-reader.js?v=20261125-3"></script>
-  <script src="./assets/course-materials.js?v=20261125-3"></script>
+  <script src="./assets/course-material-reader.js?v=20261125-4"></script>
+  <script src="./assets/course-materials.js?v=20261125-4"></script>
   <script src="./assets/profile-name-trigger.js?v=20261006-1"></script>
   <script>
 
@@ -20495,24 +20495,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     const cases = course.cases || [];
     const readCount = chapters.filter((ch, idx) => readChapters[`${course.id}_${ch.id || idx}`]).length;
     const progressPct = chapters.length > 0 ? Math.round((readCount / chapters.length) * 100) : 0;
-    const downloadCourseSyllabus = async () => {
-      if (!syllabus.pdfId) return;
-      try {
-        const storedDocument = await UnitPdfStore.getPdf(syllabus.pdfId);
-        if (!storedDocument?.blob) throw new Error('PDF-ja nuk gjendet në këtë pajisje.');
-        const objectUrl = URL.createObjectURL(storedDocument.blob);
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = (syllabus.sourceName || `Syllabus-${course.title}`).replace(/[^\p{L}\p{N}._ -]/gu, '_').replace(/\.pdf$/i, '') + '.pdf';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-      } catch (error) {
-        console.error(error);
-        alert(uiLanguage === 'en' ? 'The syllabus PDF is not available on this device.' : 'PDF-ja e syllabus-it nuk gjendet në këtë pajisje.');
-      }
-    };
     const activeChapter = chapters[activeCourseChapterIdx] || chapters[0] || null;
     const activeChapterRead = activeChapter ? Boolean(readChapters[`${course.id}_${activeChapter.id || activeCourseChapterIdx}`]) : false;
 
@@ -21355,7 +21337,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
               )
             ),
             null,
-            syllabus.pdfId && menuItem('pdf', 'Shkarko programin (PDF)', downloadCourseSyllabus),
             /*#__PURE__*/React.createElement("div", { className: "my-1.5 h-px bg-black/5 dark:bg-white/10" }),
             menuItem('back', `Kthehu te ${navPreviousLabel() || 'lëndët'}`, () => goBackOr('courses'))
           )

@@ -37,9 +37,7 @@
 .cm-archive-list{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;padding:16px;font-size:13px;color:var(--ink)}
 .cm-archive-list>div{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.cm-archive-list small{white-space:nowrap;color:var(--muted)}
 .cm-archive-list p{margin:8px 0 14px;line-height:1.5;color:var(--muted)}
-.cl-download{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:50%;color:rgb(var(--brand-rgb))}
-.cl-download:hover{background:rgba(var(--brand-rgb),.08)}
-.cm-reader :is(button,input):focus-visible,.cm-document-scroll:focus-visible,.cl-download:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:2px}
+.cm-reader :is(button,input):focus-visible,.cm-document-scroll:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:2px}
 @media(max-width:380px){.cm-reader-tools{padding-inline:3px;gap:0}.cm-reader-tools button{min-width:32px}.cm-page-number input{width:34px}.cm-reading-text{padding:14px;font-size:calc(16px*var(--cm-zoom,1))}}
 
 .cm-data-scroll{flex:1;min-width:0;min-height:0;width:100%;height:100%;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
@@ -51,3 +49,4 @@
 .cm-data-content th{background:var(--surface);font-weight:600}
 .cm-data-content .cm-archive-list{height:auto;overflow:visible;font-size:calc(13px*var(--cm-zoom))}
 .cm-data-scroll:focus-visible{outline:2px solid rgb(var(--brand-rgb));outline-offset:-2px}
+.cl-viewer :is(img,canvas){-webkit-touch-callout:none}

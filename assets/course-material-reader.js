@@ -165,7 +165,7 @@
       busy && h('div', { className: 'cm-reader-status', role: 'status' }, 'Duke hapur faqen…'),
       error ? h('div', { className: 'cm-reader-error', role: 'alert' }, 'Faqja nuk u shfaq.', button('Provo përsëri', 'Provo përsëri', { onClick: () => setRetry(value => value + 1) }))
         : textMode ? h('article', { className: 'cm-reading-text' }, text || (!busy && 'Kjo faqe është fotografi e skanuar. Përdor pamjen e faqes për ta lexuar.'))
-          : h(React.Fragment, null, h('canvas', { ref: canvas, 'aria-label': 'Faqja ' + number }), h('div', { ref: layer, className: 'cm-text-layer textLayer' })));
+          : h(React.Fragment, null, h('canvas', { ref: canvas, draggable: false, 'aria-label': 'Faqja ' + number }), h('div', { ref: layer, className: 'cm-text-layer textLayer' })));
   }
   function PdfReader({ file, storage }) {
     const [loaded, setLoaded] = React.useState(null), [page, setPage] = React.useState(() => readPosition(storage, file.id)), [jump, setJump] = React.useState(() => ({ page, token: 0 }));
@@ -225,7 +225,7 @@
       h('table', null,
         h('thead', null, h('tr', null, data.columns.map(column => h('th', { key: column, title: data.labels?.[column] || column }, column)))),
         h('tbody', null, data.rows.map((row, i) => h('tr', { key: i }, row.map((value, j) => h('td', { key: j }, value == null ? '—' : String(value))))))));
-    else body = h('div', { className: 'cm-archive-list' }, h('p', null, 'Përmbajtja e skedarit SPSS'), data.entries.map((entry, i) => h('div', { key: i }, h('span', null, entry.name), h('small', null, Math.ceil(entry.size / 1024) + ' KB'))), h('p', null, 'Analizat interaktive të këtij formati hapen në SPSS. Origjinali mund të shkarkohet.'));
+    else body = h('div', { className: 'cm-archive-list' }, h('p', null, 'Përmbajtja e skedarit SPSS'), data.entries.map((entry, i) => h('div', { key: i }, h('span', null, entry.name), h('small', null, Math.ceil(entry.size / 1024) + ' KB'))), h('p', null, 'Analizat interaktive të këtij formati hapen në SPSS.'));
     return h(DataSurface, null, body);
   }
   function Reader({ file, files, start, onPosition, storage }) {
