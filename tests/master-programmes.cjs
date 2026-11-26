@@ -17,7 +17,7 @@ for (const branch of masters) {
   const count = branch.id === 'master-arkivistike' ? 1 : 2;
   ok(branch.years.length === count && branch.years.at(-1).semesters.at(-1).id === count * 2, branch.id + ': correct years and semesters');
   ok(c.context(branch.id).faculty.id === 'filozofik' && c.context(branch.id).hasFreeRooms, branch.id + ': correct faculty membership');
-  ok(branch.years.every(y => y.full === 'Master' && y.semesters.every(s => s.courses.length === 0)) && !c.schedule(branch.id, 1), branch.id + ': never inherits BA subjects, materials or timetable');
+  ok(branch.years.every(y => y.full === 'Master' && y.semesters.every(s => s.courses.length === 0)) && c.schedule(branch.id, 1)?.studyLevel === 'master', branch.id + ': keeps MA timetable identity without inheriting BA subjects or materials');
   ok(branch.source.url.startsWith('https://filozofiku.uni-pr.edu/'), branch.id + ': official source retained');
 }
 ok(c.find('filozofik', '', 'bachelor').some(b => b.id === 'psikologji') && !c.find('filozofik', '', 'bachelor').some(b => b.studyLevel === 'master'), 'existing BA programmes stay separate');

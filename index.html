@@ -8419,7 +8419,7 @@ const FILOZOFIKU_MASTER_PROGRAMMES = Object.freeze([
   { id: 'master-psikologji-klinike', label: 'Psikologji Klinike dhe Komuniteti', years: 2, icon: '🧠', desc: 'Shëndeti mendor, psikologjia klinike dhe komuniteti.', document: 'F2F3D7F6-0A3B-4C12-88E5-4F3EB0CFA3BD.pdf' },
   { id: 'master-sociologji', label: 'Sociologji', years: 2, icon: '👥', desc: 'Hulumtimi dhe analiza e shoqërisë.', document: '9BDA792B-FDDB-42FE-9E2C-E82006340248.pdf' },
   { id: 'master-filozofi-politike', label: 'Filozofi Politike', years: 2, icon: '🏛️', desc: 'Filozofia, drejtësia dhe mendimi politik.', document: '7FB6DF29-4200-43CA-B773-B3E095EDD523.pdf' },
-  { id: 'master-histori-koha-e-re', label: 'Histori Koha e Re', years: 2, icon: '📜', desc: 'Studimi dhe hulumtimi i historisë moderne.', document: '51BE7A94-975E-46EF-9F04-BEA9F97697F5.pdf' },
+  { id: 'master-histori-koha-e-re', label: 'Histori Koha e Re', scheduleGroup: 'Koha e Re', years: 2, icon: '📜', desc: 'Studimi dhe hulumtimi i historisë moderne.', document: '51BE7A94-975E-46EF-9F04-BEA9F97697F5.pdf' },
   { id: 'master-arkivistike', label: 'Arkivistikë', years: 1, icon: '📚', desc: 'Ruajtja, përpunimi dhe digjitalizimi i arkivave.', document: '6145452F-4CBA-4E05-842C-78F336F083F1.pdf' },
   { id: 'master-marredhenie-nderkombetare', label: 'Marrëdhënie Ndërkombëtare dhe Diplomaci', years: 2, icon: '🌐', desc: 'Politika ndërkombëtare dhe diplomacia.', document: 'BEC42FCF-B931-4FA7-B4FE-8159293D8852.pdf' },
   { id: 'master-trashegimi-kulturore', label: 'Trashëgimi Kulturore', years: 2, icon: '🏛️', desc: 'Hulumtimi, mbrojtja dhe menaxhimi i trashëgimisë.', url: 'https://filozofiku.uni-pr.edu/page.aspx?id=1,66' }
@@ -8427,7 +8427,7 @@ const FILOZOFIKU_MASTER_PROGRAMMES = Object.freeze([
 for (const programme of FILOZOFIKU_MASTER_PROGRAMMES) {
   BRANCHES.push({
     id: programme.id, label: programme.label, icon: programme.icon, desc: programme.desc,
-    faculty: 'Fakulteti Filozofik · UP', facultyShort: 'Filozofik', studyLevel: 'master',
+    faculty: 'Fakulteti Filozofik · UP', facultyShort: 'Filozofik', studyLevel: 'master', scheduleGroup: programme.scheduleGroup || programme.label,
     catalogStatus: 'programme', verifiedAt: '2026-11-26',
     source: { label: 'Programi Master · Fakulteti Filozofik', url: programme.url || `https://filozofiku.uni-pr.edu/desk/inc/media/${programme.document}` },
     years: Array.from({ length: programme.years }, (_, index) => ({
@@ -8481,8 +8481,12 @@ const getStudentFacultyContext = (branchId, preferredFacultyId = '') => {
 const getFacultyScheduleProgram = (branchId, yearId) => {
   const context = getStudentFacultyContext(branchId);
   const year = context.branch?.years.find(item => String(item.id) === String(yearId));
-  const groupName = FILOZOFIKU_PROGRAM_GROUPS[branchId];
-  return context.hasFreeRooms && groupName && year ? { branchId, yearId: Number(year.id), groupName, label: `${context.branch.label} · ${year.label}` } : null;
+  const studyLevel = getBranchStudyLevel(context.branch);
+  const groupName = studyLevel === 'master' ? context.branch?.scheduleGroup : FILOZOFIKU_PROGRAM_GROUPS[branchId];
+  return context.hasFreeRooms && groupName && year ? {
+    branchId, yearId: Number(year.id), groupName, groupNames: [...new Set([groupName, context.branch.label])], studyLevel,
+    label: `${context.branch.label}${studyLevel === 'master' ? ' · Master' : ''} · ${year.label}`
+  } : null;
 };
 function renderFacultyProgramChooser({ facultyId, onFaculty, query, onQuery, onBranch, studyLevel = 'bachelor', onStudyLevel, busy = false }) {
   const h = React.createElement;
@@ -10405,10 +10409,12 @@ function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofiku
     : program === 'psychology' ? { groupName: 'Psikologji', yearId: 3 } : program;
   if (!selected || typeof selected !== 'object' || typeof selected.groupName !== 'string' || !Number.isInteger(Number(selected.yearId)) || Number(selected.yearId) < 1 || Number(selected.yearId) > 6 || !data) return [];
   const normalize = text => String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  const target = normalize(selected.groupName);
-  const matches = value => String(value || '').split(/[,;]/).some(member => {
-    const parts = normalize(member).match(/^(.*?)\s*-\s*(\d)ba\b/);
-    return parts && parts[1].trim() === target && Number(parts[2]) === Number(selected.yearId);
+  const targets = new Set([selected.groupName, ...(selected.groupNames || [])].map(normalize));
+  const degree = selected.studyLevel === 'master' ? 'ma' : 'ba';
+  // Recurring classes use commas; the public booking catalogue joins shared groups with ·.
+  const matches = value => String(value || '').split(/[,;·]/).some(member => {
+    const parts = normalize(member).match(/^(.*?)\s*-\s*(\d+)\s*(ba|ma)\b/);
+    return parts && targets.has(parts[1].trim()) && Number(parts[2]) === Number(selected.yearId) && parts[3] === degree;
   });
   const recurring = (data.rooms || []).flatMap(room => (room.e || []).filter(event => event.d === Number(dayId) - 1).map(event => ({ ...event, room: room.l || room.n })));
   const dated = typeof FilozofikuBookings !== 'undefined' ? FilozofikuBookings.events(data, date) : [];
