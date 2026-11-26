@@ -209,7 +209,7 @@
       }
       const changed=Object.keys(result.profile).some(key=>String(currentProfile[key]||'')!==String(result.profile[key]||''));
       cloud.apply(account,result);
-      if(!dirty && changed)root.location.reload();
+      if(!dirty && changed)root.dispatchEvent(new CustomEvent('fakulteti:profile',{detail:{accountId:account.id}}));
       return result;
     })().catch(error=>{
       if(error.code==='SESSION_REVOKED'){signOut();root.location.reload();}

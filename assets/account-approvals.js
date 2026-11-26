@@ -129,9 +129,12 @@
       return()=>{alive.current=false;clearInterval(timer);root.removeEventListener('fakulteti:manage-accounts',openManager);root.removeEventListener('online',resume);root.removeEventListener('pageshow',resume);root.document.removeEventListener('visibilitychange',resume);};
     },[]);
     useEffect(()=>{if(policy&&policy.status!=='approved'){root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');root.fakultetiAndroid?.send('focus-unlock');}},[policy?.status]);
-    if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:policy.id+':'+policy.version}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
+    if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:JSON.stringify([policy.id,policy.role,Boolean(policy.isAdmin),[...(policy.permissions||[])].sort()])}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
+    // Only cold entry waits behind the logo. Background checks keep the approved tree mounted.
+    if(!policy && busy && !needsProfile && !error) return h('main',{className:'approval-launch',role:'status','aria-label':'Fakulteti','aria-busy':true},
+      h('img',{src:root.document.documentElement.classList.contains('dark')?'./assets/fakulteti-online-logo-dark.png':'./assets/fakulteti-online-logo.png',alt:'Fakulteti',width:88,height:88}));
     const status=policy?.status || 'loading';
-    const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:needsProfile?'Plotëso profilin':busy?'Po kontrollohet qasja':'Kërkesa për aprovim'};
+    const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:needsProfile?'Plotëso profilin':'Kërkesa për aprovim'};
     return h('main',{className:'approval-wait-page'},h('section',{className:'approval-wait-card card-surface border border-default'},brand(),
       h('div',{className:'approval-status-icon'},icon(status==='pending'?'M12 8v4l3 2M22 12a10 10 0 11-20 0 10 10 0 0120 0':'M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7zM12 8v5M12 16h.01')),
       h('h1',null,titles[status]),h('p',null,status==='pending'?'Kërkesa jote i është dërguar Grent Hoxhës. Mund ta përdorësh app-in pasi të aprovohet.':status==='rejected'?'Grent Hoxha nuk e ka aprovuar kërkesën tënde.':status==='suspended'?'Grent Hoxha e ka pezulluar përkohësisht qasjen tënde.':needsProfile?'Plotëso emrin dhe mbiemrin që kërkesa jote t’i dërgohet Grent Hoxhës.':'Lidhu me internet për të kontrolluar aprovimin e llogarisë.'),

@@ -13,10 +13,10 @@
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
   <script src="./assets/cloud-accounts.js?v=2"></script>
-  <script src="./assets/local-accounts.js?v=6"></script>
+  <script src="./assets/local-accounts.js?v=20261126-1"></script>
   <script>window.FakultetiOnlineAccountsRequired = true; var unitStorage = window.FakultetiLocalAccounts.storage;</script>
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
-  <link rel="stylesheet" href="./assets/account-approvals.css?v=2">
+  <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-1">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
   <style id="profile-refinement">
@@ -1728,7 +1728,7 @@
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=13"></script>
-  <script src="./assets/account-approvals.js?v=5"></script>
+  <script src="./assets/account-approvals.js?v=20261126-1"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
@@ -38588,13 +38588,22 @@ function App() {
   const approvalPolicy = window.FakultetiApprovals?.policy;
   const roomsOnlyAccess = approvalPolicy?.status === 'approved' && approvalPolicy.permissions.length === 1 && approvalPolicy.permissions[0] === 'rooms';
   const roomsHomeAccount = (prefersFreeRoomsHome(studentFullName || studentName) || roomsOnlyAccess || approvalPolicy?.landing === 'freerooms') && selectedFacultyContext.hasFreeRooms && (!approvalPolicy || (window.FakultetiApprovals.can('rooms') && ['auto','freerooms'].includes(approvalPolicy.landing)));
+  const [, refreshProfile] = useState(0);
   useEffect(() => {
-    if (!roomsHomeAccount) return;
-    const resume = () => { if (!document.hidden && (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)) setRoomsAppExpanded(false); };
-    const restore = event => { if (event.persisted) resume(); };
-    document.addEventListener('visibilitychange', resume); window.addEventListener('pageshow', restore);
-    return () => { document.removeEventListener('visibilitychange', resume); window.removeEventListener('pageshow', restore); };
-  }, [roomsHomeAccount]);
+    const profileUpdated = event => {
+      if (event.detail?.accountId !== window.FakultetiLocalAccounts.current()?.id) return;
+      setStudentName(unitStorage.getItem('u_name') || null);
+      const fullName = unitStorage.getItem('u_real_name') || unitStorage.getItem('u_name') || '';
+      setStudentFullName(isValidStudentFullName(fullName) ? normalizeStudentName(fullName) : '');
+      setSelectedBranch(unitStorage.getItem('u_branch') || null);
+      setSelectedYear(Number(unitStorage.getItem('u_year')) || null);
+      setSelectedSemester(Number(unitStorage.getItem('u_semester')) || null);
+      setActualRole(window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
+      refreshProfile(value => value + 1);
+    };
+    window.addEventListener('fakulteti:profile', profileUpdated);
+    return () => window.removeEventListener('fakulteti:profile', profileUpdated);
+  }, []);
   activeUiLanguage = uiLanguage;
   const handleLanguageChange = language => {
     const safeLanguage = language === 'en' ? 'en' : 'sq';
@@ -38675,6 +38684,8 @@ function App() {
     studentName, uiLanguage, onOpenApp: () => setRoomsAppExpanded(true)
   });
   return /*#__PURE__*/React.createElement(AcademyApp, {
+    // A new academic context needs a new course tree; a resume/profile-name refresh does not.
+    key: JSON.stringify([unitStorage.getItem('u_faculty'), selectedBranch, selectedYear, selectedSemester, actualRole]),
     initialView: window.FakultetiApprovals ? (roomsHomeAccount && roomsAppExpanded ? window.FakultetiApprovals.fallback(roomsOnlyAccess ? 'settings' : actualRole === 'instructor' ? 'instructor' : 'home') : window.FakultetiApprovals.landing(getInitialAcademyView(actualRole, studentFullName || studentName, selectedBranch))) : roomsHomeAccount && roomsAppExpanded ? (actualRole === 'instructor' ? 'instructor' : 'home') : null,
     onRoomsHome: roomsHomeAccount ? () => setRoomsAppExpanded(false) : undefined,
     studentName: studentName,

@@ -8,13 +8,14 @@ import {handleApprovalRequest} from '../server/account-approvals/lib/approval-se
 
 function page(db,map=new Map(),online=true) {
  const events={},raw={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k),key:i=>[...map.keys()][i]??null,get length(){return map.size;}};
- const root={localStorage:raw,crypto:webcrypto,navigator:{},location:{reload(){}},addEventListener:(k,f)=>events[k]=f,dispatchEvent:e=>events[e.type]?.(e),
+ let reloads=0;
+ const root={localStorage:raw,crypto:webcrypto,navigator:{},location:{reload(){reloads++;}},addEventListener:(k,f)=>events[k]=f,dispatchEvent:e=>events[e.type]?.(e),
    fetch:async(url,options)=>handleApprovalRequest(new Request(url,options),{DB:db})};
  const timers=new Set(),setTimer=(f,n)=>{const id=setTimeout(()=>{timers.delete(id);f();},n);timers.add(id);return id;};
  const context=vm.createContext({window:root,TextEncoder,Uint8Array,AbortController,CustomEvent:class{constructor(type,options={}){this.type=type;this.detail=options.detail;}},setTimeout:setTimer,clearTimeout,console});
  if(online)vm.runInContext(readFileSync('assets/cloud-accounts.js','utf8'),context);
  vm.runInContext(readFileSync('assets/local-accounts.js','utf8'),context);
- return {api:root.FakultetiLocalAccounts,map,close:()=>timers.forEach(clearTimeout)};
+ return {api:root.FakultetiLocalAccounts,map,root,get reloads(){return reloads;},close:()=>timers.forEach(clearTimeout)};
 }
 const profile={firstName:'Arta',lastName:'Hoxha',gender:'female',role:'student'},email='arta@example.test',password='Only-synthetic-test-123';
 test('frontend cloud flow preserves namespaces, keeps learning local and synchronizes only profiles',async()=>{
@@ -45,6 +46,24 @@ test('online profile enrollment opens its selected year without copying study pr
  const phone=page(db);await phone.api.signIn(email,password);const enrolled=page(db,phone.map);
  assert.deepEqual(JSON.parse(enrolled.api.storage.getItem('u_unlocked')),[1,2]);assert.equal(enrolled.api.storage.getItem('u_progress'),null);
  [a,original,phone,enrolled].forEach(p=>p.close());
+});
+
+test('background profile sync applies remote changes without restarting the open app',async()=>{
+ const db=database(),registered=page(db),created=await registered.api.register(email,password,false,profile);created.complete();
+ const computer=page(db,registered.map),phoneEntry=page(db);await phoneEntry.api.signIn(email,password);
+ const phone=page(db,phoneEntry.map),updates=[];
+ computer.root.addEventListener('fakulteti:profile',event=>updates.push(event.detail));
+ computer.api.storage.setItem('u_notes','unfinished local reading notes');
+ phone.api.storage.setItem('u_nickname','Updated on phone');await phone.api.syncProfile();
+ await computer.api.syncProfile();
+ assert.equal(computer.reloads,0);assert.equal(computer.api.storage.getItem('u_name'),'Updated on phone');
+ assert.equal(updates.length,1);assert.equal(updates[0].accountId,computer.api.current().id);
+ assert.equal(computer.api.storage.getItem('u_notes'),'unfinished local reading notes');
+ await computer.api.syncProfile();assert.equal(updates.length,1);assert.equal(computer.reloads,0);
+ await phoneEntry.api.resetPassword(email,created.recoveryCode,password+'new');
+ await assert.rejects(computer.api.syncProfile(),e=>e.code==='SESSION_REVOKED');
+ assert.equal(computer.reloads,1);assert.equal(computer.api.current(),null);
+ [registered,computer,phoneEntry,phone].forEach(p=>p.close());
 });
 test('legacy account migration preserves the local ID, learning data, and original recovery code',async()=>{
  const db=database(),local=page(db,new Map(),false),created=await local.api.register(email,password,false,profile);created.complete();

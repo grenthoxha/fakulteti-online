@@ -1,4 +1,6 @@
 [data-access-hidden="true"]{display:none!important}
+.approval-launch{min-height:100svh;min-height:100dvh;display:grid;place-items:center;margin:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);box-sizing:border-box;background:var(--page,#f4f6fb)}
+.approval-launch img{display:block;width:88px;height:88px;object-fit:contain}
 .approval-wait-page{min-height:100svh;display:grid;place-items:center;padding:24px 18px;box-sizing:border-box;color:var(--ink);background:var(--page)}
 .approval-wait-card{width:min(100%,430px);padding:28px;border-radius:24px;text-align:center;box-sizing:border-box}
 .approval-brand{display:flex;align-items:center;justify-content:center;gap:10px;font-size:20px}.approval-brand img{object-fit:contain}
