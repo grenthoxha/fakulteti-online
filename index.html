@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
   <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261107-7">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-1">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
     .profile-minimal.profile-refined > * {margin-top:0 !important;}
@@ -13566,6 +13566,7 @@ function AcademyApp({
   const [routinePendingRemoval, setRoutinePendingRemoval] = useState(null);
   const [dailyRoutineFilter, setDailyRoutineFilter] = useState('all');
   const [expandedAllTasks, setExpandedAllTasks] = useState(false);
+  const [editingHomeTasks, setEditingHomeTasks] = useState(false);
   const [todayQuickTask, setTodayQuickTask] = useState({ open: false, title: '', time: '', minutes: 25, priority: 'p4' });
   /* Pomodoro · Detyrat e sotme */
   const POMO_DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, goal: 4, autoBreak: true, autoFocus: false, sound: true, vibrate: true, notify: false, awake: true, style: 'eklipsi' };
@@ -34301,7 +34302,8 @@ Nënshkrimi: _____________________`;
     const openList = displayedDailyRoutines;
     const primary = openList[0] || null;
     const remaining = openList.slice(1);
-    const openShown = expandedAllTasks ? remaining : remaining.slice(0,2);
+    const showAllTasks = expandedAllTasks || editingHomeTasks;
+    const openShown = showAllTasks ? remaining : remaining.slice(0,2);
     const total = visibleDailyRoutines.length;
     const q = todayQuickTask;
     const clockIcon = () => unitUiIcon('M12 8v5l3 2M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z','w-4 h-4');
@@ -34316,7 +34318,7 @@ Nënshkrimi: _____________________`;
         menuItem('Ndrysho',()=>editDailyRoutine(routine)),
         menuItem('Fshij',()=>setRoutinePendingRemoval(routine),true)));
     const extras = routine => {
-      if(!expandedAllTasks)return null;
+      if(!showAllTasks)return null;
       const courseObj = routine.courseId?allCourses.find(course=>course.id===routine.courseId):null;
       const projectObj = routine.projectId?customProjects.find(project=>project.id===routine.projectId):null;
       const subtasks=routine.subtasks||[];
@@ -34331,8 +34333,8 @@ Nënshkrimi: _____________________`;
       return ce('div',{key:routine.id,className:'home-task-row'},
         ce('div',{className:'home-task-row-main'},
           ce('button',{type:'button',onClick:()=>toggleDailyRoutine(routine),'aria-label':`${isDone?'Shëno si të pakryer':'Shëno si të kryer'}: ${routine.title}`,'aria-pressed':isDone,className:`home-task-check${isDone?' is-done':''}`},unitUiIcon('M5 12.5l4.5 4.5L19 7.5','w-3.5 h-3.5')),
-          ce('div',{className:'home-task-row-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(routine),className:`home-task-title${isDone?' is-done':''}`},routine.title),metadata(routine)),
-          expandedAllTasks&&actions(routine)),extras(routine));
+          ce('div',{className:'home-task-row-copy'},ce(editingHomeTasks?'button':'span',{...(editingHomeTasks?{type:'button',onClick:()=>editDailyRoutine(routine)}:{}),className:`home-task-title${isDone?' is-done':''}`},routine.title),metadata(routine)),
+          editingHomeTasks&&actions(routine)),extras(routine));
     };
     const startTask = routine => {
       // Keep an existing focus session intact; otherwise start this task's duration.
@@ -34384,18 +34386,20 @@ Nënshkrimi: _____________________`;
     return ce('div',{className:'home-tasks-reference'},
       ce('div',{className:'home-reference-heading'},
         ce('div',null,ce('h2',null,appearanceText('Detyrat','Tasks'))),
-        ce('button',{type:'button',onClick:()=>q.open?setTodayQuickTask(previous=>({...previous,open:false})):openTodayQuickTask(),'aria-expanded':q.open,'aria-label':q.open?'Mbyll shtimin e detyrës':'Shto detyrë',className:'home-tasks-add'},unitUiIcon(q.open?'M6 6l12 12M18 6L6 18':'M12 5v14M5 12h14','w-6 h-6'))),
+        ce('div',{className:'home-tasks-heading-actions'},
+          (total>0||editingHomeTasks)&&ce('button',{type:'button',className:'home-tasks-edit','aria-pressed':editingHomeTasks,'aria-label':appearanceText(editingHomeTasks?'Përfundo editimin e detyrave':'Ndrysho detyrat',editingHomeTasks?'Finish editing tasks':'Edit tasks'),onClick:()=>{setEditingHomeTasks(value=>!value);setTodayQuickTask(previous=>({...previous,open:false}));}},unitUiIcon(editingHomeTasks?'M5 12l4 4L19 6':'M16 3l5 5M4 20l4-1L21 6a2 2 0 0 0-3-3L5 16l-1 4z','w-4 h-4')),
+          ce('button',{type:'button',onClick:()=>{setEditingHomeTasks(false);q.open?setTodayQuickTask(previous=>({...previous,open:false})):openTodayQuickTask();},'aria-expanded':q.open,'aria-label':q.open?'Mbyll shtimin e detyrës':'Shto detyrë',className:'home-tasks-add'},unitUiIcon(q.open?'M6 6l12 12M18 6L6 18':'M12 5v14M5 12h14','w-6 h-6')))),
       form,
       primary&&ce('div',{className:'home-task-featured'},
         ce('button',{type:'button',onClick:()=>toggleDailyRoutine(primary),'aria-label':`Shëno si të kryer: ${primary.title}`,'aria-pressed':false,className:'home-task-check'},unitUiIcon('M5 12.5l4.5 4.5L19 7.5','w-3.5 h-3.5')),
-        ce('div',{className:'home-task-featured-copy'},ce('button',{type:'button',onClick:()=>editDailyRoutine(primary),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
+        ce('div',{className:'home-task-featured-copy'},ce(editingHomeTasks?'button':'span',{...(editingHomeTasks?{type:'button',onClick:()=>editDailyRoutine(primary)}:{}),className:'home-task-title'},primary.title),metadata(primary),extras(primary)),
         ce('button',{type:'button',onClick:()=>startTask(primary),className:'home-task-start','aria-label':`${pomo.taskId===primary.id&&pomo.endsAt?'Vazhdo':'Fillo'}: ${primary.title}`},unitUiIcon('M8 4l12 8-12 8V4z','w-4 h-4')),
-        expandedAllTasks&&actions(primary)),
+        editingHomeTasks&&actions(primary)),
       openShown.length>0&&ce('div',{className:'home-task-later-list'},openShown.map(row)),
-      expandedAllTasks&&doneToday.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Të kryera','Completed')),ce('div',{className:'home-task-later-list'},doneToday.map(row))),
+      showAllTasks&&doneToday.length>0&&ce(React.Fragment,null,ce('p',{className:'home-tasks-later-label'},appearanceText('Të kryera','Completed')),ce('div',{className:'home-task-later-list'},doneToday.map(row))),
       !primary&&!q.open&&ce('div',{className:'home-tasks-empty'},ce('strong',{className:'text-sm'},appearanceText(total?'Detyrat e sotme u përfunduan':'Asnjë detyrë për sot',total?'Today’s tasks are complete':'No tasks for today')),!total&&ce('p',null,appearanceText('Shto çfarë do të bësh sot.','Add what you plan to do today.')),!total&&ce('button',{type:'button',onClick:openTodayQuickTask,className:'home-task-start'},appearanceText('Shto detyrën e parë','Add your first task'))),
-      ce('button',{type:'button',className:'home-tasks-all','aria-expanded':expandedAllTasks,onClick:()=>setExpandedAllTasks(value=>!value)},appearanceText(expandedAllTasks?'Shfaq më pak':'Shiko të gjitha',expandedAllTasks?'Show less':'View all'),ce('span',{'aria-hidden':true},expandedAllTasks?'↑':'→')),
-      expandedAllTasks&&ce('div',{className:'home-tasks-tools'},
+      ce('button',{type:'button',className:'home-tasks-all','aria-expanded':expandedAllTasks,onClick:()=>{setEditingHomeTasks(false);setTodayQuickTask(previous=>({...previous,open:false}));setExpandedAllTasks(value=>!value);}},appearanceText(expandedAllTasks?'Shfaq më pak':'Shiko të gjitha',expandedAllTasks?'Show less':'View all'),ce('span',{'aria-hidden':true},expandedAllTasks?'↑':'→')),
+      editingHomeTasks&&ce('div',{className:'home-tasks-tools'},
         ce('button',{type:'button',onClick:()=>{setReportSelectedDate(today);setRoutineReportModalOpen(true);}},unitUiIcon('M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6','w-4 h-4'),appearanceText('Raporti i ditës','Daily report')),
         ce('button',{type:'button',onClick:()=>setPomoOpen(true)},clockIcon(),appearanceText('Kohëmatësi','Timer'))));
   };
