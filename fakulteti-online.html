@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-2">
+  <link rel="stylesheet" href="./assets/app-refresh.css?v=20261126-1">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
     .profile-minimal.profile-refined > * {margin-top:0 !important;}
@@ -1728,7 +1729,8 @@
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=13"></script>
-  <script src="./assets/account-approvals.js?v=20261126-4"></script>
+  <script src="./assets/app-refresh.js?v=20261126-1"></script>
+  <script src="./assets/account-approvals.js?v=20261126-5"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
@@ -34509,8 +34511,6 @@ Nënshkrimi: _____________________`;
     const sessions = programScheduleSessions(day.id, day.key);
     const programName = scheduleProgramFilter === 'social-work' ? 'Punë Sociale · Viti I' : facultyScheduleProgram?.label || 'Orari i drejtimit';
     return h('section', { className: 'space-y-3', 'aria-label': `Orari i ${programName}` },
-      h('div', null,
-        h('h2', { className: 'text-base font-bold text-primary' }, programName)),
       sessions.length ? sessions.map((session, index) => h('article', {
         key: `${session.room}:${session.s}:${session.g}:${index}`, className: 'sch-card space-y-2'
       },
@@ -38526,6 +38526,17 @@ Nënshkrimi: _____________________`;
     onDismiss: id => setToasts(items => items.filter(item => item.id !== id))
   }));
 }
+
+async function refreshApplicationData() {
+  if (!window.FakultetiLocalAccounts.current() || !window.FakultetiApprovals?.check || navigator.onLine === false) return { ok: false };
+  const requests = [window.FakultetiApprovals.check()];
+  const context = getStudentFacultyContext(unitStorage.getItem('u_branch'), unitStorage.getItem('u_faculty'));
+  if (context.hasFreeRooms) requests.push(FilozofikuDailyStore.refresh({ force: true }));
+  const results = await Promise.allSettled(requests);
+  return { ok: results.every(result => result.status === 'fulfilled' && result.value?.ok !== false) };
+}
+
+window.fakultetiRefreshApp = refreshApplicationData;
 
 function bindTaskComposerViewport(doc, win) {
   const overlay=doc.getElementById('daily-routine-composer-overlay');

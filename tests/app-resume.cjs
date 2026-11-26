@@ -64,6 +64,10 @@ async function gateFixture(status = 'approved') {
   f.unmount(); ok(f.intervals.size === 0, 'resume checks are cleaned up');
   for (const status of ['pending', 'rejected']) { const p = await gateFixture(status); p.render(); tree = await p.settled(); ok(!nodes(tree).some(n => n.type === 'App') && tree.props.className === 'approval-wait-page', status + ' never bypasses approval'); p.unmount(); }
   const invalid = await gateFixture(); invalid.setPolicy({email: 'other@example.test'}); invalid.render(); tree = await invalid.settled(); ok(!nodes(tree).some(n => n.type === 'App') && text(tree).includes('Lidhja'), 'mismatched policy identity cannot unlock app'); invalid.unmount();
+  const manual = await gateFixture(); manual.render(); tree=await manual.settled(); const manualKey=tree.children[0].props.key;
+  manual.setPolicy({version:23});await manual.root.FakultetiApprovals.check();ok(manual.render().children[0].props.key===manualKey,'manual data refresh retains the mounted app instance');
+  manual.root.dispatchEvent(new Event('fakulteti:approval',{detail:{status:'suspended'}}));ok(manual.render().children[0].props.key===manualKey,'unverified external policy events cannot change gate state');
+  manual.setPolicy({status:'suspended'});await manual.root.FakultetiApprovals.check();ok(!nodes(manual.render()).some(n=>n.type==='App'),'manual refresh applies a verified suspension immediately');manual.unmount();
   const revoked = await gateFixture(); revoked.render(); await revoked.settled(); revoked.setError('SESSION_REVOKED'); revoked.root.dispatchEvent(new Event('online')); await revoked.settled(); ok(revoked.reloads === 1 && revoked.root.FakultetiLocalAccounts.current() === null, 'revoked sessions still sign out and reload'); revoked.unmount();
 
   const access = await gateFixture(); access.setPolicy({name:'Arta Hoxha'}); access.render(); await access.settled();

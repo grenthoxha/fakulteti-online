@@ -128,13 +128,15 @@
     useEffect(() => {
       alive.current=true; refresh();
       const resume=()=>{if(!root.document.hidden) refresh();};
+      const policyChecked=event=>{if(alive.current && event.detail===api.policy)setPolicy(api.policy);};
+      root.addEventListener('fakulteti:approval',policyChecked);
       const timer=setInterval(resume,30000), openManager=()=>{if(api.isAdmin())setManagerOpen(true);};
       root.addEventListener('fakulteti:manage-accounts',openManager);
       root.addEventListener('online',resume);root.addEventListener('pageshow',resume);root.document.addEventListener('visibilitychange',resume);
-      return()=>{alive.current=false;clearInterval(timer);root.removeEventListener('fakulteti:manage-accounts',openManager);root.removeEventListener('online',resume);root.removeEventListener('pageshow',resume);root.document.removeEventListener('visibilitychange',resume);};
+      return()=>{alive.current=false;clearInterval(timer);root.removeEventListener('fakulteti:approval',policyChecked);root.removeEventListener('fakulteti:manage-accounts',openManager);root.removeEventListener('online',resume);root.removeEventListener('pageshow',resume);root.document.removeEventListener('visibilitychange',resume);};
     },[]);
     useEffect(()=>{if(policy&&policy.status!=='approved'){root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');root.fakultetiAndroid?.send('focus-unlock');}},[policy?.status]);
-    if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:JSON.stringify([policy.id,policy.role,Boolean(policy.isAdmin),[...(policy.permissions||[])].sort()])}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
+    if(policy?.status==='approved') return h(React.Fragment,null,React.cloneElement(children,{key:JSON.stringify([policy.id,policy.role,Boolean(policy.isAdmin),[...(policy.permissions||[])].sort()])}),root.FakultetiAppRefresh&&h(root.FakultetiAppRefresh,{onRefresh:root.fakultetiRefreshApp}),managerOpen&&api.isAdmin()&&ReactDOM.createPortal(h(root.FakultetiAccessManager,{onClose:()=>setManagerOpen(false)}),root.document.body));
     // Only cold entry waits behind the logo. Background checks keep the approved tree mounted.
     if(!policy && busy && !needsProfile && !error) return h('main',{className:'approval-launch',role:'status','aria-label':'Po ngarkohet Fakulteti','aria-busy':true},
       h('div',{className:'approval-launch-content','aria-hidden':true},
