@@ -133,8 +133,7 @@
     // Only cold entry waits behind the logo. Background checks keep the approved tree mounted.
     if(!policy && busy && !needsProfile && !error) return h('main',{className:'approval-launch',role:'status','aria-label':'Po ngarkohet Fakulteti','aria-busy':true},
       h('div',{className:'approval-launch-content','aria-hidden':true},
-        h('div',{className:'approval-launch-mark'},h('img',{src:root.document.documentElement.classList.contains('dark')?'./assets/fakulteti-online-logo-dark.png':'./assets/fakulteti-online-logo.png',alt:'Fakulteti',width:80,height:80})),
-        h('div',{className:'approval-launch-dots'},h('i'),h('i'),h('i'))));
+        h('div',{className:'approval-launch-mark'},h('img',{src:root.document.documentElement.classList.contains('dark')?'./assets/fakulteti-online-logo-dark.png':'./assets/fakulteti-online-logo.png',alt:'Fakulteti',width:80,height:80}))));
     const status=policy?.status || 'loading';
     const titles={pending:'Në pritje të aprovimit',rejected:'Kërkesa nuk u aprovua',suspended:'Qasja është pezulluar',loading:needsProfile?'Plotëso profilin':'Kërkesa për aprovim'};
     return h('main',{className:'approval-wait-page'},h('section',{className:'approval-wait-card card-surface border border-default'},brand(),
