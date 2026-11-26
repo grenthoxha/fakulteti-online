@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
   <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-2">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/app-refresh.css?v=20261126-1">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
@@ -34293,7 +34293,7 @@ Nënshkrimi: _____________________`;
         const locked=service.id==='freerooms' && window.FakultetiApprovals && !window.FakultetiApprovals.canView('freerooms');
         return h('button', {
         key:service.id, type:'button', 'aria-disabled':locked?'true':undefined,
-        onClick:()=>locked?showToast('Qasje për kryetarët e grupeve dhe llogaritë e autorizuara.','🔒'):setView(service.id), className:`home-service-reference${locked?' is-locked':''}`,
+        onClick:()=>locked?showToast('Qasje për kryetarët e grupeve dhe llogaritë e autorizuara.','🔒'):setView(service.id), className:`home-service-reference${service.id==='freerooms'?' is-privileged':''}${locked?' is-locked':''}`,
         style:{ '--service-bg':'rgba(var(--brand-rgb), .1)', '--service-ink':'rgb(var(--brand-rgb))' }
       },
         h('span', { className:'home-service-icon', 'aria-hidden':true }, unitUiIcon(service.icon,'w-6 h-6')),

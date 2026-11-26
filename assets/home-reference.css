@@ -110,3 +110,9 @@ html[data-density] main.app-main .home-dashboard > :not([hidden]) ~ .home-sectio
 .home-dashboard .home-service-reference.is-locked .home-service-access-badge {color:var(--muted);background:var(--surface-muted);}
 @media(min-width:640px) {.home-dashboard .home-service-access-badge {right:15px;top:24px;}}
 @media(prefers-reduced-motion:reduce) {#daily-routine-composer {animation:none;}}
+
+/* Privileged classroom card: preserve the service-card layout and interactions. */
+.home-dashboard .home-service-reference.is-privileged {background:radial-gradient(ellipse at 100% 0,rgba(224,183,101,.19),transparent 64%),linear-gradient(135deg,#eef4ff,#dfeafb);border-color:#b9cbe5;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);}
+.home-dashboard .home-service-reference.is-privileged:hover {border-color:#8baad2;}
+.dark .home-dashboard .home-service-reference.is-privileged {background:radial-gradient(ellipse at 100% 0,rgba(196,160,90,.1),transparent 64%),linear-gradient(135deg,#203654,#17283f);border-color:#415b7b;box-shadow:inset 0 1px 0 rgba(199,221,255,.07);}
+.dark .home-dashboard .home-service-reference.is-privileged:hover {border-color:#6581a5;}
