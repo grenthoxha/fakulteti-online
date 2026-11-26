@@ -42,7 +42,7 @@ async function gateFixture(status = 'approved') {
   const f = await gateFixture();
   let tree = f.render();
   ok(tree.props.className === 'approval-launch' && nodes(tree).some(n => n.type === 'img' && n.props.alt === 'Fakulteti'), 'cold launch shows the actual logo');
-  ok(text(tree) === '' && !nodes(tree).some(n => n.type === 'button'), 'no access-check text or placeholder approval controls during initial check');
+  ok(text(tree) === '' && tree.props['aria-busy'] === true && tree.props['aria-label'] === 'Po ngarkohet Fakulteti' && !nodes(tree).some(n => n.type === 'button'), 'initial check shows only the visual loader, with an accessible status and no visible words or approval controls');
   tree = await f.settled();
   const key = tree.children[0].props.key;
   ok(tree.children[0].type === 'App', 'approval mounts the app only after identity validation');
