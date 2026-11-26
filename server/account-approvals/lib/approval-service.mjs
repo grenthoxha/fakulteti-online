@@ -145,7 +145,7 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
     const target = /^\/api\/admin\/requests\/([a-f0-9]{64})$/.exec(url.pathname);
     if (target && request.method === 'PATCH') {
       if (await isLinkedAdmin(db, target[1])) fail('ADMIN_SELF_CHANGE_DENIED', 403);
-      if (!['approved','rejected','suspended','pending'].includes(input.status) || !['student','instructor'].includes(input.role) || !Array.isArray(input.permissions) || input.permissions.some(p => !SECTIONS.includes(p)) || !LANDINGS.includes(input.landing) || !Number.isInteger(input.version)) fail('POLICY_INVALID');
+      if (!['approved','rejected','suspended','pending'].includes(input.status) || !['student','instructor','president'].includes(input.role) || !Array.isArray(input.permissions) || input.permissions.some(p => !SECTIONS.includes(p)) || !LANDINGS.includes(input.landing) || !Number.isInteger(input.version)) fail('POLICY_INVALID');
       const routeSections = {home:'home',week:'schedule',courses:'courses',student:'exams',studentservices:'services',freerooms:'rooms',articles:'articles'};
       if (input.status === 'approved' && input.landing !== 'auto' && input.landing !== 'settings' && !input.permissions.includes(routeSections[input.landing])) fail('LANDING_DENIED');
       const result = await db.prepare('UPDATE approval_requests SET status = ?, role = ?, permissions = ?, landing = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?').bind(input.status,input.role,JSON.stringify([...new Set(input.permissions)]),input.landing,now,target[1],input.version).run();

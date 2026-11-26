@@ -66,6 +66,16 @@ async function gateFixture(status = 'approved') {
   const invalid = await gateFixture(); invalid.setPolicy({email: 'other@example.test'}); invalid.render(); tree = await invalid.settled(); ok(!nodes(tree).some(n => n.type === 'App') && text(tree).includes('Lidhja'), 'mismatched policy identity cannot unlock app'); invalid.unmount();
   const revoked = await gateFixture(); revoked.render(); await revoked.settled(); revoked.setError('SESSION_REVOKED'); revoked.root.dispatchEvent(new Event('online')); await revoked.settled(); ok(revoked.reloads === 1 && revoked.root.FakultetiLocalAccounts.current() === null, 'revoked sessions still sign out and reload'); revoked.unmount();
 
+  const access = await gateFixture(); access.setPolicy({name:'Arta Hoxha'}); access.render(); await access.settled();
+  ok(!access.root.FakultetiApprovals.canView('freerooms'), 'ordinary approved students cannot open privileged rooms even with broad section permissions');
+  access.map.set('u_is_class_president','true');
+  ok(!access.root.FakultetiApprovals.isClassPresident() && !access.root.FakultetiApprovals.can('rooms'), 'the old local self-assignment switch cannot grant the privilege');
+  for(const name of ['Bujar Hoti','Agron Miftari','Grent Hoxha','Grenti Hoxha']) {access.setPolicy({name});await access.root.FakultetiApprovals.check();ok(access.root.FakultetiApprovals.canView('freerooms'),'approved named account keeps rooms access: '+name);}
+  access.setPolicy({name:'Bujar Other'});await access.root.FakultetiApprovals.check();ok(!access.root.FakultetiApprovals.can('rooms'),'sharing a first name does not grant access');
+  access.setPolicy({name:'Arta Hoxha',role:'president'});await access.root.FakultetiApprovals.check();ok(access.root.FakultetiApprovals.isClassPresident() && access.root.FakultetiApprovals.can('rooms'),'an appointed class president receives rooms privilege');
+  access.setPolicy({role:'student'});await access.root.FakultetiApprovals.check();ok(!access.root.FakultetiApprovals.can('rooms'),'removing the appointment revokes the privilege');
+  access.setPolicy({name:'Bujar Hoti',status:'pending'});await access.root.FakultetiApprovals.check();ok(!access.root.FakultetiApprovals.can('rooms'),'named accounts still need approval');access.unmount();
+
   const html = fs.readFileSync('fakulteti-online.html', 'utf8');
   const appSource = html.slice(html.indexOf('function App() {'), html.indexOf('\nReactDOM.createRoot', html.indexOf('function App() {')));
   function appFixture(rooms = false) {

@@ -53,6 +53,23 @@ test('new devices remain pending; knowing the administrator email grants no priv
   assert.equal((await result(await applicant.enroll(db,'admin'))).status,400);
   const me=await result(await handleApprovalRequest(await applicant.request('/api/me'),{DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'},NOW));assert.equal(me.body.isAdmin,false);assert.equal(me.body.public_key,undefined);
 });
+
+test('class presidents can be appointed and revoked only by the verified administrator',async()=>{
+  const db=database(),admin=await device('grent@gmail.com','Grent Hoxha'),student=await device();
+  const env={DB:db,APPROVAL_OWNER_EMAIL:'owner@example.test'};
+  assert.equal((await student.enroll(db,'president')).status,400);
+  await admin.enroll(db);await student.enroll(db);await linkOwner(db,admin);
+  const appointment={status:'approved',role:'president',permissions:['home','courses','rooms'],landing:'auto',version:1};
+  const denied=await handleApprovalRequest(await student.request('/api/admin/requests/'+student.id,'PATCH',appointment),env,NOW);
+  assert.equal(denied.status,403);
+  const appointed=await result(await handleApprovalRequest(await admin.request('/api/admin/requests/'+student.id,'PATCH',appointment),env,NOW));
+  assert.equal(appointed.status,200);assert.equal(appointed.body.role,'president');
+  const me=await result(await handleApprovalRequest(await student.request('/api/me'),env,NOW));
+  assert.equal(me.body.role,'president');assert.equal(me.body.isAdmin,false);assert(me.body.permissions.includes('rooms'));
+  const demoted=await result(await handleApprovalRequest(await admin.request('/api/admin/requests/'+student.id,'PATCH',{...appointment,role:'student',version:appointed.body.version}),env,NOW));
+  assert.equal(demoted.status,200);assert.equal(demoted.body.role,'student');
+  assert.equal((await result(await handleApprovalRequest(await student.request('/api/me'),env,NOW))).body.role,'student');
+});
 test('only a verified owner can link Grent; approvals and individual visibility are enforced remotely',async()=>{
   const db=database(),admin=await device('grent@gmail.com','Grent Hoxha'),student=await device();
   await admin.enroll(db);await student.enroll(db);

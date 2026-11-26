@@ -79,7 +79,12 @@
     // Offline approval never grants remote administrative actions; those are verified on the service.
     return {...policy, offline:true};
   }
-  function can(section) { return Boolean(currentPolicy?.status === 'approved' && (currentPolicy.isAdmin || currentPolicy.permissions?.includes(section))); }
+  function isClassPresident() { return Boolean(currentPolicy?.status === 'approved' && (currentPolicy.isAdmin || currentPolicy.role === 'president')); }
+  function hasRoomsPrivilege() {
+    const name=String(currentPolicy?.name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+    return Boolean(currentPolicy?.status === 'approved' && (isClassPresident() || ['bujar hoti','agron miftari','grent hoxha','grenti hoxha'].includes(name)));
+  }
+  function can(section) { return Boolean(currentPolicy?.status === 'approved' && (currentPolicy.isAdmin || currentPolicy.permissions?.includes(section)) && (section !== 'rooms' || hasRoomsPrivilege())); }
   function canView(view) {
     if (['settings','account-access','profile-edit','profile-settings','profile-account','profile-resources'].includes(view)) return currentPolicy?.status === 'approved';
     if (view === 'profile-notes') return can('courses');
@@ -92,7 +97,7 @@
     if (canView(preferred)) return preferred;
     return ['home','freerooms','week','courses','student','studentservices','articles','settings'].find(canView) || 'settings';
   }
-  const api = root.FakultetiApprovals = { SECTIONS, ADMIN_EMAIL, check, cached, can, canView, landing, fallback: view => landing(view,false),
+  const api = root.FakultetiApprovals = { SECTIONS, ADMIN_EMAIL, check, cached, can, canView, landing, isClassPresident, hasRoomsPrivilege, fallback: view => landing(view,false),
     get policy() { return currentPolicy; }, isAdmin: () => Boolean(currentPolicy?.isAdmin),
     adminLink: () => call('/api/admin-link','POST',{}),
     audit: () => call('/api/admin/audit'),
@@ -170,7 +175,7 @@
         h('div',{className:'approval-user-heading'},h('h3',null,selected.name),h('p',null,selected.email),h('p',{className:'text-sm text-secondary'},selected.online?'Llogari online':'Llogari e mëparshme · Ende pa u lidhur online'),selected.lastLogin&&h('p',{className:'text-sm text-secondary'},'Hyrja e fundit: '+new Date(selected.lastLogin).toLocaleString('sq')),selected.profile?.faculty&&h('p',{className:'text-sm text-secondary'},[selected.profile.faculty,selected.profile.branch,selected.profile.year&&'Viti '+selected.profile.year].filter(Boolean).join(' · '))),
         h('div',{className:'approval-presets'},h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:Object.keys(SECTIONS),landing:'auto'})},'Qasje e plotë'),h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:['rooms'],landing:'freerooms'})},'Vetëm sallat e lira'),h('button',{type:'button',onClick:()=>setDraft({...draft,permissions:['home','schedule','courses','exams','articles'],landing:'courses'})},'Mësimi')),
         h('fieldset',{className:'approval-permissions'},h('legend',null,'Pjesët që i shfaqen'),Object.entries(SECTIONS).map(([key,label])=>h('label',{key},h('input',{type:'checkbox',checked:draft.permissions.includes(key),onChange:e=>setDraft({...draft,permissions:e.target.checked?[...draft.permissions,key]:draft.permissions.filter(p=>p!==key),landing:'auto'})}),h('span',null,label)))),
-        h('div',{className:'approval-form-row'},h('label',null,'Profili',h('select',{value:draft.role,onChange:e=>setDraft({...draft,role:e.target.value})},h('option',{value:'student'},'Student'),h('option',{value:'instructor'},'Profesor'))),
+        h('div',{className:'approval-form-row'},h('label',null,'Roli',h('select',{value:draft.role,onChange:e=>{const role=e.target.value;setDraft({...draft,role,permissions:role==='president'?[...new Set([...draft.permissions,'rooms'])]:draft.permissions});}},h('option',{value:'student'},'Student'),h('option',{value:'instructor'},'Profesor'),h('option',{value:'president'},'Kryetar klase/grupi'))),
         h('label',null,'Faqja që hapet',h('select',{value:draft.landing,onChange:e=>setDraft({...draft,landing:e.target.value})},[['auto','Sipas profilit'],['home','Kreu'],['week','Orari'],['courses','Lëndët'],['student','Provimet'],['studentservices','Shërbimet studentore'],['freerooms','Sallat e lira'],['articles','Artikujt'],['settings','Profili']].filter(([view])=>view==='auto'||view==='settings'||draft.permissions.includes(ROUTES[view])).map(([value,label])=>h('option',{key:value,value},label))))),
         h('div',{className:'approval-save-actions'},h('button',{type:'button',disabled:busy,className:'approval-primary',onClick:()=>save('approved')},selected.status==='approved'?'Ruaj qasjen':'Aprovo llogarinë'),selected.status==='approved'&&h('button',{type:'button',disabled:busy,className:'approval-secondary',onClick:()=>save('suspended')},'Pezullo qasjen'),selected.status!=='approved'&&h('button',{type:'button',disabled:busy,className:'approval-text-button',onClick:()=>save('rejected')},'Refuzo kërkesën')),
         h('section',{className:'approval-permissions'},h('h3',null,'Aktiviteti i llogarisë'),

@@ -91,3 +91,22 @@ html[data-density] main.app-main .home-dashboard > :not([hidden]) ~ .home-sectio
   .home-dashboard .home-services-heading-icon {display:none;}
 }
 @media(prefers-reduced-motion:reduce) {.home-dashboard .home-service-reference {transition:none;}.home-dashboard .home-service-reference:hover {transform:none;}}
+
+/* Keep the task composer at the bottom, including above the software keyboard. */
+#daily-routine-composer-overlay {align-items:flex-end;padding:0;}
+#daily-routine-composer {max-height:min(90dvh,calc(100% - 12px));border-radius:24px 24px 0 0;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));overscroll-behavior:contain;scrollbar-width:thin;}
+#daily-routine-composer button {box-shadow:none!important;transform:none!important;}
+#daily-routine-composer .task-composer-properties {gap:6px;}
+#daily-routine-composer .task-composer-properties > :is(button,label) {min-height:34px;border-radius:10px;font-size:12px;font-weight:500;}
+#daily-routine-composer .task-composer-footer {position:sticky;bottom:calc(-1 * max(16px,env(safe-area-inset-bottom,0px)));z-index:30;margin-bottom:0;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));background:var(--surface);}
+#daily-routine-composer .task-composer-footer > span {display:none;}
+#daily-routine-composer .task-composer-footer > div {width:100%;}
+#daily-routine-composer .task-composer-footer button {min-height:42px;font-size:13px;font-weight:600;}
+#daily-routine-composer .task-composer-footer button[type="button"] {background:transparent;border-color:transparent;}
+#daily-routine-composer .task-composer-footer button[type="submit"] {background:rgb(var(--brand-rgb));}
+.exam-complete-details {display:grid;place-items:center;flex-shrink:0;width:30px;height:32px;border:0;border-radius:9px;background:rgba(var(--brand-rgb),.07);color:rgb(var(--brand-rgb));cursor:pointer;}
+.exam-complete-details:focus-visible {outline:2px solid #5b9bea;outline-offset:2px;}
+.home-dashboard .home-service-access-badge {position:absolute;right:10px;top:17px;display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:rgba(var(--brand-rgb),.07);color:rgb(var(--brand-rgb));}
+.home-dashboard .home-service-reference.is-locked .home-service-access-badge {color:var(--muted);background:var(--surface-muted);}
+@media(min-width:640px) {.home-dashboard .home-service-access-badge {right:15px;top:24px;}}
+@media(prefers-reduced-motion:reduce) {#daily-routine-composer {animation:none;}}

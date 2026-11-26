@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
   <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
-  <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-1">
+  <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-2">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
     .profile-minimal.profile-refined > * {margin-top:0 !important;}
@@ -1728,7 +1728,7 @@
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=13"></script>
-  <script src="./assets/account-approvals.js?v=20261126-3"></script>
+  <script src="./assets/account-approvals.js?v=20261126-4"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
@@ -14062,9 +14062,7 @@ function AcademyApp({
   const [studentGroupId, setStudentGroupId] = useState(() => {
     try { return unitStorage.getItem('u_student_group_id') || 'Grupi 1'; } catch { return 'Grupi 1'; }
   });
-  const [isClassPresident, setIsClassPresident] = useState(() => {
-    try { return unitStorage.getItem('u_is_class_president') !== 'false'; } catch { return true; }
-  });
+  const isClassPresident = Boolean(window.FakultetiApprovals?.isClassPresident());
   const [groupColloquiums, setGroupColloquiums] = useState(() => readPersonalExamRecords('u_group_colloquiums_v1'));
   const [groupAnnouncements, setGroupAnnouncements] = useState(() => {
     try {
@@ -14638,6 +14636,7 @@ function AcademyApp({
       };
     }
   }, [dailyRoutineEditorOpen, dateTimeModalOpen, newProjectModalOpen, courseVideoFeedOpen]);
+  useEffect(() => dailyRoutineEditorOpen ? bindTaskComposerViewport(document, window) : undefined, [dailyRoutineEditorOpen]);
   useEffect(() => () => { courseVideoFeedAnimationRef.current?.cancel(); }, [courseVideoFeedOpen]);
   useEffect(() => {
     if (!courseVideoFeedOpen) return;
@@ -25442,14 +25441,6 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     setStudentGroupId(grp);
     try { unitStorage.setItem('u_student_group_id', grp); } catch {}
   };
-  const handleToggleClassPresident = () => {
-    setIsClassPresident(prev => {
-      const next = !prev;
-      try { unitStorage.setItem('u_is_class_president', String(next)); } catch {}
-      showToast(next ? 'U aktivizua roli: Kryetar Klase për grupin tënd!' : 'Kalove në pamjen e zakonshme të studentit të grupit.', '👑');
-      return next;
-    });
-  };
   const handlePublishGroupColloquium = e => {
     e.preventDefault();
     const cObj = enrolledCourses.find(c => c.id === colloquiumDraft.courseId) || enrolledCourses[0] || allCourses[0];
@@ -25915,7 +25906,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
             textBtn(completedAnnouncementsOpen ? 'Fshih arkivën' : `Arkiva (${doneEntries.length})`, () => setCompletedAnnouncementsOpen(v => !v), 'is-quiet'),
             completedAnnouncementsOpen && h('div', { className: 'mx-agenda' }, renderAgenda(doneEntries, true, () => 'Arkiva')))),
 
-      h('div', { className: 'mx-role' }, textBtn(isClassPresident ? 'Kryetar klase · çaktivizo' : 'Je kryetar klase?', handleToggleClassPresident, 'is-quiet')));
+      isClassPresident && h('div', { className: 'mx-role' }, h('span', null, 'Kryetar klase/grupi')));
   };
 
   /* ── 4p-2. RENDER EXTRA TUTORING VIEW (MËSIM SHTESË · MAX 7 PERSONA · PAGESË NGAPAK & REVIEWS) ── */
@@ -30555,7 +30546,8 @@ Nënshkrimi: _____________________`;
           /* 1. TASK COMPOSER MODAL (PORTALIZED DIRECTLY TO DOCUMENT.BODY) */
           dailyRoutineEditorOpen && /*#__PURE__*/React.createElement(ModalPortal, null, /*#__PURE__*/React.createElement("div", {
             id: "daily-routine-composer-overlay",
-            className: "fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden anim-fade-in",
+            role: "dialog", "aria-modal": "true", "aria-labelledby": "daily-routine-composer-title",
+            className: "fixed inset-0 z-[99999] bg-black/35 dark:bg-black/55 flex items-end justify-center overflow-hidden anim-fade-in",
             style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100dvh", zIndex: 99999 },
             onClick: e => {
               if (e.target === e.currentTarget) setDailyRoutineEditorOpen(false);
@@ -30565,7 +30557,7 @@ Nënshkrimi: _____________________`;
             /*#__PURE__*/React.createElement("form", {
               id: "daily-routine-composer",
               onSubmit: submitDailyRoutine,
-              className: "w-full max-w-xl max-h-[92dvh] overflow-y-auto p-4 sm:p-6 rounded-3xl solid-popover border border-default shadow-2xl space-y-4 anim-zoom-in select-none"
+              className: "w-full max-w-xl max-h-[90dvh] overflow-y-auto p-4 sm:p-5 rounded-t-3xl solid-popover border border-default shadow-2xl space-y-4 anim-fade-up select-none"
             },
               /* Header Row */
               /*#__PURE__*/React.createElement("div", {
@@ -30580,7 +30572,7 @@ Nënshkrimi: _____________________`;
                   /* Text */
                   /*#__PURE__*/React.createElement("div", null,
                     /*#__PURE__*/React.createElement("h3", {
-                      className: "text-xs sm:text-sm font-bold text-primary tracking-tight"
+                      id: "daily-routine-composer-title", className: "text-xs sm:text-sm font-bold text-primary tracking-tight"
                     }, dailyRoutineDraft.id ? "Redakto aktivitetin" : "Shto detyrë"),
                     /*#__PURE__*/React.createElement("p", {
                       className: "text-[10px] text-secondary leading-none mt-0.5"
@@ -30935,7 +30927,7 @@ Nënshkrimi: _____________________`;
               
               /* Smart Property Chips Bar */
               /*#__PURE__*/React.createElement("div", {
-                className: "flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs pt-1 relative z-20 max-w-full pb-1"
+                className: "task-composer-properties flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs pt-1 relative z-20 max-w-full pb-1"
               },
                 /* 1. SEPARATE DATE BUTTON */
                 /*#__PURE__*/React.createElement("button", {
@@ -31171,7 +31163,7 @@ Nënshkrimi: _____________________`;
 
               /* 6. Footer Action Bar */
               /*#__PURE__*/React.createElement("div", {
-                className: "pt-3 flex items-center justify-between gap-3 border-t border-default/70 flex-wrap sm:flex-nowrap"
+                className: "task-composer-footer pt-3 flex items-center justify-between gap-3 border-t border-default/70 flex-wrap sm:flex-nowrap"
               },
                 /* Left: Info Hint */
                 /*#__PURE__*/React.createElement("span", {
@@ -33452,7 +33444,7 @@ Nënshkrimi: _____________________`;
     const openAdd = openExamAdd;
     const openEdit = exam => {
       setExamActionId(null);
-      setDeadlineDraft({ title: '', courseId: exam.courseId, date: exam.date, examTime: exam.time || '', examRoom: exam.room || '', pick: '', type: 'exam', isExamModalOpen: true, editId: exam.id });
+      setDeadlineDraft({ title: '', courseId: exam.courseId, date: exam.date, examTime: String(exam.time || '').trim(), examRoom: String(exam.room || '').trim(), pick: '', type: 'exam', isExamModalOpen: true, editId: exam.id });
     };
     const closeAdd = () => setDeadlineDraft(prev => ({ ...prev, isExamModalOpen: false }));
     const examMenu = exam => ce("details", { className: "relative shrink-0 self-start" },
@@ -33479,7 +33471,7 @@ Nënshkrimi: _____________________`;
     const later = examDeadlines.slice(1);
     const label = txt => ce("h2", { className: "text-[13px] font-semibold text-tertiary" }, txt);
 
-    const examMeta = exam => [exam && exam.time, exam && exam.room ? `Salla ${exam.room}` : ''].filter(Boolean).join(' · ');
+    const examMeta = exam => [String(exam?.time || '').trim(), String(exam?.room || '').trim() ? `Salla ${String(exam.room).trim()}` : ''].filter(Boolean).join(' · ');
     const dayFull = date => `${capFirst(formatDateSq(date, { weekday: 'long' }))}, ${formatDateSq(date, { day: 'numeric' })} ${capFirst(formatDateSq(date, { month: 'long' }))}`;
     const monthOf = date => capFirst(formatDateSq(date, { month: 'long' }));
     const weekdayOf = date => capFirst(formatDateSq(date, { weekday: 'long' }));
@@ -33490,14 +33482,17 @@ Nënshkrimi: _____________________`;
       const d = daysUntil(exam.date);
       const ready = readinessOf(item);
       const fill = Math.max(0.05, Math.min(1, (30 - d) / 30));
-      const fact = (labelText, value, cls) => ce("div", { className: `px-[18px] py-3 min-w-0 ${cls || ''}` },
+      const fact = (labelText, value, cls, editField) => ce("div", { className: `px-[18px] py-3 min-w-0 ${cls || ''}` },
         ce("div", { className: "text-[11px] font-semibold text-tertiary" }, labelText),
-        ce("div", { className: `mt-0.5 text-[15px] font-[650] truncate ${value ? 'text-primary' : 'text-tertiary'}` }, value || '—'));
+        ce(editField && !String(value || '').trim() ? "button" : "div", {
+          ...(editField && !String(value || '').trim() ? {type:'button',onClick:()=>openEdit(exam), 'aria-label':`${editField}: ${nameOf(exam)}`} : {}),
+          className: `mt-0.5 text-[15px] font-[650] truncate ${String(value || '').trim() ? 'text-primary' : 'text-brand-600 dark:text-brand-300'}`
+        }, String(value || '').trim() || (editField ? editField : '—')));
       return ce(React.Fragment, null,
         ce("div", { className: "-mx-[18px] grid grid-cols-[1.25fr_1fr_1fr] border-y border-default" },
           fact("Data", `${dayNumOf(exam.date)} ${monthOf(exam.date)}`),
-          fact("Ora", exam.time, "border-l border-default"),
-          fact("Salla", exam.room, "border-l border-default")),
+          fact("Ora", exam.time, "border-l border-default", "Shto orën"),
+          fact("Salla", exam.room, "border-l border-default", "Shto sallën")),
         ce("div", { className: "mt-4 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/10 overflow-hidden", "aria-hidden": true },
           ce("div", { className: "h-full rounded-full bg-brand-600 dark:bg-brand-300", style: { width: `${Math.round(fill * 100)}%` } })),
         ce("div", { className: "mt-2 flex items-center justify-between text-[12.5px] text-tertiary" },
@@ -33709,6 +33704,12 @@ Nënshkrimi: _____________________`;
                 ce("span", { className: "block text-[15px] font-semibold text-primary leading-5" }, nameOf(exam)),
                 examMeta(exam) ? ce("span", { className: "block text-[12.5px] text-tertiary mt-px" }, examMeta(exam)) : null),
               !selecting && ce("span", { className: `shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold ${pillCls}` }, d === 0 ? 'Sot' : d === 1 ? 'Nesër' : `${d} ditë`)),
+            !selecting && (!String(exam.time || '').trim() || !String(exam.room || '').trim()) && ce('button', {
+              type:'button',className:'exam-complete-details',
+              'aria-label':`Plotëso orën ose sallën: ${nameOf(exam)}`,
+              onPointerDown:event=>event.stopPropagation(),onPointerUp:event=>event.stopPropagation(),
+              onClick:event=>{event.stopPropagation();openEdit(exam);}
+            },unitUiIcon('M16 3l5 5M4 20l4-1L21 6a2 2 0 0 0-3-3L5 16l-1 4z','w-4 h-4')),
             !selecting && ce("span", { className: "-mr-2 hidden lg:flex" }, examMenu(exam)))),
         open && !selecting && ce("div", { className: "px-[18px] pb-4" }, detailBody(exam)),
         !isLast && ce("div", { className: "mx-[18px] border-b border-default" }));
@@ -34277,7 +34278,7 @@ Nënshkrimi: _____________________`;
       { id:'scholarship', title:appearanceText('Simulatori i Bursës','Scholarship Calculator'), detail:appearanceText('Llogarit mundësitë për bursë','Explore scholarship eligibility'), icon:'M2 8l10-5 10 5-10 5-10-5zM6 10v7c4 3 8 3 12 0v-7M22 8v8' },
       { id:'studygroups', title:appearanceText('Grupet e Studimit','Study Groups'), detail:appearanceText('Mësoni bashkë, online ose në kampus','Study together, online or on campus'), icon:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0' },
       { id:'urbantraffic', title:appearanceText('Trafiku Urban','Urban Transit'), detail:appearanceText('Linjat, stacionet dhe oraret','Routes, stops and timetables'), icon:'M5 4h14v14H5zM5 10h14M9 4v6M15 4v6M7 18v3M17 18v3M8 14h.01M16 14h.01' }
-    ].filter(service => (service.id !== 'freerooms' || facultyContext.hasFreeRooms) && (!window.FakultetiApprovals || window.FakultetiApprovals.canView(service.id)));
+    ].filter(service => (service.id !== 'freerooms' || facultyContext.hasFreeRooms) && (service.id === 'freerooms' || !window.FakultetiApprovals || window.FakultetiApprovals.canView(service.id)));
     return h('section', { 'data-home-section':'student-services', className:'home-services-reference' },
       h('div', { className:'home-reference-heading' },
         h('div', { className:'home-services-heading-main' },
@@ -34286,14 +34287,17 @@ Nënshkrimi: _____________________`;
             h('h2', null, appearanceText('Shërbimet Studentore','Student Services')))),
         h('button', {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("studentservices")) ? 'true' : undefined, type:'button', onClick:()=>setView('studentservices'), className:'home-services-all' }, appearanceText('Të gjitha','View all'), h('span', { 'aria-hidden':true }, '→'))),
-      h('div', { className:'home-services-grid-reference' }, services.map(service=>h('button', {
-        key:service.id, type:'button', onClick:()=>setView(service.id), className:'home-service-reference',
+      h('div', { className:'home-services-grid-reference' }, services.map(service=>{
+        const locked=service.id==='freerooms' && window.FakultetiApprovals && !window.FakultetiApprovals.canView('freerooms');
+        return h('button', {
+        key:service.id, type:'button', 'aria-disabled':locked?'true':undefined,
+        onClick:()=>locked?showToast('Qasje për kryetarët e grupeve dhe llogaritë e autorizuara.','🔒'):setView(service.id), className:`home-service-reference${locked?' is-locked':''}`,
         style:{ '--service-bg':'rgba(var(--brand-rgb), .1)', '--service-ink':'rgb(var(--brand-rgb))' }
       },
         h('span', { className:'home-service-icon', 'aria-hidden':true }, unitUiIcon(service.icon,'w-6 h-6')),
-        unitUiIcon('M9 5l7 7-7 7','home-service-chevron'),
+        service.id==='freerooms'?h('span',{className:'home-service-access-badge','aria-label':locked?'Qasje e privilegjuar · e kyçur':'Qasje e privilegjuar',title:'Qasje e privilegjuar'},unitUiIcon(locked?'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5zM12 15v2':'M12 3l8 7-8 11-8-11zM4 10h16M8 3l4 7 4-7','w-3.5 h-3.5')):unitUiIcon('M9 5l7 7-7 7','home-service-chevron'),
         h('span', { className:'home-service-title' }, service.title),
-        h('span', { className:'home-service-description' }, service.detail)))));
+        h('span', { className:'home-service-description' }, service.detail));})));
   };
 
   const renderTodayTasksMinimal = () => {
@@ -34468,7 +34472,7 @@ Nënshkrimi: _____________________`;
           circle("Java e kaluar", "M15 6l-6 6 6 6", () => { setScheduleWeekOffset(o => o - 1); setScheduleSelectedDayKey(null); }),
           circle("Java e ardhshme", "M9 6l6 6-6 6", () => { setScheduleWeekOffset(o => o + 1); setScheduleSelectedDayKey(null); }),
           circle("Shto ligjëratë ose ushtrim në orar", "M12 5v14M5 12h14", () => { openNewScheduleItem(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }, 'is-solid'))),
-      ce('div', { className: 'flex items-center justify-between gap-3 mt-2' },
+      ce('div', { className: 'sch-faculty-row flex items-center justify-between gap-3 mt-0.5' },
         ce('span', { className: 'text-[11px] text-secondary truncate' }, facultyContext.faculty?.label || ''),
         facultyContext.hasFreeRooms && ce('button', {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("freerooms")) ? 'true' : undefined, type: 'button', onClick: () => setView('freerooms'), className: 'min-h-8 text-xs font-semibold text-brand-700 dark:text-brand-300 shrink-0' }, 'Sallat e lira →')),
@@ -38523,6 +38527,19 @@ Nënshkrimi: _____________________`;
   }));
 }
 
+function bindTaskComposerViewport(doc, win) {
+  const overlay=doc.getElementById('daily-routine-composer-overlay');
+  if(!overlay) return () => {};
+  const viewport=win.visualViewport;
+  const update=()=>{
+    overlay.style.top=`${Math.max(0,Math.round(viewport?.offsetTop || 0))}px`;
+    overlay.style.height=`${Math.max(1,Math.round(viewport?.height || win.innerHeight || 600))}px`;
+  };
+  update();
+  viewport?.addEventListener('resize',update);viewport?.addEventListener('scroll',update);win.addEventListener('resize',update);
+  return ()=>{viewport?.removeEventListener('resize',update);viewport?.removeEventListener('scroll',update);win.removeEventListener('resize',update);};
+}
+
 function bindBujarRoomsResume(doc, win, refresh) {
   let wasHidden = doc.hidden, lastRequest = -Infinity;
   const check = () => {
@@ -38584,7 +38601,7 @@ function App() {
     const s = unitStorage.getItem('u_semester');
     return s ? Number(s) : null;
   });
-  const [actualRole, setActualRole] = useState(() => window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
+  const [actualRole, setActualRole] = useState(() => window.FakultetiApprovals?.policy?.role === 'president' ? 'student' : window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
   const [roomsAppExpanded, setRoomsAppExpanded] = useState(false);
   const [choosingAcademics, setChoosingAcademics] = useState(false);
   const selectedFacultyContext = getStudentFacultyContext(selectedBranch, unitStorage.getItem('u_faculty'));
@@ -38602,7 +38619,7 @@ function App() {
       setSelectedBranch(unitStorage.getItem('u_branch') || null);
       setSelectedYear(Number(unitStorage.getItem('u_year')) || null);
       setSelectedSemester(Number(unitStorage.getItem('u_semester')) || null);
-      setActualRole(window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
+      setActualRole(window.FakultetiApprovals?.policy?.role === 'president' ? 'student' : window.FakultetiApprovals?.policy?.role || unitStorage.getItem('u_role') || 'student');
       refreshProfile(value => value + 1);
     };
     window.addEventListener('fakulteti:profile', profileUpdated);
