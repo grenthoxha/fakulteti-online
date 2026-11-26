@@ -8412,6 +8412,33 @@ BRANCHES.forEach(branch => {
 });
 
 
+// Current MA intake: https://filozofiku.uni-pr.edu/page.aspx?id=1,7,1780
+// Programme identity/duration only; no BA courses or timetable are reused for MA.
+const FILOZOFIKU_MASTER_PROGRAMMES = Object.freeze([
+  { id: 'master-psikologji-shkollore', label: 'Psikologji Shkollore dhe Këshillim', years: 2, icon: '🧠', desc: 'Psikologji në shkollë dhe këshillim.', document: 'B3FC6033-0804-4366-9053-34415947E4DE.pdf' },
+  { id: 'master-psikologji-klinike', label: 'Psikologji Klinike dhe Komuniteti', years: 2, icon: '🧠', desc: 'Shëndeti mendor, psikologjia klinike dhe komuniteti.', document: 'F2F3D7F6-0A3B-4C12-88E5-4F3EB0CFA3BD.pdf' },
+  { id: 'master-sociologji', label: 'Sociologji', years: 2, icon: '👥', desc: 'Hulumtimi dhe analiza e shoqërisë.', document: '9BDA792B-FDDB-42FE-9E2C-E82006340248.pdf' },
+  { id: 'master-filozofi-politike', label: 'Filozofi Politike', years: 2, icon: '🏛️', desc: 'Filozofia, drejtësia dhe mendimi politik.', document: '7FB6DF29-4200-43CA-B773-B3E095EDD523.pdf' },
+  { id: 'master-histori-koha-e-re', label: 'Histori Koha e Re', years: 2, icon: '📜', desc: 'Studimi dhe hulumtimi i historisë moderne.', document: '51BE7A94-975E-46EF-9F04-BEA9F97697F5.pdf' },
+  { id: 'master-arkivistike', label: 'Arkivistikë', years: 1, icon: '📚', desc: 'Ruajtja, përpunimi dhe digjitalizimi i arkivave.', document: '6145452F-4CBA-4E05-842C-78F336F083F1.pdf' },
+  { id: 'master-marredhenie-nderkombetare', label: 'Marrëdhënie Ndërkombëtare dhe Diplomaci', years: 2, icon: '🌐', desc: 'Politika ndërkombëtare dhe diplomacia.', document: 'BEC42FCF-B931-4FA7-B4FE-8159293D8852.pdf' },
+  { id: 'master-trashegimi-kulturore', label: 'Trashëgimi Kulturore', years: 2, icon: '🏛️', desc: 'Hulumtimi, mbrojtja dhe menaxhimi i trashëgimisë.', url: 'https://filozofiku.uni-pr.edu/page.aspx?id=1,66' }
+]);
+for (const programme of FILOZOFIKU_MASTER_PROGRAMMES) {
+  BRANCHES.push({
+    id: programme.id, label: programme.label, icon: programme.icon, desc: programme.desc,
+    faculty: 'Fakulteti Filozofik · UP', facultyShort: 'Filozofik', studyLevel: 'master',
+    catalogStatus: 'programme', verifiedAt: '2026-11-26',
+    source: { label: 'Programi Master · Fakulteti Filozofik', url: programme.url || `https://filozofiku.uni-pr.edu/desk/inc/media/${programme.document}` },
+    years: Array.from({ length: programme.years }, (_, index) => ({
+      id: index + 1, label: `Viti ${['I', 'II'][index]}`, full: 'Master',
+      desc: `${programme.years === 1 ? '1 vit' : '2 vite'} · ${programme.years * 60} ECTS`,
+      semesters: [1, 2].map(offset => ({ id: index * 2 + offset, label: `Semestri ${['I', 'II', 'III', 'IV'][index * 2 + offset - 1]}`, courses: [] }))
+    }))
+  });
+}
+const getBranchStudyLevel = branch => branch?.studyLevel === 'master' ? 'master' : 'bachelor';
+
 /* Faculty membership is separate from the student's programme and year. */
 const UNIT_FACULTIES = Object.freeze([
   { id: 'filozofik', label: 'Fakulteti Filozofik', shortLabel: 'Filozofik', icon: '🏛️', rooms: true },
@@ -8439,10 +8466,11 @@ const getBranchFacultyIds = branch => {
   const id = { 'Mjekësi':'mjekesi', Ekonomik:'ekonomik', Juridik:'juridik', Edukim:'edukim', Filologji:'filologji', 'Arkitekturë':'arkitekture' }[branch.facultyShort];
   return id ? [id] : [];
 };
-const getFacultyBranches = (facultyId, query = '') => {
+const getFacultyBranches = (facultyId, query = '', studyLevel = '') => {
   const words = foldFacultyText(query).split(' ').filter(Boolean);
   return BRANCHES.filter(branch => getBranchFacultyIds(branch).includes(facultyId)
-    && words.every(word => foldFacultyText(branch.label + ' ' + (branch.desc || '')).includes(word)));
+    && (!studyLevel || getBranchStudyLevel(branch) === studyLevel)
+    && words.every(word => foldFacultyText(branch.label + ' ' + getBranchStudyLevel(branch) + ' ' + (branch.desc || '')).includes(word)));
 };
 const getStudentFacultyContext = (branchId, preferredFacultyId = '') => {
   const branch = BRANCHES.find(item => item.id === branchId) || null;
@@ -8456,10 +8484,10 @@ const getFacultyScheduleProgram = (branchId, yearId) => {
   const groupName = FILOZOFIKU_PROGRAM_GROUPS[branchId];
   return context.hasFreeRooms && groupName && year ? { branchId, yearId: Number(year.id), groupName, label: `${context.branch.label} · ${year.label}` } : null;
 };
-function renderFacultyProgramChooser({ facultyId, onFaculty, query, onQuery, onBranch, busy = false }) {
+function renderFacultyProgramChooser({ facultyId, onFaculty, query, onQuery, onBranch, studyLevel = 'bachelor', onStudyLevel, busy = false }) {
   const h = React.createElement;
   const faculty = UNIT_FACULTIES.find(item => item.id === facultyId);
-  const branches = faculty ? getFacultyBranches(faculty.id, query) : [];
+  const branches = faculty ? getFacultyBranches(faculty.id, query, studyLevel) : [];
   const cardClass = 'card-surface border border-default rounded-2xl p-4 sm:p-5 text-left transition-colors hover:border-brand-400 disabled:opacity-50';
   if (!faculty) return h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-left', 'aria-label': 'Fakultetet' },
     UNIT_FACULTIES.filter(item => getFacultyBranches(item.id).length).map(item => h('button', {
@@ -8472,10 +8500,17 @@ function renderFacultyProgramChooser({ facultyId, onFaculty, query, onQuery, onB
     h('div', { className: 'flex items-center justify-between gap-3 flex-wrap' },
       h('button', { type: 'button', disabled: busy, onClick: () => onFaculty(null), className: 'min-h-10 text-xs font-semibold text-brand-600 dark:text-brand-300' }, '← Ndrysho fakultetin'),
       h('span', { className: 'text-xs font-semibold text-secondary' }, faculty.label)),
+    getFacultyBranches(faculty.id, '', 'master').length > 0 && h('div', { className: 'flex gap-1 rounded-xl p-1 input-bg border border-default', role: 'group', 'aria-label': 'Niveli i studimeve' },
+      [['bachelor', 'Bachelor'], ['master', 'Master']].map(([level, label]) => h('button', {
+        key: level, type: 'button', disabled: busy, 'aria-pressed': studyLevel === level,
+        onClick: () => onStudyLevel?.(level),
+        className: `flex-1 min-h-10 rounded-lg text-sm font-semibold transition-colors ${studyLevel === level ? 'card-surface text-brand-600 dark:text-brand-300 shadow-sm' : 'text-secondary'}`
+      }, label))),
     h('input', { type: 'search', value: query, onChange: event => onQuery(event.target.value), disabled: busy, placeholder: 'Kërko drejtimin…', 'aria-label': 'Kërko drejtimin në fakultetin e zgjedhur', className: 'w-full card-surface border border-default px-4 py-3 rounded-xl text-sm text-primary outline-none focus:border-brand-500' }),
     h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' }, branches.map(branch => h('button', {
       key: branch.id, type: 'button', disabled: busy || !branch.years.length, onClick: () => onBranch(branch.id), className: cardClass
     }, h('span', { className: 'block text-sm font-semibold text-primary' }, branch.label),
+      h('span', { className: 'block text-xs text-brand-600 dark:text-brand-300 mt-1' }, `${getBranchStudyLevel(branch) === 'master' ? 'Master' : 'Bachelor'} · ${branch.years.length === 1 ? '1 vit' : branch.years.length + ' vite'}`),
       h('span', { className: 'block text-xs text-secondary leading-5 mt-2' }, branch.desc),
       h('span', { className: 'block text-xs font-semibold text-brand-600 dark:text-brand-300 mt-3' }, 'Zgjidh drejtimin →')))),
     !branches.length && h('p', { className: 'text-sm text-secondary py-4', role: 'status' }, 'Nuk u gjet drejtim në këtë fakultet.'));
@@ -8745,6 +8780,7 @@ function Onboarding({
   const [taughtCourses, setTaughtCourses] = useState([]);
   const [facultyId, setFacultyId] = useState(null);
   const [searchMajor, setSearchMajor] = useState('');
+  const [studyLevel, setStudyLevel] = useState('bachelor');
 
   const handleNameSubmit = async e => {
     e.preventDefault();
@@ -8919,7 +8955,7 @@ function Onboarding({
     disabled: nameChecking || Boolean(getAskStudentNameError(name, lastName)) || !['male', 'female'].includes(gender),
     "aria-busy": nameChecking,
     className: "w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-500 transition-colors disabled:opacity-50 mt-2 cursor-pointer shadow-sm"
-  }, nameChecking ? "Po kontrollohet emri…" : "Vazhdo →")) : step === 2 ? renderFacultyProgramChooser({ facultyId, onFaculty: id => { setFacultyId(id); setBranchId(null); setSelectedYearId(null); setTaughtCourses([]); setSearchMajor(''); }, query: searchMajor, onQuery: setSearchMajor, onBranch: handleBranchSelect, busy: nameChecking }) : step === 3 ? /*#__PURE__*/React.createElement("div", {
+  }, nameChecking ? "Po kontrollohet emri…" : "Vazhdo →")) : step === 2 ? renderFacultyProgramChooser({ facultyId, onFaculty: id => { setFacultyId(id); setStudyLevel('bachelor'); setBranchId(null); setSelectedYearId(null); setTaughtCourses([]); setSearchMajor(''); }, query: searchMajor, onQuery: setSearchMajor, onBranch: handleBranchSelect, studyLevel, onStudyLevel: level => { setStudyLevel(level); setBranchId(null); setSelectedYearId(null); setTaughtCourses([]); setSearchMajor(''); }, busy: nameChecking }) : step === 3 ? /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 max-w-md mx-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
@@ -33126,7 +33162,7 @@ Nënshkrimi: _____________________`;
     return {
       surname: surname.toLocaleUpperCase('sq'),
       givenName: givenName.toLocaleUpperCase('sq'),
-      programme: `${branchObj.label} · Bachelor`,
+      programme: `${branchObj.label} · ${getBranchStudyLevel(branchObj) === 'master' ? 'Master' : 'Bachelor'}`,
       enrolled: `${startYear}/${startYear + 1}`,
       number: `FO-${startYear}-${code}-${serial}`,
       compactNumber: `FO${startYear}${code}${serial}`,

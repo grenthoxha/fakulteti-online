@@ -22,11 +22,13 @@ test('frontend cloud flow preserves namespaces, keeps learning local and synchro
  const db=database(),a=page(db),created=await a.api.register(email,password,false,profile);created.complete();
  const first=page(db,a.map);assert.equal(first.api.isOnline(),true);
  first.api.storage.setItem('u_notes','private notes');first.api.storage.setItem('u_grades','private grades');
+ first.api.storage.setItem('u_faculty','filozofik');first.api.storage.setItem('u_branch','master-sociologji');first.api.storage.setItem('u_year','2');first.api.storage.setItem('u_semester','3');
  first.api.storage.setItem('u_nickname','Arta student');await first.api.syncProfile();
  const phone=page(db);await phone.api.signIn(email,password);const second=page(db,phone.map);
  assert.equal(second.api.storage.getItem('u_nickname'),'Arta student');assert.equal(second.api.storage.getItem('u_notes'),null);assert.equal(second.api.storage.getItem('u_grades'),null);
+ assert.equal(second.api.storage.getItem('u_faculty'),'filozofik');assert.equal(second.api.storage.getItem('u_branch'),'master-sociologji');assert.equal(second.api.storage.getItem('u_year'),'2');assert.equal(second.api.storage.getItem('u_semester'),'3');
  assert.notEqual(second.api.current().id,first.api.current().id);
- assert.deepEqual(JSON.parse(second.api.storage.getItem('u_unlocked')||'[]'),[]);
+ assert.deepEqual(JSON.parse(second.api.storage.getItem('u_unlocked')||'[]'),[1,2]);
  const oldId=first.api.current().id;first.api.signOut();await first.api.signIn(email,password);
  const again=page(db,a.map);assert.equal(again.api.current().id,oldId);assert.equal(again.api.storage.getItem('u_notes'),'private notes');
  const row=await db.prepare('SELECT profile FROM cloud_accounts WHERE email=?').bind(email).first();assert(!/private notes|private grades/.test(row.profile));
