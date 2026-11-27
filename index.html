@@ -10753,6 +10753,8 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
   const showMasterRoomFilter = canFilterMasterRooms(window.FakultetiApprovals?.policy?.name || unitStorage.getItem('u_real_name') || unitStorage.getItem('u_name'));
   const masterSessions = useMemo(() => getFilozofikuMasterSessions(data, dayIdx), [data, dayIdx]);
   const filteredMasterSessions = useMemo(() => getFilozofikuMasterSessions(data, dayIdx, searchQuery), [data, dayIdx, searchQuery]);
+  const masterRoomNames = useMemo(() => new Set(masterSessions.map(event => event.room)), [masterSessions]);
+  const masterSearchRoomNames = useMemo(() => new Set(filteredMasterSessions.map(event => event.room)), [filteredMasterSessions]);
   const allReplacements = useMemo(() => getFilozofikuReplacements(data, '', nowDate), [data, nowDate]);
   const filteredReplacements = useMemo(() => getFilozofikuReplacements(data, searchQuery, nowDate), [data, searchQuery, nowDate]);
   const freeCount = roomsEvaluated.filter(r => r.isFree).length;
@@ -10769,11 +10771,12 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     return roomsEvaluated.filter(r => {
       if (statusFilter === 'free' && !r.isFree) return false;
       if (statusFilter === 'occupied' && r.isFree) return false;
+      if (statusFilter === 'master' && (!showMasterRoomFilter || !masterRoomNames.has(r.l || r.n))) return false;
       if (floorFilter !== 'all' && r.floor.id !== floorFilter) return false;
       if (onlySmartboard && !r.smartboard) return false;
       if (q) {
         const matchRoom = r.l.toLowerCase().includes(q) || r.floor.label.toLowerCase().includes(q);
-        const matchEv = r.dayEvents.some(ev =>
+        const matchEv = statusFilter === 'master' ? masterSearchRoomNames.has(r.l || r.n) : r.dayEvents.some(ev =>
           (ev.p || '').toLowerCase().includes(q) ||
           (ev.t || '').toLowerCase().includes(q) ||
           (ev.g || '').toLowerCase().includes(q)
@@ -10782,7 +10785,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
       }
       return true;
     });
-  }, [roomsEvaluated, statusFilter, floorFilter, onlySmartboard, searchQuery]);
+  }, [roomsEvaluated, statusFilter, floorFilter, onlySmartboard, searchQuery, showMasterRoomFilter, masterRoomNames, masterSearchRoomNames]);
 
   const professorsEvaluated = useMemo(() => {
     const map = new Map();
@@ -10854,7 +10857,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
   }, [professorsEvaluated, searchQuery]);
 
   const searchedProfessors = useMemo(() => searchFilozofikuProfessors(professorsEvaluated, searchQuery), [professorsEvaluated, searchQuery]);
-  const showProfessorSearch = searchedProfessors.length > 0;
+  const showProfessorSearch = statusFilter !== 'master' && searchedProfessors.length > 0;
   const professorsToShow = showProfessorSearch ? searchedProfessors : filteredProfessors;
 
   const selectedProf = useMemo(
@@ -10935,7 +10938,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
             { id: 'occupied', label: 'Të zëna (' + occupiedCount + ')' },
             { id: 'professors', label: 'Profesorët (' + professorsEvaluated.length + ')' },
             { id: 'replacements', label: 'Zëvendësimet (' + allReplacements.length + ')' },
-            ...(showMasterRoomFilter ? [{ id: 'master', label: 'Master (' + masterSessions.length + ')' }] : [])
+            ...(showMasterRoomFilter ? [{ id: 'master', label: 'Master (' + masterRoomNames.size + ')' }] : [])
           ].map(tab => h('button', {
             key: tab.id,
             type: 'button',
@@ -10965,10 +10968,10 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     ),
 
     /* Professors Grid (when statusFilter === 'professors') OR Rooms Grid */
-    (statusFilter === 'replacements' || (statusFilter === 'master' && showMasterRoomFilter))
-      ? h('section', { 'aria-label': statusFilter === 'master' ? 'Orët Master' : 'Zëvendësimet', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
-          (statusFilter === 'master' ? filteredMasterSessions : filteredReplacements).length
-            ? (statusFilter === 'master' ? filteredMasterSessions : filteredReplacements).map(event => h('article', {
+    statusFilter === 'replacements'
+      ? h('section', { 'aria-label': 'Zëvendësimet', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
+          filteredReplacements.length
+            ? filteredReplacements.map(event => h('article', {
                 key: `${event.id}:${event.date}:${event.s}:${event.room}`, className: 'card-surface rounded-2xl border border-default p-4 space-y-2'
               },
                 h('time', { dateTime: event.date, className: 'block text-xs font-semibold text-secondary' }, Number(event.date.slice(8)) + ' ' + ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'][Number(event.date.slice(5, 7)) - 1] + ' ' + event.date.slice(0, 4)),
@@ -10979,7 +10982,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
                 event.p && h('p', { className: 'text-xs text-secondary' }, formatFilozofikuProf(event.p)),
                 event.g && h('p', { className: 'text-xs text-secondary' }, event.g)))
             : h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center text-sm font-bold text-primary col-span-full' },
-                statusFilter === 'master' ? 'Nuk ka orë Master për këtë ditë ose kërkim.' : allReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime.'))
+                allReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime.'))
       : (statusFilter === 'professors' || showProfessorSearch)
       ? (professorsToShow.length === 0
           ? h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center space-y-2' },
