@@ -1735,6 +1735,7 @@
   <script src="./assets/account-approvals.js?v=20261126-5"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
+  <script src="./assets/pomodoro-planning.js?v=20261127-1"></script>
   <script src="./assets/android-widgets.js?v=2"></script>
   <script src="./assets/notifications.js?v=3"></script>
   <script src="./assets/local-messages.js?v=2"></script>
@@ -16970,6 +16971,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
       label: quickAdd.label || dailyRoutineDraft.label || null,
       recurrence,
       createdAt: existingRoutine?.createdAt || new Date().toISOString(),
+      ...(existingRoutine?.pomodoroEstimate != null ? { pomodoroEstimate: existingRoutine.pomodoroEstimate } : {}),
       completedAt: existingRoutine?.completedAt || null
     };
     if (dailyRoutineDraft.id) {
@@ -34138,6 +34140,23 @@ Nënshkrimi: _____________________`;
     const taskValue = openTasks.some(r => r.id === pomo.taskId) ? pomo.taskId : '';
     const activeTask = openTasks.find(r => r.id === taskValue);
     const taskText = activeTask ? activeTask.title : '';
+    const planner = typeof window !== 'undefined' ? window.FakultetiPomodoroPlanning : null;
+    const planNow = typeof pomoNow === 'number' ? pomoNow : Date.now();
+    const taskPlan = planner ? planner.plan({ task: activeTask, history: typeof pomoHistory !== 'undefined' ? pomoHistory : [], state: pomo, settings: s, now: planNow }) : null;
+    const updateTaskEstimate = value => {
+      if (!planner || !activeTask) return;
+      const estimate = planner.clampEstimate(value);
+      setDailyRoutines(previous => previous.map(task => task.id === activeTask.id ? { ...task, pomodoroEstimate: estimate } : task));
+    };
+    let finishClock = '';
+    if (taskPlan?.finishAt) {
+      const finish = new Date(taskPlan.finishAt), now = new Date(planNow), tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const prefix = finish.toDateString() === now.toDateString() ? '' : finish.toDateString() === tomorrow.toDateString() ? 'nesër ' : finish.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' }) + ' ';
+      finishClock = prefix + finish.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    const planText = taskPlan ? [activeTask ? `Detyra: ${taskPlan.completed}/${taskPlan.estimate}` : null,
+      finishClock ? `${running ? 'Rreth' : isPaused ? 'Nëse vazhdon:' : 'Nëse nis:'} ${finishClock}` : activeTask ? 'Vlerësimi u arrit' : 'Fokusi u përfundua'].filter(Boolean).join(' · ') + (finishClock ? ' · me pushime' : '') : '';
+
     const vp = pomoVp;
     const locked = pomoLocked;
     const landPhone = vp.w > vp.h * 1.1 && vp.h < 560;
@@ -34178,7 +34197,7 @@ Nënshkrimi: _____________________`;
     const abs = (style, children, key, props) => ce("div", { key, ...(props || {}), style: { position: 'absolute', ...style } }, children);
     const timerProps = { role: 'timer', 'aria-label': `${mm} minuta e ${left % 60} sekonda` };
     const centerIn = (top, children, key, extra) => abs({ left: 0, width: contentW, top, display: 'flex', flexDirection: 'column', alignItems: 'center', ...(extra || {}) }, children, key);
-    const edgeZone = wide ? (locked ? 88 : 64) : (ch < 540 ? 112 : 132);
+    const edgeZone = wide ? (locked ? 88 : 64) : Math.max(ch < 540 ? 112 : 132, taskPlan && taskText && !locked ? 144 : 0);
     const midH = Math.max(80, ch - edgeZone * 2);
     const midY = ch / 2;
     let display = null;
@@ -34277,7 +34296,11 @@ Nënshkrimi: _____________________`;
             roundBtn(P_LOCK, 'Kyç ekranin', pomoLock, { size: tsz }),
             roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { outline: '#fff', color: '#fff', size: tsz }),
             roundBtn(P_CLOSE, 'Mbyll', pomoClose, { size: tsz }))], 'hdr');
-    const taskLine = (!wide && taskText && !locked) ? abs({ left: edgePad, right: edgePad, bottom: 'calc(max(20px, env(safe-area-inset-bottom)) + 68px)', textAlign: 'center', fontSize: 15, color: '#8a8a96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, taskText, 'task') : null;
+    const taskLine = (!wide && taskText && !locked) ? abs({ left: edgePad, right: edgePad, bottom: taskPlan ? 'calc(max(20px, env(safe-area-inset-bottom)) + 92px)' : 'calc(max(20px, env(safe-area-inset-bottom)) + 68px)', textAlign: 'center', fontSize: 15, color: '#8a8a96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, taskText, 'task') : null;
+    const planningLine = taskPlan && !locked ? abs({ left: edgePad, right: wide ? sideW + edgePad : edgePad,
+      bottom: wide ? 'max(12px, env(safe-area-inset-bottom))' : 'calc(max(20px, env(safe-area-inset-bottom)) + 68px)',
+      textAlign: 'center', fontSize: 12, lineHeight: '18px', color: '#a2a2ad', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+    }, planText, 'plan', { 'aria-label': planText + '. Parashikim me pushimet, nëse vazhdon pa ndërprerje shtesë.', title: 'Parashikim me pushimet, pa ndërprerje shtesë' }) : null;
     const bottomBar = (locked || wide) ? null : abs({ left: edgePad, right: edgePad, bottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 12 },
       [ce("button", { key: 'go', type: "button", className: 'pomo-run-control', 'aria-pressed': running, onClick: toggleRun, style: { ...btnReset, flex: 1, height: 52, borderRadius: 26, background: accent, color: ink, fontSize: 17, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 } }, icon(running ? P_PAUSE : P_PLAY, 'w-5 h-5', ink), runLabel),
         roundBtn(P_STOP, 'Ndalo Pomodoron', pomoStop, { size: 48, bg: '#17171c' }),
@@ -34323,13 +34346,21 @@ Nënshkrimi: _____________________`;
         stepper('Pushimi', 'short', 1, 60, [3, 5, 10, 15]),
         stepper('Pushimi i gjatë', 'long', 1, 120, [15, 20, 30]),
         stepper('Pushim i gjatë pas', 'every', 1, 12, [2, 4, 6], 'Numri i sesioneve të fokusit para pushimit të gjatë.'),
-        stepper('Sa pomodoro', 'goal', 1, 12, [2, 4, 6, 8], `Gjithsej rreth ${totalTxt} me pushime`),
+        stepper('Pomodoro në cikël', 'goal', 1, 12, [2, 4, 6, 8], `Gjithsej rreth ${totalTxt} me pushime`),
         ...[['autoBreak', 'Nis pushimin automatikisht'], ['autoFocus', 'Nis fokusin tjetër automatikisht']].map(([key, label]) => ce('label', { key, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 48, padding: '8px 0', fontSize: 14, color: '#e8e8ee' } }, label, ce('input', { type: 'checkbox', checked: !!s[key], onChange: e => updatePomoSetting(key, e.target.checked), style: { width: 20, height: 20, accentColor: st.accent } }))),
         ce("div", { style: { padding: '16px 0', borderBottom: '1px solid #17171c' } },
           ce("label", { htmlFor: "pomo-task", style: { display: 'block', fontSize: 15, color: '#e8e8ee', marginBottom: 10 } }, 'Po punoj te'),
           ce("select", { id: "pomo-task", value: taskValue, onChange: e => { const v = e.target.value; setPomo(p => ({ ...p, taskId: v })); }, style: { width: '100%', height: 48, padding: '0 12px', borderRadius: 12, background: '#111114', border: '1px solid #2a2a32', color: '#f1f1f5', fontSize: 16, outline: 'none' } },
             ce("option", { value: "" }, "Pa detyrë të caktuar"),
             openTasks.map(r => ce("option", { key: r.id, value: r.id }, r.title + (r.time ? ` · ${r.time}` : ''))))),
+        activeTask && taskPlan && ce('section', { id: 'pomo-task-estimate', 'aria-label': 'Vlerësimi i detyrës', style: { padding: '16px 0', borderBottom: '1px solid #17171c' } },
+          ce('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 } },
+            ce('span', { style: { fontSize: 14, color: '#e8e8ee' } }, 'Pomodoro për këtë detyrë'),
+            ce('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 'none' } },
+              sBtn('−', 'Më pak Pomodoro për këtë detyrë', () => updateTaskEstimate(taskPlan.estimate - 1), taskPlan.estimate <= 1),
+              ce('output', { 'aria-label': 'Numri i Pomodorove për detyrën', style: { minWidth: 28, textAlign: 'center', fontSize: 18, color: '#fff', fontVariantNumeric: 'tabular-nums' } }, taskPlan.estimate),
+              sBtn('+', 'Më shumë Pomodoro për këtë detyrë', () => updateTaskEstimate(taskPlan.estimate + 1), taskPlan.estimate >= 12))),
+          ce('p', { style: { fontSize: 12, color: muted, margin: '8px 0 0' } }, `${taskPlan.completed}/${taskPlan.estimate} sesione të përfunduara për këtë detyrë.`)),
         ce("div", { style: { padding: '16px 0' } },
           ce("div", { style: { fontSize: 15, color: '#e8e8ee', marginBottom: 10 } }, 'Pamja'),
           ce("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } },
@@ -34347,7 +34378,7 @@ Nënshkrimi: _____________________`;
       },
         ce("div", { className: "pomo-surface", style: { position: 'relative', width: cw, height: ch, maxWidth: '100%', background: '#000', color: '#fff', fontFamily: FONT, overflow: 'hidden', borderRadius: radius, border: fullView ? 0 : '1px solid rgba(255,255,255,0.09)', boxShadow: fullView ? 'none' : '0 30px 80px rgba(0,0,0,0.6)', userSelect: 'none', WebkitUserSelect: 'none' } },
           ce("style", null, css),
-          bgLayers, display, header, taskLine, bottomBar, sideCol, lockBar, settingsPanel)));
+          bgLayers, display, header, taskLine, planningLine, bottomBar, sideCol, lockBar, settingsPanel)));
   };
 
   const renderHomeServicesReference = () => {
