@@ -34025,20 +34025,20 @@ Nënshkrimi: _____________________`;
     const result = window.FakultetiPomodoro.finish(pomo, pomoSettings, Date.now());
     if (result.completion && !recordPomoCompletions([result.completion])) return;
     if (window.fakultetiAndroid?.pomoNotificationsSupported && pomo.endsAt) window.fakultetiAndroid.send('pomo-finished:' + pomo.endsAt);
-    setPomo(result.state); setPomoNow(Date.now());
+    setPomo({ ...result.state, wasPaused: false }); setPomoNow(Date.now());
     if (result.state.done) { setPomoLocked(false); window.fakultetiAndroid?.send('focus-unlock'); pomoAlert('Përfunduan të gjitha', `Bravo! Mbarove ${result.state.cycle} pomodoro.`); }
     else if (pomo.phase === 'focus') pomoAlert('Pomodoro përfundoi', result.state.phase === 'long' ? 'Koha për pushimin e gjatë.' : 'Koha për pushim.');
     else pomoAlert('Pushimi përfundoi', result.state.endsAt ? 'Fillon pomodoro tjetër.' : 'Gati për fokusin e radhës.');
   };
-  const pomoStart = () => { const now = Date.now(); setPomoNow(now); setPomo(p => window.FakultetiPomodoro.start(p, pomoSettings, now)); };
-  const pomoPause = () => { if (pomo.endsAt && pomo.endsAt <= Date.now()) pomoFinishPhase(); else setPomo(p => window.FakultetiPomodoro.pause(p, Date.now())); };
-  const pomoReset = () => setPomo(p => { const t = pomoPhaseSecs(p.phase); return { ...p, total: t, left: t, endsAt: null, done: false }; });
-  const pomoRestartAll = () => { const t = pomoPhaseSecs('focus'); setPomo(p => ({ ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: 0, done: false })); };
+  const pomoStart = () => { const now = Date.now(); setPomoNow(now); setPomo(p => ({ ...window.FakultetiPomodoro.start(p, pomoSettings, now), wasPaused: false })); };
+  const pomoPause = () => { if (pomo.endsAt && pomo.endsAt <= Date.now()) pomoFinishPhase(); else setPomo(p => ({ ...window.FakultetiPomodoro.pause(p, Date.now()), wasPaused: true })); };
+  const pomoReset = () => setPomo(p => { const t = pomoPhaseSecs(p.phase); return { ...p, total: t, left: t, endsAt: null, done: false, wasPaused: false }; });
+  const pomoRestartAll = () => { const t = pomoPhaseSecs('focus'); setPomo(p => ({ ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: 0, done: false, wasPaused: false })); };
   const pomoStop = () => { if (pomoLocked) return; pomoRestartAll(); setPomoSetOpen(false); };
   const pomoSetPhase = phase => {
     if (pomo.endsAt) return;
     const t = pomoPhaseSecs(phase);
-    setPomo(p => ({ ...p, phase, total: t, left: t, done: false }));
+    setPomo(p => ({ ...p, phase, total: t, left: t, done: false, wasPaused: false }));
   };
   const pomoAdjust = minutes => setPomo(p => {
     const now = Date.now();
@@ -34049,7 +34049,7 @@ Nënshkrimi: _____________________`;
   const pomoSkipBreak = () => setPomo(p => {
     if (p.phase === 'focus') return p;
     const t = pomoPhaseSecs('focus');
-    return { ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: p.cycle, done: false };
+    return { ...p, phase: 'focus', total: t, left: t, endsAt: null, cycle: p.cycle, done: false, wasPaused: false };
   });
   const updatePomoSetting = (key, value) => {
     setPomoSettings(prev => ({ ...prev, [key]: value }));
@@ -34131,6 +34131,8 @@ Nënshkrimi: _____________________`;
     const pad2 = n => String(n).padStart(2, '0');
     const counter = pomo.done ? goal : Math.min(goal, pomo.cycle + (isFocus ? 1 : 0));
     const phaseLabel = pomo.done ? 'MBAROVE' : isFocus ? 'FOKUS' : pomo.phase === 'long' ? 'PUSHIM I GJATË' : 'PUSHIM';
+    const isPaused = !running && !pomo.done && (pomo.wasPaused || left < pomo.total);
+    const statusLabel = pomo.done ? 'MBAROVE' : isPaused ? 'NË PAUZË' : !running ? 'GATI' : phaseLabel;
     const counterLabel = `${pad2(counter)}/${pad2(goal)}`;
     const openTasks = visibleDailyRoutines.filter(r => !routineIsDoneToday(r));
     const taskValue = openTasks.some(r => r.id === pomo.taskId) ? pomo.taskId : '';
@@ -34168,18 +34170,11 @@ Nënshkrimi: _____________________`;
     const P_PLAY = "M8 5.5v13l10.5-6.5z";
     const btnReset = { background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' };
     const roundBtn = (path, label, onClick, o = {}) => ce("button", { type: "button", onClick, "aria-label": label, title: label, style: { ...btnReset, width: o.size || 44, height: o.size || 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', border: o.outline ? `1.4px solid ${o.outline}` : 0, background: o.bg || 'transparent', color: o.color || '#9a9aa6' } }, icon(path, o.iconCls, o.color || '#9a9aa6'));
-    const toggleRun = event => {
-      if (locked || pomoSetOpen) return;
-      const target = event?.currentTarget;
-      if (target?.animate && !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) {
-        try { target.animate([{ filter: 'brightness(1.35)', opacity: .65 }, { filter: 'brightness(1)', opacity: 1 }], { duration: 280, easing: 'ease-out' }); } catch {}
-      }
-      if (running) pomoPause(); else pomoStart();
-    };
-    const runLabel = running ? 'Pauzë' : pomo.done ? 'Fillo përsëri' : (left < pomo.total ? 'Vazhdo' : 'Fillo');
+    const toggleRun = () => { if (locked || pomoSetOpen) return; if (running) pomoPause(); else pomoStart(); };
+    const runLabel = running ? 'Pauzë' : pomo.done ? 'Fillo përsëri' : (isPaused ? 'Vazhdo' : 'Fillo');
 
     /* ---------- pamja e kohës ---------- */
-    const css = '.pomo-timer-display[role=button]{transition:opacity .12s ease;-webkit-tap-highlight-color:transparent}.pomo-timer-display[role=button]:active{opacity:.65}.pomo-timer-display[role=button]:focus-visible{outline:2px solid #9a9aa6;outline-offset:-4px;border-radius:20px}.pomo-timer-display[data-style=eklipsi]:focus-visible{border-radius:50%}.pomo-flipin{animation:pomoFlipIn .38s cubic-bezier(.2,.7,.2,1)}@keyframes pomoFlipIn{0%{transform:translateY(-14%) scaleY(.82);opacity:.15}100%{transform:none;opacity:1}}.pomo-fade{animation:pomoFade .25s ease-out}@keyframes pomoFade{from{opacity:0}to{opacity:1}}';
+    const css = '.pomo-timer-display[role=button]{transition:opacity .12s ease;-webkit-tap-highlight-color:transparent}.pomo-timer-display[role=button]:active{opacity:.8}.pomo-run-control{transition:filter .12s ease,transform .12s ease}.pomo-run-control:active{transform:scale(.98);filter:brightness(.9)}.pomo-timer-display[role=button]:focus-visible{outline:2px solid #9a9aa6;outline-offset:-4px;border-radius:20px}.pomo-timer-display[data-style=eklipsi]:focus-visible{border-radius:50%}.pomo-flipin{animation:pomoFlipIn .38s cubic-bezier(.2,.7,.2,1)}@keyframes pomoFlipIn{0%{transform:translateY(-14%) scaleY(.82);opacity:.15}100%{transform:none;opacity:1}}.pomo-fade{animation:pomoFade .25s ease-out}@keyframes pomoFade{from{opacity:0}to{opacity:1}}';
     const abs = (style, children, key, props) => ce("div", { key, ...(props || {}), style: { position: 'absolute', ...style } }, children);
     const timerProps = { role: 'timer', 'aria-label': `${mm} minuta e ${left % 60} sekonda` };
     const centerIn = (top, children, key, extra) => abs({ left: 0, width: contentW, top, display: 'flex', flexDirection: 'column', alignItems: 'center', ...(extra || {}) }, children, key);
@@ -34206,7 +34201,7 @@ Nënshkrimi: _____________________`;
         ce("div", { style: { position: 'relative', width: D, height: D } }, ringSvg,
           ce("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' } },
             ce("div", { role: "timer", "aria-label": `${mm} minuta e ${left % 60} sekonda`, style: { fontSize: Math.round(D * 0.255), fontWeight: 200, letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } }, `${mmStr}:${ssStr}`),
-            ce("div", { style: { marginTop: Math.round(D * 0.05), fontSize: 13, letterSpacing: '0.22em', color: accent, opacity: 0.85, fontWeight: 500 } }, wide ? phaseLabel : `${phaseLabel} · ${counter}/${goal}`))));
+            ce("div", { style: { marginTop: Math.round(D * 0.05), fontSize: 13, letterSpacing: '0.22em', color: accent, opacity: 0.85, fontWeight: 500 } }, wide ? statusLabel : `${statusLabel} · ${counter}/${goal}`))));
     } else if (styleId === 'flip') {
       const mmChars = mmStr.split('');
       const ssChars = ssStr.split('');
@@ -34258,7 +34253,7 @@ Nënshkrimi: _____________________`;
       const tFont = Math.round(Math.min(midH * 0.46, displayW * 0.215, fullView ? 132 : 100));
       display = abs({ left: 0, width: contentW, top: midY, transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
         [ce("div", { key: 't', role: "timer", "aria-label": `${mm} minuta e ${left % 60} sekonda`, style: { fontSize: tFont, fontWeight: 200, letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } }, `${mmStr}:${ssStr}`),
-          wide ? ce("div", { key: 'l', style: { marginTop: 10, fontSize: 13, letterSpacing: '0.22em', color: accent, opacity: 0.8, fontWeight: 500 } }, phaseLabel) : null].filter(Boolean));
+          wide ? ce("div", { key: 'l', style: { marginTop: 10, fontSize: 13, letterSpacing: '0.22em', color: accent, opacity: 0.8, fontWeight: 500 } }, statusLabel) : null].filter(Boolean));
     }
 
     display = React.cloneElement(display, {
@@ -34266,25 +34261,25 @@ Nënshkrimi: _____________________`;
       style: { ...display.props.style, cursor: locked || pomoSetOpen ? 'default' : 'pointer', touchAction: locked ? 'none' : 'manipulation' },
       ...(!locked && !pomoSetOpen ? {
         role: 'button', tabIndex: 0, 'aria-pressed': running,
-        'aria-label': `${running ? 'Pauzo' : pomo.done ? 'Fillo përsëri' : left < pomo.total ? 'Vazhdo' : 'Fillo'} Pomodoron · ${mmStr}:${ssStr} · ${phaseLabel} · ${counter}/${goal}`,
+        'aria-label': `${running ? 'Pauzo' : pomo.done ? 'Fillo përsëri' : isPaused ? 'Vazhdo' : 'Fillo'} Pomodoron · ${mmStr}:${ssStr} · ${phaseLabel} · ${counter}/${goal}`,
         onClick: toggleRun,
         onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) toggleRun(event); } }
       } : {})
     });
 
     /* ---------- kontrollet ---------- */
-    const headerText = `${phaseLabel} · ${counterLabel}${wide && taskText ? ' · ' + taskText : ''}`;
+    const headerText = `${statusLabel} · ${counterLabel}${wide && taskText ? ' · ' + taskText : ''}`;
     const header = locked ? null : wide
       ? abs({ left: 'max(24px, env(safe-area-inset-left))', top: 'max(18px, env(safe-area-inset-top))', right: sideW + 24, fontSize: 12.5, letterSpacing: '0.2em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }, headerText, 'hdr')
       : abs({ left: 0, right: 0, top: 'max(16px, env(safe-area-inset-top))', height: 56, padding: `0 ${edgePad}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-        [ce("span", { key: 'l', style: { fontSize: narrow ? 11.5 : 12.5, letterSpacing: narrow ? '0.12em' : '0.22em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 } }, (styleId === 'eklipsi' ? 'POMODORO' : `${phaseLabel} · ${counterLabel}`)),
+        [ce("span", { key: 'l', role: 'status', 'aria-live': 'polite', style: { fontSize: narrow ? 11.5 : 12.5, letterSpacing: narrow ? '0.12em' : '0.22em', color: muted, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 } }, statusLabel),
           ce("div", { key: 'r', style: { display: 'flex', alignItems: 'center', gap: 6, flex: 'none' } },
             roundBtn(P_LOCK, 'Kyç ekranin', pomoLock, { size: tsz }),
             roundBtn(pomoFull ? P_COMPRESS : P_EXPAND, pomoFull ? 'Dil nga ekrani i plotë' : 'Ekran i plotë', pomoToggleFull, { outline: '#fff', color: '#fff', size: tsz }),
             roundBtn(P_CLOSE, 'Mbyll', pomoClose, { size: tsz }))], 'hdr');
     const taskLine = (!wide && taskText && !locked) ? abs({ left: edgePad, right: edgePad, bottom: 'calc(max(20px, env(safe-area-inset-bottom)) + 68px)', textAlign: 'center', fontSize: 15, color: '#8a8a96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, taskText, 'task') : null;
     const bottomBar = (locked || wide) ? null : abs({ left: edgePad, right: edgePad, bottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 12 },
-      [ce("button", { key: 'go', type: "button", onClick: toggleRun, style: { ...btnReset, flex: 1, height: 52, borderRadius: 26, background: accent, color: ink, fontSize: 17, fontWeight: 600 } }, runLabel),
+      [ce("button", { key: 'go', type: "button", className: 'pomo-run-control', 'aria-pressed': running, onClick: toggleRun, style: { ...btnReset, flex: 1, height: 52, borderRadius: 26, background: accent, color: ink, fontSize: 17, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 } }, icon(running ? P_PAUSE : P_PLAY, 'w-5 h-5', ink), runLabel),
         roundBtn(P_STOP, 'Ndalo Pomodoron', pomoStop, { size: 48, bg: '#17171c' }),
         roundBtn(P_SLIDERS, 'Cilësimet', () => setPomoSetOpen(true), { size: 48, bg: '#17171c' })], 'bar');
     const sideCol = (wide && !locked) ? abs({ right: 'max(20px, env(safe-area-inset-right))', top: 0, bottom: 0, width: sideW - 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: sideGap },

@@ -38,6 +38,21 @@ for(const vp of [{w:538,h:849},{w:844,h:390}]){
  ok(!nodes(f.render()).some(n=>n.props['aria-label']==='Rifillo kohëmatësin'),'phase reset is replaced by complete stop');
 }
 const settingsFixture=fixture({pomoSetOpen:true});ok(!nodes(settingsFixture.render()).find(n=>n.props.className==='pomo-timer-display').props.onClick,'timer cannot activate behind its settings panel');
+for(const style of ['eklipsi','flip','horizont'])for(const vp of [{w:390,h:844},{w:844,h:390}]){
+ for(const [state,label,action] of [[{endsAt:123,left:1500},'FOKUS','Pauzë'],[{endsAt:null,left:1500,wasPaused:true},'NË PAUZË','Vazhdo'],[{endsAt:null,left:1500},'GATI','Fillo'],[{endsAt:123,left:300,total:300,phase:'short'},'PUSHIM','Pauzë']]){
+  const f=fixture({pomoVp:vp,pomoSettings:{focus:25,short:5,long:15,every:4,goal:4,style},pomo:{phase:'focus',total:1500,cycle:0,taskId:'task',done:false,...state},pomoLeftSecs:()=>state.left});
+  const tree=f.render();ok(text(tree).includes(label),'persistent timer state is visible in every style/orientation: '+label);
+  ok(nodes(tree).some(n=>n.type==='button'&&(text(n)===action||n.props['aria-label']===action)),'clear primary action matches timer state: '+action);
+ }
+}
+// A pause during the first second still looks paused despite rounded-up 25:00.
+const immediate=vm.createContext({window:{},Date:{now:()=>1000},pomo:{phase:'focus',total:1500,left:1500,endsAt:1501000,cycle:0},pomoSettings:{},setPomoNow(){},pomoFinishPhase(){throw Error('not finished');}});
+vm.runInContext(fs.readFileSync(path.join(root,'assets/pomodoro-core.js'),'utf8'),immediate);
+immediate.setPomo=update=>{immediate.pomo=update(immediate.pomo);};immediate.pomoPhaseSecs=()=>1500;
+vm.runInContext(part('  const pomoStart =','  const pomoStop =')+'this.pause=pomoPause;this.start=pomoStart;this.reset=pomoReset;',immediate);
+immediate.pause();ok(immediate.pomo.left===1500&&immediate.pomo.wasPaused&&!immediate.pomo.endsAt,'immediate pause has a durable explicit paused state');
+immediate.start();ok(!immediate.pomo.wasPaused&&immediate.pomo.endsAt===1501000,'resume clears paused state without changing the deadline');
+immediate.pause();immediate.reset();ok(!immediate.pomo.wasPaused&&!immediate.pomo.endsAt,'reset returns to ready rather than paused');
 // Execute the real stop handler: it cancels the deadline and resets the sequence,
 // while preserving the task and completed-session history.
 let stoppedState={phase:'long',total:900,left:411,endsAt:Date.now()+411000,cycle:3,taskId:'chapter',done:false},settingsOpen=true;
