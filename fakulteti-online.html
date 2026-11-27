@@ -36032,7 +36032,7 @@ Nënshkrimi: _____________________`;
     "aria-pressed": isDark,
     title: isDark ? 'Aktivizo pamjen e çelët' : 'Aktivizo pamjen e errët',
     className: "app-theme-toggle flex p-2.5 rounded-xl text-secondary hover:text-primary hover-surface transition-colors text-sm items-center justify-center"
-  }, isDark ? '☀️' : '🌙'), !isInstructorAccount && /*#__PURE__*/React.createElement("button", {
+  }, isDark ? '☀️' : '🌙'), !isInstructorAccount && view !== 'settings' && /*#__PURE__*/React.createElement("button", {
     "data-access-hidden": typeof window !== 'undefined' && window.FakultetiApprovals && !(window.FakultetiApprovals.canView("settings")) ? 'true' : undefined,
     onClick: () => { setNotificationCenterOpen(false); setNotificationPreviewOpen(false); setGroupMessagesOpen(false); setView('settings'); },
     title: "Cil\xEBsimet dhe Profili",
