@@ -926,6 +926,7 @@
     @media (min-width: 1024px) { .exam-add-floating { right: 1.5rem; bottom: 1.5rem; } }
     .pomo-floating { position: fixed; z-index: 21; right: 1.5rem; bottom: 1.5rem; display: inline-flex; align-items: center; gap: .5rem; height: 3rem; padding: 0 1rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,.18); background: rgb(var(--brand-rgb)); color: #fff; font-size: .875rem; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px rgba(var(--brand-rgb), .24); cursor: pointer; transition: transform .2s ease, opacity .2s ease; }
     .pomo-floating:hover { transform: translateY(-2px); }
+    .pomo-floating:active { transform: scale(.95); filter: brightness(1.15); }
     .pomo-floating:focus-visible { outline: 2px solid rgb(var(--brand-rgb)); outline-offset: 3px; }
     .pomo-floating.is-break { background: #059669; box-shadow: 0 6px 18px rgba(5,150,105,.28); }
     .pomo-floating .pomo-dot { width: .5rem; height: .5rem; border-radius: 9999px; background: currentColor; animation: pomoPulse 1.6s ease-in-out infinite; }
@@ -34167,11 +34168,18 @@ Nënshkrimi: _____________________`;
     const P_PLAY = "M8 5.5v13l10.5-6.5z";
     const btnReset = { background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' };
     const roundBtn = (path, label, onClick, o = {}) => ce("button", { type: "button", onClick, "aria-label": label, title: label, style: { ...btnReset, width: o.size || 44, height: o.size || 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', border: o.outline ? `1.4px solid ${o.outline}` : 0, background: o.bg || 'transparent', color: o.color || '#9a9aa6' } }, icon(path, o.iconCls, o.color || '#9a9aa6'));
-    const toggleRun = () => { if (locked || pomoSetOpen) return; if (running) pomoPause(); else pomoStart(); };
+    const toggleRun = event => {
+      if (locked || pomoSetOpen) return;
+      const target = event?.currentTarget;
+      if (target?.animate && !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) {
+        try { target.animate([{ filter: 'brightness(1.35)', opacity: .65 }, { filter: 'brightness(1)', opacity: 1 }], { duration: 280, easing: 'ease-out' }); } catch {}
+      }
+      if (running) pomoPause(); else pomoStart();
+    };
     const runLabel = running ? 'Pauzë' : pomo.done ? 'Fillo përsëri' : (left < pomo.total ? 'Vazhdo' : 'Fillo');
 
     /* ---------- pamja e kohës ---------- */
-    const css = '.pomo-timer-display[role=button]:focus-visible{outline:2px solid #9a9aa6;outline-offset:-4px;border-radius:20px}.pomo-timer-display[data-style=eklipsi]:focus-visible{border-radius:50%}.pomo-flipin{animation:pomoFlipIn .38s cubic-bezier(.2,.7,.2,1)}@keyframes pomoFlipIn{0%{transform:translateY(-14%) scaleY(.82);opacity:.15}100%{transform:none;opacity:1}}.pomo-fade{animation:pomoFade .25s ease-out}@keyframes pomoFade{from{opacity:0}to{opacity:1}}';
+    const css = '.pomo-timer-display[role=button]{transition:opacity .12s ease;-webkit-tap-highlight-color:transparent}.pomo-timer-display[role=button]:active{opacity:.65}.pomo-timer-display[role=button]:focus-visible{outline:2px solid #9a9aa6;outline-offset:-4px;border-radius:20px}.pomo-timer-display[data-style=eklipsi]:focus-visible{border-radius:50%}.pomo-flipin{animation:pomoFlipIn .38s cubic-bezier(.2,.7,.2,1)}@keyframes pomoFlipIn{0%{transform:translateY(-14%) scaleY(.82);opacity:.15}100%{transform:none;opacity:1}}.pomo-fade{animation:pomoFade .25s ease-out}@keyframes pomoFade{from{opacity:0}to{opacity:1}}';
     const abs = (style, children, key, props) => ce("div", { key, ...(props || {}), style: { position: 'absolute', ...style } }, children);
     const timerProps = { role: 'timer', 'aria-label': `${mm} minuta e ${left % 60} sekonda` };
     const centerIn = (top, children, key, extra) => abs({ left: 0, width: contentW, top, display: 'flex', flexDirection: 'column', alignItems: 'center', ...(extra || {}) }, children, key);
@@ -34260,7 +34268,7 @@ Nënshkrimi: _____________________`;
         role: 'button', tabIndex: 0, 'aria-pressed': running,
         'aria-label': `${running ? 'Pauzo' : pomo.done ? 'Fillo përsëri' : left < pomo.total ? 'Vazhdo' : 'Fillo'} Pomodoron · ${mmStr}:${ssStr} · ${phaseLabel} · ${counter}/${goal}`,
         onClick: toggleRun,
-        onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) toggleRun(); } }
+        onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) toggleRun(event); } }
       } : {})
     });
 
