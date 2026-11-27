@@ -9,5 +9,6 @@ html.app-pull-ready,html.app-pull-ready body{overscroll-behavior-y:contain}
 .app-pull-refresh.is-error button{color:var(--muted)}
 .app-pull-refresh .is-spinning{animation:app-pull-spin .8s linear infinite}
 .app-pull-announcement{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.app-pull-message{position:absolute;top:52px;left:50%;transform:translateX(-50%);width:min(300px,calc(100vw - 32px));padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:inherit;font-size:12px;line-height:1.5;text-align:center;box-shadow:0 4px 14px rgba(15,23,42,.1);pointer-events:none}
 @keyframes app-pull-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.app-pull-refresh{transition:none}.app-pull-refresh .is-spinning{animation-duration:1.8s}}

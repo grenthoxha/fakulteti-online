@@ -7,9 +7,10 @@ const text = n => n && typeof n === 'object' ? n.children.map(text).join('') : S
 let checks = 0;
 const ok = (v, m) => { assert(v, m); checks++; };
 const registry = take('const BRANCHES =', '/* End faculty context helpers. */');
-const globals = {React: {createElement: h}, OFFICIAL_CATALOG_SOURCES: {psikologji: {url: 'psychology'}, kompjuterike: {}, mjekesi: {}}};
+const globals = {window:{}, React: {createElement: h}, OFFICIAL_CATALOG_SOURCES: {psikologji: {url: 'psychology'}, kompjuterike: {}, mjekesi: {}}};
 for (const name of new Set(registry.match(/\bOFFICIAL_[A-Z_]+_YEARS\b/g))) globals[name] = [{id: 1, semesters: [{id: 1, courses: [{id: name, title: name, status: 'O'}]}]}];
 const c = vm.createContext(globals);
+vm.runInContext(fs.readFileSync('assets/master-curricula.js','utf8'),c);
 vm.runInContext(registry + ';this.branches=BRANCHES;this.programmes=FILOZOFIKU_MASTER_PROGRAMMES;this.find=getFacultyBranches;this.context=getStudentFacultyContext;this.schedule=getFacultyScheduleProgram;', c);
 const masters = c.find('filozofik', '', 'master');
 ok(masters.length === 8 && new Set(c.branches.map(b => b.id)).size === c.branches.length, 'eight current MA programmes have distinct stable IDs');
@@ -17,12 +18,17 @@ for (const branch of masters) {
   const count = branch.id === 'master-arkivistike' ? 1 : 2;
   ok(branch.years.length === count && branch.years.at(-1).semesters.at(-1).id === count * 2, branch.id + ': correct years and semesters');
   ok(c.context(branch.id).faculty.id === 'filozofik' && c.context(branch.id).hasFreeRooms, branch.id + ': correct faculty membership');
-  ok(branch.years.every(y => y.full === 'Master' && y.semesters.every(s => s.courses.length === 0)) && c.schedule(branch.id, 1)?.studyLevel === 'master', branch.id + ': keeps MA timetable identity without inheriting BA subjects or materials');
+  ok(branch.years.every(y => y.full === 'Master' && y.semesters.every(s => s.courses.length > 0)) && c.schedule(branch.id, 1)?.studyLevel === 'master', branch.id + ': all MA semesters have their own official subjects and timetable identity');
+  const courses=branch.years.flatMap(y=>y.semesters.flatMap(s=>s.courses));
+  ok(courses.every(course=>course.id.startsWith('up_')&&course.official&&course.ects>0&&['O','Z'].includes(course.status)&&!course.chapters.length&&!course.cards.length&&!course.quiz.length),'official subjects do not fabricate learning content or reuse BA content');
   ok(branch.source.url.startsWith('https://filozofiku.uni-pr.edu/'), branch.id + ': official source retained');
 }
 ok(c.find('filozofik', '', 'bachelor').some(b => b.id === 'psikologji') && !c.find('filozofik', '', 'bachelor').some(b => b.studyLevel === 'master'), 'existing BA programmes stay separate');
 ok(c.find('filozofik', 'klinike', 'master')[0].id === 'master-psikologji-klinike' && c.find('filozofik', 'Trashegimi', 'master').length === 1, 'search works for master titles and unaccented phone input');
 ok(c.find('fiek', '', 'master').length === 0, 'MA programmes do not leak into another faculty');
+const allMA=masters.flatMap(b=>b.years.flatMap(y=>y.semesters.flatMap(s=>s.courses)));
+ok(new Set(allMA.map(course=>course.id)).size===allMA.length,'all MA course identities are unique across subjects, programmes and semesters');
+ok(masters.find(b=>b.id==='master-sociologji').years[0].semesters[0].courses[0].title==='Metodat e hulumtimit empirik','Master subject list follows the published curriculum');
 
 // Execute the real onboarding component, including the level and year callbacks.
 function onboarding() {

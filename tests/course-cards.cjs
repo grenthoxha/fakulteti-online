@@ -65,6 +65,10 @@ let detail=c.path(),detailNodes=nodes(detail),staffIndex=detailNodes.findIndex(n
 ok(staffIndex>=0&&staffIndex<detailNodes.findIndex(n=>n.type==='button'&&text(n).includes('Ligjërata dhe kapituj')),'teaching staff precedes the separate learning entry');
 ok(!text(detail).includes('Sipas caktimit'),'generic professor placeholder is not duplicated in course subtitle');
 c.chapters=[];detail=c.path();ok(text(detail).includes('Linda Hoxha')&&text(detail).indexOf('Linda Hoxha')<text(detail).indexOf('Materialet e kësaj lënde'),'course without chapters still displays staff first');
+ok(nodes(detail).some(n=>n.type==='button'&&text(n).includes('Shënimet e mia')),'personal notes remain available even before a master or bachelor course has uploaded learning content');
+const maCourse={id:'up_socm_01_01',title:'Metodat e hulumtimit empirik',chapters:[]};
+const maStaff=c.staff(maCourse,{program:{groupName:'Sociologji',studyLevel:'master'},data:{rooms:[{e:[{t:maCourse.title,p:'Prof. Master Ligjërues',a:'Ligjërata',g:'Psikologji-1BA · Sociologji-1MA'},{t:maCourse.title,p:'Prof. Bachelor Ligjërues',a:'Ligjërata',g:'Sociologji-1BA'}]}]},yearId:1});
+ok(maStaff.professor==='Master Ligjërues','master teaching staff comes from the MA group rather than a same-named BA subject');
 // The overview separates material browsing from the existing learning tools.
 const courseTabs=[];Object.assign(c,{chapters:course.chapters,hasCourseMaterials:true,unitStorage:{},ModalPortal:'Portal',openCourseTab:id=>courseTabs.push(id),openCourseSection:(selected,tab)=>courseTabs.push(tab)});
 c.window.FakultetiCourseMaterials={hasCourse:()=>true,Section:'MaterialEntry'};
@@ -75,6 +79,7 @@ nodes(detail).find(n=>n.type==='MaterialEntry').props.onOpen();ok(courseTabs.at(
 vm.runInContext('this.learning=renderCourseLearning;',c);
 Object.assign(c,{iconBtn:'button',unitReadJson:()=>({}),openCourseBook(){},openCourseReader(){},openCourseLecture(){},UNIT_BOOK_POS:'book-position',formatLastStudied:()=>'',READ_ICONS:{book:'book'},renderCourseMaterials:()=>null});
 const learning=c.learning();ok(nodes(learning).some(n=>n.type==='LearningPath')&&nodes(learning).some(n=>n.type==='input'&&n.props.type==='file'),'study renders the weekly learning path and preserves personal PDF upload');
+c.chapters=[];const emptyLearning=c.learning();ok(nodes(emptyLearning).some(n=>n.type==='LearningPath'&&typeof n.props.onUpload==='function')&&nodes(emptyLearning).some(n=>n.type==='input'&&n.props.type==='file'),'a new master or bachelor course permits personal PDF reading before lecture content is uploaded');c.chapters=course.chapters;
 ok(nodes(learning).find(n=>n.type==='LearningPath').props.model===c.courseLearningModel,'weekly view uses the account-scoped progression model');
 ok(!nodes(learning).some(n=>n.type==='MaterialEntry')&&!nodes(learning).some(n=>n.props.className?.includes('course-teaching-staff')),'learning does not duplicate staff or the material browser');
 ok(html.includes("currentTab === 'materials' && renderCourseMaterials(course, true)")&&html.includes("currentTab === 'study' && renderCourseLearning()"),'course routes render both pages inside the existing app shell');

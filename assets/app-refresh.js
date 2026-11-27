@@ -16,16 +16,17 @@
       return true;
     };
     const reset=()=>{gesture=null;emit({phase:'idle',distance:0});};
-    const finish=ok=>{
+    const finish=result=>{
       if(closed)return;
-      emit({phase:ok?'success':'error',distance:48});
-      settleTimer=win.setTimeout(()=>emit({phase:'idle',distance:0}),ok?650:3000);
+      const ok=result?.ok!==false;
+      emit({phase:ok?(result?.partial?'partial':'success'):'error',distance:48,message:result?.message||''});
+      settleTimer=win.setTimeout(()=>emit({phase:'idle',distance:0,message:''}),ok&&!result?.partial?650:6000);
     };
     const run=()=>{
       if(job)return job;
       if(closed)return Promise.resolve({ok:false});
-      win.clearTimeout(settleTimer);gesture=null;emit({phase:'loading',distance:48,top:top()});
-      job=Promise.resolve().then(()=>refresh()).then(result=>{finish(result?.ok!==false);return result;},()=>{finish(false);return{ok:false};}).finally(()=>{job=null;});
+      win.clearTimeout(settleTimer);gesture=null;emit({phase:'loading',distance:48,top:top(),message:''});
+      job=Promise.resolve().then(()=>refresh()).then(result=>{finish(result);return result;},()=>{finish({ok:false});return{ok:false};}).finally(()=>{job=null;});
       return job;
     };
     const start=event=>{
@@ -80,12 +81,14 @@
       root.document.documentElement.classList.add('app-pull-ready');
       return()=>{control.dispose();controller.current=null;root.document.documentElement.classList.remove('app-pull-ready');};
     },[onRefresh]);
-    const{phase,distance,top}=state,busy=phase==='loading',visible=phase!=='idle';
+    const{phase,distance,top,message}=state,busy=phase==='loading',visible=phase!=='idle';
     const labels={idle:'Rifresko faqen',pulling:'Tërhiq poshtë për rifreskim',armed:'Lësho për rifreskim',loading:'Po rifreskohet',success:'U rifreskua',error:'Rifreskimi nuk u krye. Provo përsëri'};
-    const path=phase==='success'?'M5 12l4 4L19 6':phase==='error'?'M12 7v6M12 17h.01M12 3l10 18H2z':'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-2L20 7M4 17l2.3 2a7 7 0 0 0 11.6-2';
+    const label=message||labels[phase]||'Prek për rifreskim';
+    const path=phase==='success'?'M5 12l4 4L19 6':phase==='partial'?'M12 8h.01M12 12v5M22 12a10 10 0 11-20 0 10 10 0 0120 0':'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-2L20 7M4 17l2.3 2a7 7 0 0 0 11.6-2';
     return h('div',{className:`app-pull-refresh is-${phase}`,'aria-hidden':!visible,style:{top:top+8,opacity:visible?Math.min(1,distance/30):0,transform:`translateY(${visible?Math.min(24,distance*.35):-12}px)`}},
-      h('span',{className:'app-pull-announcement',role:'status','aria-live':'polite'},visible?labels[phase]:''),
-      h('button',{type:'button',tabIndex:visible?0:-1,disabled:busy,'aria-busy':busy,'aria-label':labels[phase],title:labels[phase],onClick:()=>controller.current?.refresh()},
+      h('span',{className:'app-pull-announcement',role:'status','aria-live':'polite'},visible?label:''),
+      visible&&(phase==='error'||phase==='partial')&&h('span',{className:'app-pull-message'},label),
+      h('button',{type:'button',tabIndex:visible?0:-1,disabled:busy,'aria-busy':busy,'aria-label':label,title:label,onClick:()=>controller.current?.refresh()},
         h('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,className:busy?'is-spinning':undefined,style:!busy&&['pulling','armed'].includes(phase)?{transform:`rotate(${distance*3}deg)`}:undefined},
           busy?h('circle',{cx:12,cy:12,r:8,strokeDasharray:'36 51'}):h('path',{d:path}))));
   };

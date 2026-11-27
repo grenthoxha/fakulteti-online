@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="./assets/account-approvals.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-3">
-  <link rel="stylesheet" href="./assets/app-refresh.css?v=20261126-1">
+  <link rel="stylesheet" href="./assets/app-refresh.css?v=20261127-1">
   <style id="profile-refinement">
     .profile-minimal.profile-refined {display:flex;flex-direction:column;gap:12px;padding-top:18px;}
     .profile-minimal.profile-refined > * {margin-top:0 !important;}
@@ -1726,10 +1726,11 @@
   <div id="root"></div>
 
   <script src="./assets/official-room-bookings.js?v=20261106-2"></script>
+  <script src="./assets/master-curricula.js?v=20261127-1"></script>
   <script src="./assets/editorial-content.js?v=20261108-story-layout2"></script>
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=13"></script>
-  <script src="./assets/app-refresh.js?v=20261126-1"></script>
+  <script src="./assets/app-refresh.js?v=20261127-1"></script>
   <script src="./assets/account-approvals.js?v=20261126-5"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
@@ -8422,18 +8423,27 @@ const FILOZOFIKU_MASTER_PROGRAMMES = Object.freeze([
   { id: 'master-histori-koha-e-re', label: 'Histori Koha e Re', scheduleGroup: 'Koha e Re', years: 2, icon: '📜', desc: 'Studimi dhe hulumtimi i historisë moderne.', document: '51BE7A94-975E-46EF-9F04-BEA9F97697F5.pdf' },
   { id: 'master-arkivistike', label: 'Arkivistikë', years: 1, icon: '📚', desc: 'Ruajtja, përpunimi dhe digjitalizimi i arkivave.', document: '6145452F-4CBA-4E05-842C-78F336F083F1.pdf' },
   { id: 'master-marredhenie-nderkombetare', label: 'Marrëdhënie Ndërkombëtare dhe Diplomaci', years: 2, icon: '🌐', desc: 'Politika ndërkombëtare dhe diplomacia.', document: 'BEC42FCF-B931-4FA7-B4FE-8159293D8852.pdf' },
-  { id: 'master-trashegimi-kulturore', label: 'Trashëgimi Kulturore', years: 2, icon: '🏛️', desc: 'Hulumtimi, mbrojtja dhe menaxhimi i trashëgimisë.', url: 'https://filozofiku.uni-pr.edu/page.aspx?id=1,66' }
+  { id: 'master-trashegimi-kulturore', label: 'Trashëgimi Kulturore', years: 2, icon: '🏛️', desc: 'Hulumtimi, mbrojtja dhe menaxhimi i trashëgimisë.', document: '3BF74FB7-3585-4353-AB6F-55DA01B4A450.pdf' }
 ]);
 for (const programme of FILOZOFIKU_MASTER_PROGRAMMES) {
+  const curriculum = typeof window !== 'undefined' ? window.FakultetiMasterCurricula?.[programme.id] : null;
+  const source = { label: 'Programi Master · Fakulteti Filozofik', url: programme.url || `https://filozofiku.uni-pr.edu/desk/inc/media/${programme.document}` };
   BRANCHES.push({
     id: programme.id, label: programme.label, icon: programme.icon, desc: programme.desc,
     faculty: 'Fakulteti Filozofik · UP', facultyShort: 'Filozofik', studyLevel: 'master', scheduleGroup: programme.scheduleGroup || programme.label,
-    catalogStatus: 'programme', verifiedAt: '2026-11-26',
-    source: { label: 'Programi Master · Fakulteti Filozofik', url: programme.url || `https://filozofiku.uni-pr.edu/desk/inc/media/${programme.document}` },
+    catalogStatus: curriculum ? 'verified' : 'programme', verifiedAt: '2026-11-27', source,
     years: Array.from({ length: programme.years }, (_, index) => ({
       id: index + 1, label: `Viti ${['I', 'II'][index]}`, full: 'Master',
       desc: `${programme.years === 1 ? '1 vit' : '2 vite'} · ${programme.years * 60} ECTS`,
-      semesters: [1, 2].map(offset => ({ id: index * 2 + offset, label: `Semestri ${['I', 'II', 'III', 'IV'][index * 2 + offset - 1]}`, courses: [] }))
+      semesters: [1, 2].map(offset => {
+        const id = index * 2 + offset;
+        return { id, label: `Semestri ${['I', 'II', 'III', 'IV'][id - 1]}`, officialEcts: 30,
+          courses: (curriculum?.semesters[id - 1] || []).map(([title, ects, status, prof = ''], ordinal) => ({
+            id: `up_${curriculum.code.toLowerCase()}_${String(id).padStart(2, '0')}_${String(ordinal + 1).padStart(2, '0')}`,
+            title, ects, status, prof, color: 'brand', official: true, officialSource: source, catalogStatus: 'verified',
+            desc: 'Lëndë e programit Master të Fakultetit Filozofik.', chapters: [], cards: [], quiz: [], cases: []
+          })) };
+      })
     }))
   });
 }
@@ -10106,10 +10116,10 @@ function getCourseTeachingStaff(course, { program, data, schedule = [], branchId
   });
   if (program && data) {
     for (const room of data.rooms || []) for (const event of room.e || []) {
-      const groups = String(event.g || '').split(/[,;]/);
+      const groups = String(event.g || '').split(/[,;·]/);
       if (!groups.some(value => {
-        const match = foldFacultyText(value).match(/^(.*?)\s*-\s*(\d)ba\b/);
-        return match && match[1].trim() === foldFacultyText(program.groupName) && Number(match[2]) === Number(yearId) && matchesGroup(value);
+        const match = foldFacultyText(value).match(/^(.*?)\s*-\s*(\d+)\s*(ba|ma)\b/);
+        return match && [program.groupName, ...(program.groupNames || [])].some(name => foldFacultyText(name) === match[1].trim()) && match[3] === (program.studyLevel === 'master' ? 'ma' : 'ba') && Number(match[2]) === Number(yearId) && matchesGroup(value);
       }) || !sameCourse(event.t)) continue;
       const activity = foldFacultyText(event.a);
       if (activity.includes('ushtrim')) add(assistants, event.p);
@@ -10424,6 +10434,19 @@ function getFilozofikuProgramSessions(data, program, dayId, date = getFilozofiku
     .sort((a, b) => a.start.localeCompare(b.start) || a.room.localeCompare(b.room, 'sq') || a.g.localeCompare(b.g, 'sq'));
 }
 
+function canFilterMasterRooms(name) {
+  return /^grent(?:i)?(?:\s|$)/i.test(String(name || '').trim());
+}
+function getFilozofikuMasterSessions(data, dayIdx, query = '') {
+  const date = getFilozofikuDateForDay(dayIdx);
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const words = normalize(query).trim().split(/\s+/).filter(Boolean);
+  return (data.rooms || []).flatMap(room => getFilozofikuRoomEvents(data, room, dayIdx, date).map(event => ({...event, room: room.l || room.n, date})))
+    .filter(event => String(event.g || '').split(/[,;·]/).some(group => /-\s*\d+\s*ma\b/i.test(group)))
+    .filter(event => words.every(word => normalize([event.t, event.p, event.g, event.room].join(' ')).includes(word)))
+    .sort((a, b) => a.s - b.s || a.room.localeCompare(b.room, 'sq'));
+}
+
 function getFilozofikuReplacements(data, query = '', now = new Date()) {
   if (typeof FilozofikuBookings === 'undefined') return [];
   const today = FilozofikuBookings.localDate(now);
@@ -10727,6 +10750,9 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     });
   }, [data, useLiveClock, startIdx, endIdx, liveInfo]);
 
+  const showMasterRoomFilter = canFilterMasterRooms(window.FakultetiApprovals?.policy?.name || unitStorage.getItem('u_real_name') || unitStorage.getItem('u_name'));
+  const masterSessions = useMemo(() => getFilozofikuMasterSessions(data, dayIdx), [data, dayIdx]);
+  const filteredMasterSessions = useMemo(() => getFilozofikuMasterSessions(data, dayIdx, searchQuery), [data, dayIdx, searchQuery]);
   const allReplacements = useMemo(() => getFilozofikuReplacements(data, '', nowDate), [data, nowDate]);
   const filteredReplacements = useMemo(() => getFilozofikuReplacements(data, searchQuery, nowDate), [data, searchQuery, nowDate]);
   const freeCount = roomsEvaluated.filter(r => r.isFree).length;
@@ -10908,7 +10934,8 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
             { id: 'free', label: 'Të lira (' + freeCount + ')' },
             { id: 'occupied', label: 'Të zëna (' + occupiedCount + ')' },
             { id: 'professors', label: 'Profesorët (' + professorsEvaluated.length + ')' },
-            { id: 'replacements', label: 'Zëvendësimet (' + allReplacements.length + ')' }
+            { id: 'replacements', label: 'Zëvendësimet (' + allReplacements.length + ')' },
+            ...(showMasterRoomFilter ? [{ id: 'master', label: 'Master (' + masterSessions.length + ')' }] : [])
           ].map(tab => h('button', {
             key: tab.id,
             type: 'button',
@@ -10938,10 +10965,10 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
     ),
 
     /* Professors Grid (when statusFilter === 'professors') OR Rooms Grid */
-    statusFilter === 'replacements'
-      ? h('section', { 'aria-label': 'Zëvendësimet', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
-          filteredReplacements.length
-            ? filteredReplacements.map(event => h('article', {
+    (statusFilter === 'replacements' || (statusFilter === 'master' && showMasterRoomFilter))
+      ? h('section', { 'aria-label': statusFilter === 'master' ? 'Orët Master' : 'Zëvendësimet', className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' },
+          (statusFilter === 'master' ? filteredMasterSessions : filteredReplacements).length
+            ? (statusFilter === 'master' ? filteredMasterSessions : filteredReplacements).map(event => h('article', {
                 key: `${event.id}:${event.date}:${event.s}:${event.room}`, className: 'card-surface rounded-2xl border border-default p-4 space-y-2'
               },
                 h('time', { dateTime: event.date, className: 'block text-xs font-semibold text-secondary' }, Number(event.date.slice(8)) + ' ' + ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'][Number(event.date.slice(5, 7)) - 1] + ' ' + event.date.slice(0, 4)),
@@ -10952,7 +10979,7 @@ function FilozofikuFreeRoomsPage({ onBack, initialStatusFilter = 'all', compactM
                 event.p && h('p', { className: 'text-xs text-secondary' }, formatFilozofikuProf(event.p)),
                 event.g && h('p', { className: 'text-xs text-secondary' }, event.g)))
             : h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center text-sm font-bold text-primary col-span-full' },
-                allReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime.'))
+                statusFilter === 'master' ? 'Nuk ka orë Master për këtë ditë ose kërkim.' : allReplacements.length ? 'Nuk u gjet asnjë zëvendësim.' : 'Nuk ka zëvendësime.'))
       : (statusFilter === 'professors' || showProfessorSearch)
       ? (professorsToShow.length === 0
           ? h('div', { className: 'card-surface rounded-2xl border border-default p-8 text-center space-y-2' },
@@ -20681,7 +20708,7 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
     /* ── Pamje mësimi në stilin "Brilliant": një kapitull në ekran, pa zhurmë ── */
     const studyTabs = [
       { id: 'path', label: 'Lënda' },
-      ...(chapters.length ? [{ id: 'study', label: 'Ligjërata dhe kapituj', meta: `${progressPct}%` }] : []),
+      { id: 'study', label: chapters.length ? 'Ligjërata dhe kapituj' : 'Leximi im', meta: chapters.length ? `${progressPct}%` : null },
       ...(hasCourseMaterials ? [{ id: 'materials', label: 'Materiale nga studentët' }] : []),
       ...(courseBooks[course.id] ? [{ id: 'book', label: 'Libri (faqe për faqe)' }, { id: 'read', label: 'Teksti i kapitullit' }] : [{ id: 'read', label: 'Lexo' }]),
       { id: 'syllabus', label: 'Mësimi', meta: chapters.length ? `${readCount}/${chapters.length}` : null },
@@ -21052,20 +21079,19 @@ nativeCreateElement(window.UnitStudentSupport.ServicesCards, {
           course.ects ? lh('p', { className: 'course-overview-meta' }, `${course.ects} ECTS`) : null,
           renderCourseTeachingStaff(course)),
         lh('div', { className: 'course-overview-entries' },
-          chapters.length > 0 && lh('section', { className: 'course-overview-learning' },
-            row('study', 'Ligjërata dhe kapituj', [`${courseLearningModel.groups.length} ligjërata`, `${chapters.length} kapituj`].join(' · '), READ_ICONS.book, () => openCourseTab('study'),
+          lh('section', { className: 'course-overview-learning' },
+            row('study', chapters.length ? 'Ligjërata dhe kapituj' : 'Leximi im', chapters.length ? [`${courseLearningModel.groups.length} ligjërata`, `${chapters.length} kapituj`].join(' · ') : 'Shto librin tënd për lexim', READ_ICONS.book, () => openCourseTab('study'),
               lh('span', { className: 'course-overview-progress' }, `${progressPct}%`, lessonIcon(LESSON_ICONS.chev, 'w-4 h-4'))),
             lh('div', { className: 'course-overview-track', role: 'progressbar', 'aria-label': 'Progresi i mësimit', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': progressPct }, lh('span', { style: { width: `${progressPct}%` } }))),
           hasCourseMaterials && renderCourseMaterials(course),
           courseBook && lh('section', { className: 'course-overview-personal-book' }, row('book', courseBook.name, `${courseBook.pages} faqe · Libri yt`, READ_ICONS.book, openCourseBook))),
-        (chapters.length > 0 || cards.length > 0 || quizzes.length > 0) && lh('section', { className: 'course-overview-tools', 'aria-label': 'Mjetet e lëndës' },
+        lh('section', { className: 'course-overview-tools', 'aria-label': 'Mjetet e lëndës' },
           chapters.length > 0 && row('summary', 'Përmbledhja', null, READ_ICONS.list, () => openCourseTab('cheatsheet')),
           (cards.length > 0 || quizzes.length > 0) && row('practice', 'Praktiko', practiceSub, READ_ICONS.bolt, openCoursePractice),
           row('notes', 'Shënimet e mia', null, 'M4 4h16v16H4zM8 8h8M8 12h8M8 16h5', () => openCourseTab('notes'))),
         !chapters.length && !hasCourseMaterials && !courseBook && lh('p', { className: 'course-overview-empty' }, 'Materialet e kësaj lënde ende nuk janë shtuar.'));
     };
     const renderCourseLearning = () => {
-      if (!chapters.length) return lh('p', { className: 'course-overview-empty' }, 'Mësimi në app nuk është shtuar ende për këtë lëndë.');
       return lh(React.Fragment, null,
         lh('input', { type: 'file', accept: 'application/pdf,.pdf', className: 'hidden', ref: bookInputRef, 'aria-hidden': true, tabIndex: -1,
           onChange: event => { const picked = event.target.files && event.target.files[0]; event.target.value = ''; uploadCourseBook(picked); } }),
@@ -33685,17 +33711,20 @@ Nënshkrimi: _____________________`;
       const actsOf = el => el.parentElement && el.parentElement.querySelector('[data-swipe-actions]');
       const startPress = e => {
         press.fired = false; press.dragging = false; press.axis = null;
-        if (e.pointerType === 'mouse' || selecting) return;
+        if (selecting || e.isPrimary === false || (e.button != null && e.button !== 0)) return;
+        press.pointerId = e.pointerId; press.rowId = exam.id;
         clearTimeout(press.timer); press.x = e.clientX; press.y = e.clientY;
         if (press.openId && press.openId !== exam.id) setExamSwipeId(null);
-        press.timer = setTimeout(() => { press.fired = true; press.timer = null; try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {} setExamActionId(exam.id); }, 450);
+        if (e.pointerType !== 'mouse') press.timer = setTimeout(() => { press.fired = true; press.timer = null; try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {} setExamActionId(exam.id); }, 450);
       };
       const movePress = e => {
-        if (e.pointerType === 'mouse' || selecting) return;
+        if (selecting || press.pointerId !== e.pointerId || press.rowId !== exam.id) return;
         const dx = e.clientX - press.x, dy = e.clientY - press.y;
         if (!press.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { press.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; clearTimeout(press.timer); press.timer = null; }
         if (press.axis === 'x') {
           press.dragging = true;
+          if (e.cancelable) e.preventDefault();
+          try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
           const el = e.currentTarget, act = actsOf(el);
           const base = press.openId === exam.id ? -OPEN_W : 0;
           const tx = Math.max(-OPEN_W - 24, Math.min(0, base + dx));
@@ -33705,11 +33734,13 @@ Nënshkrimi: _____________________`;
         }
       };
       const endPress = e => {
+        if (press.pointerId !== e.pointerId || press.rowId !== exam.id) return;
+        press.pointerId = null;
         clearTimeout(press.timer); press.timer = null;
         if (!press.dragging) return;
         press.dragging = false; press.fired = true;
         const el = e.currentTarget, act = actsOf(el);
-        const goOpen = press.tx < -OPEN_W / 2;
+        const goOpen = /cancel|lostpointercapture/.test(e.type || '') ? revealed : press.tx < -OPEN_W / 2;
         el.style.transition = ''; el.style.transform = `translateX(${goOpen ? -OPEN_W : 0}px)`;
         if (!goOpen) setTimeout(() => { if (press.openId !== exam.id) { el.style.background = ''; if (act) act.style.visibility = 'hidden'; } }, 260);
         setExamSwipeId(goOpen ? exam.id : null);
@@ -33721,7 +33752,7 @@ Nënshkrimi: _____________________`;
         if (press.openId) { setExamSwipeId(null); if (press.openId === exam.id) return; }
         setOpenExamId(open ? null : exam.id);
       };
-      return ce("div", { key: exam.id, className: "-mx-[18px]" },
+      return ce("div", { key: exam.id, className: "-mx-[18px]", "data-swipe-ignore": true },
         ce("div", { className: "relative overflow-hidden" },
           ce("div", { "data-swipe-actions": true, className: "absolute right-0 inset-y-0 flex", style: { visibility: revealed ? 'visible' : 'hidden' } },
             ce("button", { type: "button", tabIndex: revealed ? 0 : -1, onClick: () => { setExamSwipeId(null); openEdit(exam); }, className: "w-[78px] h-full bg-brand-600 text-white text-[13px] font-semibold cursor-pointer" }, "Ndrysho"),
@@ -33729,7 +33760,7 @@ Nënshkrimi: _____________________`;
           ce("div", {
             className: "relative flex items-center gap-3 px-[18px] py-3 select-none",
             style: { WebkitTouchCallout: 'none', touchAction: 'pan-y', transform: `translateX(${revealed ? -OPEN_W : 0}px)`, transition: 'transform .22s ease', background: revealed ? 'var(--surface)' : undefined },
-            onPointerDown: startPress, onPointerMove: movePress, onPointerUp: endPress, onPointerCancel: endPress, onPointerLeave: stopTimer,
+            onPointerDown: startPress, onPointerMove: movePress, onPointerUp: endPress, onPointerCancel: endPress, onLostPointerCapture: endPress, onPointerLeave: stopTimer,
             onContextMenu: e => { if (!selecting && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { e.preventDefault(); setExamActionId(exam.id); } }
           },
             ce("button", {
@@ -33876,7 +33907,7 @@ Nënshkrimi: _____________________`;
     })();
     return ce("div", { className: `exams-minimal w-full max-w-2xl mx-auto space-y-5 anim-fade-up ${examSelect.on ? 'pb-24' : ''}` },
       addForm, actionSheet, chooserSheet, importSheet, selectBar,
-      next && ce("section", { className: `${cardCls} px-[18px] py-1.5 overflow-hidden` },
+      next && ce("section", { "data-swipe-ignore": true, className: `${cardCls} px-[18px] py-1.5 overflow-hidden` },
         examDeadlines.map(row)),
 
       !next && !deadlineDraft.isExamModalOpen && ce("section", { className: `${cardCls} px-5 py-8 text-center` },
@@ -38570,12 +38601,25 @@ Nënshkrimi: _____________________`;
 }
 
 async function refreshApplicationData() {
-  if (!window.FakultetiLocalAccounts.current() || !window.FakultetiApprovals?.check || navigator.onLine === false) return { ok: false };
-  const requests = [window.FakultetiApprovals.check()];
+  if (!window.FakultetiLocalAccounts.current()) return { ok: false, message: 'Hyr në llogari për rifreskim.' };
+  if (navigator.onLine === false) return { ok: false, message: 'Nuk ka lidhje me internet. Të dhënat e ruajtura mbeten këtu.' };
   const context = getStudentFacultyContext(unitStorage.getItem('u_branch'), unitStorage.getItem('u_faculty'));
-  if (context.hasFreeRooms) requests.push(FilozofikuDailyStore.refresh({ force: true }));
+  const requests = [Promise.resolve().then(() => {
+    if (!window.FakultetiApprovals?.check) throw Error('ACCOUNT_UNAVAILABLE');
+    return window.FakultetiApprovals.check();
+  })];
+  if (context.hasFreeRooms) requests.push(Promise.resolve().then(() => FilozofikuDailyStore.refresh({ force: true })));
   const results = await Promise.allSettled(requests);
-  return { ok: results.every(result => result.status === 'fulfilled' && result.value?.ok !== false) };
+  const succeeded = result => result?.status === 'fulfilled' && result.value?.ok !== false;
+  const accountOK = succeeded(results[0]), roomsOK = !context.hasFreeRooms || succeeded(results[1]);
+  if (!roomsOK) return { ok: false, message: 'Sallat dhe orari nuk u rifreskuan. Po ruhen të dhënat e fundit. Prek për ta provuar sërish.' };
+  if (!accountOK) {
+    if (context.hasFreeRooms && window.FakultetiApprovals?.policy?.status === 'approved') return {
+      ok: true, partial: true, message: 'Sallat dhe orari u rifreskuan. Llogaria nuk u sinkronizua; provo sërish.'
+    };
+    return { ok: false, message: 'Llogaria nuk u sinkronizua. Të dhënat lokale mbeten të ruajtura. Prek për ta provuar sërish.' };
+  }
+  return { ok: true };
 }
 
 window.fakultetiRefreshApp = refreshApplicationData;
