@@ -8541,27 +8541,9 @@ const isValidStudentNamePart = value => {
 };
 const isValidStudentFullName = value => {
   const parts = normalizeStudentName(value).split(' ');
-  return parts.length >= 2 && isValidStudentNamePart(parts[0]) && isValidStudentNamePart(parts.slice(1).join(' '));
+  const lastName = parts.slice(1).join(' ');
+  return isValidStudentNamePart(parts[0]) && lastName.length > 0 && lastName.length <= 80;
 };
-// ASK, ReKos 2024, "Emrat dhe mbiemrat në Kosovë", Table 3, printed page 8.
-// Source: https://askapi.rks-gov.net/Custom/52ce01c7-cf15-4230-bf43-464c5b1321b1.pdf
-// © ASK, February 2026. Reproduction permitted with source attribution.
-// Only surnames use this list. Given names are looked up in ASK NameSearch.
-// A name match is preliminary and never verifies a person or approves their ID.
-const ASK_STUDENT_LAST_NAMES = Object.freeze([
-  'Krasniqi', 'Gashi', 'Berisha', 'Morina', 'Shala', 'Bytyqi', 'Hasani', 'Rexhepi', 'Bajrami', 'Hoti',
-  'Kastrati', 'Mehmeti', 'Hoxha', 'Shabani', 'Kryeziu', 'Ahmeti', 'Hyseni', 'Osmani', 'Aliu', 'Mustafa',
-  'Ramadani', 'Thaqi', 'Ademi', 'Jashari', 'Sadiku', 'Salihu', 'Beqiri', 'Rama', 'Tahiri', 'Zeqiri',
-  'Syla', 'Ibrahimi', 'Sylejmani', 'Kelmendi', 'Maliqi', 'Haliti', 'Hajdari', 'Halili', 'Sejdiu', 'Maloku',
-  'Haziri', 'Elshani', 'Selimi', 'Isufi', 'Selmani', 'Arifi', 'Imeri', 'Uka', 'Fazliu', 'Latifi',
-  'Islami', 'Azemi', 'Miftari', 'Sahiti', 'Musliu', 'Kabashi', 'Abazi', 'Bajraktari', 'Bytyçi', 'Mazreku',
-  'Halimi', 'Zogaj', 'Neziri', 'Asllani', 'Ismajli', 'Ajeti', 'Murati', 'Zeneli', 'Bunjaku', 'Veseli',
-  'Shehu', 'Emini', 'Rexha', 'Thaçi', 'Spahiu', 'Avdyli', 'Rrahmani', 'Sinani', 'Pllana', 'Zeka',
-  'Brahimi', 'Hajdini', 'Avdiu', 'Kadriu', 'Demiri', 'Idrizi', 'Jakupi', 'Hashani', 'Rexhaj', 'Behrami',
-  'Ademaj', 'Bislimi', 'Balaj', 'Hoxhaj', 'Rashiti', 'Alija', 'Musa', 'Qerimi', 'Shaqiri', 'Duraku'
-]);
-const foldAskStudentName = value => normalizeStudentName(value).normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('sq');
-const askStudentLastNameSet = new Set(ASK_STUDENT_LAST_NAMES.map(foldAskStudentName));
 const ASK_DEFAULT_STUDENT_NAME = 'Arta Hoxha';
 const SERVICES_FAV_KEY = 'unit_services_favs_v1';
 const SERVICES_LAYOUT_KEY = 'unit_services_layout_v1';
@@ -8729,12 +8711,12 @@ const ServicesHomeGrid = ({ tiles, icons, lang, updates, mine }) => {
 };
 const ASK_NAME_LOOKUP_ENDPOINT = 'https://fakulteti-ask-name-check.personalebuds.chatgpt.site/api/ask-name';
 const askGivenNameCache = new Map();
-// Compound names are allowed only when every component occurs in its ASK list.
-const isListedAskStudentName = (value, list) => isValidStudentNamePart(value)
-  && normalizeStudentName(value).split(/[ '\u2019-]+/).every(part => list.has(foldAskStudentName(part)));
+// ASK checks only the given name. The surname is a free-text registration field.
 const getAskStudentNameError = (firstName, lastName) => {
-  if (!isValidStudentNamePart(firstName) || !isValidStudentNamePart(lastName)) return 'Shkruaj emrin dhe mbiemrin, me shkronja.';
-  if (!isListedAskStudentName(lastName, askStudentLastNameSet)) return 'Mbiemri nuk gjendet në listën aktuale të ASK-së. Kontrolloje shkrimin.';
+  if (!isValidStudentNamePart(firstName)) return 'Shkruaj emrin me shkronja.';
+  const surname = normalizeStudentName(lastName);
+  if (!surname) return 'Shkruaj mbiemrin.';
+  if (surname.length > 80) return 'Mbiemri mund të ketë deri në 80 karaktere.';
   return '';
 };
 const lookupAskGivenName = async value => {
