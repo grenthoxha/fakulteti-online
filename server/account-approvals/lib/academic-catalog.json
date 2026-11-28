@@ -1,0 +1,1435 @@
+[
+  {
+    "id": "filozofik",
+    "label": "Fakulteti Filozofik",
+    "programmes": [
+      {
+        "id": "psikologji",
+        "label": "Psikologji",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sociologji",
+        "label": "Sociologji",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "shkenca-politike",
+        "label": "Shkenca Politike",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-psikologji-shkollore",
+        "label": "Psikologji Shkollore dhe Këshillim",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-psikologji-klinike",
+        "label": "Psikologji Klinike dhe Komuniteti",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-sociologji",
+        "label": "Sociologji",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-filozofi-politike",
+        "label": "Filozofi Politike",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-histori-koha-e-re",
+        "label": "Histori Koha e Re",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-arkivistike",
+        "label": "Arkivistikë",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-marredhenie-nderkombetare",
+        "label": "Marrëdhënie Ndërkombëtare dhe Diplomaci",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "master-trashegimi-kulturore",
+        "label": "Trashëgimi Kulturore",
+        "level": "master",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pune-sociale",
+        "label": "Punë Sociale",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "filozofi",
+        "label": "Filozofi",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "histori",
+        "label": "Histori",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "antropologji",
+        "label": "Antropologji dhe Trashëgimi Kulturore",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "administrim-publik",
+        "label": "Administrim Publik",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "marredhenie-nderkombetare",
+        "label": "Marrëdhënie Ndërkombëtare",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fiek",
+    "label": "Fakulteti i Inxhinierisë Elektrike dhe Kompjuterike",
+    "programmes": [
+      {
+        "id": "shkenca-kompjuterike",
+        "label": "Inxhinieri Kompjuterike & Softuerike",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "inteligjence-artificiale",
+        "label": "Inteligjencë Artificiale & Data Science",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "telekomunikacion",
+        "label": "Telekomunikacion & Siguri Kibernetike",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fshmn",
+    "label": "FSHMN",
+    "programmes": [
+      {
+        "id": "inteligjence-artificiale",
+        "label": "Inteligjencë Artificiale & Data Science",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mjekesi",
+    "label": "Fakulteti i Mjekësisë",
+    "programmes": [
+      {
+        "id": "mjekesi",
+        "label": "Mjekësi e Përgjithshme",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          },
+          {
+            "id": "4",
+            "label": "Viti IV",
+            "semesters": [
+              {
+                "id": "7",
+                "label": "Semestri VII"
+              },
+              {
+                "id": "8",
+                "label": "Semestri VIII"
+              }
+            ]
+          },
+          {
+            "id": "5",
+            "label": "Viti V",
+            "semesters": [
+              {
+                "id": "9",
+                "label": "Semestri IX"
+              },
+              {
+                "id": "10",
+                "label": "Semestri X"
+              }
+            ]
+          },
+          {
+            "id": "6",
+            "label": "Viti VI",
+            "semesters": [
+              {
+                "id": "11",
+                "label": "Semestri XI"
+              },
+              {
+                "id": "12",
+                "label": "Semestri XII"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stomatologji",
+        "label": "Stomatologji",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "farmaci",
+        "label": "Farmaci",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fizioterapi",
+        "label": "Fizioterapi & Kujdes Shëndetësor",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ekonomik",
+    "label": "Fakulteti Ekonomik",
+    "programmes": [
+      {
+        "id": "banka-financa",
+        "label": "Banka, Financa dhe Kontabilitet",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "menaxhment-marketing",
+        "label": "Menaxhment, Ndërmarrësi & Marketing",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "juridik",
+    "label": "Fakulteti Juridik",
+    "programmes": [
+      {
+        "id": "drejtesi",
+        "label": "Drejtësi (Juridik i Përgjithshëm)",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "edukim",
+    "label": "Fakulteti i Edukimit",
+    "programmes": [
+      {
+        "id": "edukim-fillor",
+        "label": "Programi Fillor & Pedagogji",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "filologji",
+    "label": "Fakulteti i Filologjisë",
+    "programmes": [
+      {
+        "id": "anglisht-gazetari",
+        "label": "Gjuhë Angleze & Gazetari",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "arkitekture",
+    "label": "Fakulteti i Ndërtimtarisë dhe Arkitekturës",
+    "programmes": [
+      {
+        "id": "arkitekture-ndertimtari",
+        "label": "Arkitekturë & Ndërtimtari",
+        "level": "bachelor",
+        "years": [
+          {
+            "id": "1",
+            "label": "Viti I",
+            "semesters": [
+              {
+                "id": "1",
+                "label": "Semestri I"
+              },
+              {
+                "id": "2",
+                "label": "Semestri II"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "label": "Viti II",
+            "semesters": [
+              {
+                "id": "3",
+                "label": "Semestri III"
+              },
+              {
+                "id": "4",
+                "label": "Semestri IV"
+              }
+            ]
+          },
+          {
+            "id": "3",
+            "label": "Viti III",
+            "semesters": [
+              {
+                "id": "5",
+                "label": "Semestri V"
+              },
+              {
+                "id": "6",
+                "label": "Semestri VI"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

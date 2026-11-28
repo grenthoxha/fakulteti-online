@@ -1,4 +1,5 @@
 import { handleCloudAuth, cloudAccount, handleCloudProfile } from './cloud-accounts.mjs';
+import academicCatalog from './academic-catalog.json' with { type: 'json' };
 export const ADMIN_EMAIL = 'grent@gmail.com';
 export const SECTIONS = ['home', 'schedule', 'courses', 'exams', 'services', 'rooms', 'messages', 'articles'];
 const LANDINGS = ['auto', 'home', 'week', 'courses', 'student', 'studentservices', 'freerooms', 'articles', 'settings'];
@@ -13,6 +14,16 @@ const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;',
 const policy = row => ({ id: row.id, email: row.email, name: row.name, status: row.status,
   role: row.role, requestedRole: row.requested_role, permissions: JSON.parse(row.permissions),
   landing: row.landing, createdAt: row.created_at, updatedAt: row.updated_at, version: row.version });
+const academicKeys = ['faculty','branch','year','semester'];
+const academicProfile = value => value ? Object.fromEntries(academicKeys.map(key => [key, String(value[key] || '')])) : null;
+function validateAcademic(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 4 || Object.keys(value).some(key => !academicKeys.includes(key)) || academicKeys.some(key => typeof value[key] !== 'string')) fail('ACADEMIC_INVALID');
+  const faculty = academicCatalog.find(item => item.id === value.faculty);
+  const branch = faculty?.programmes.find(item => item.id === value.branch);
+  const year = branch?.years.find(item => item.id === value.year);
+  if (!year?.semesters.some(item => item.id === value.semester)) fail('ACADEMIC_INVALID');
+  return academicProfile(value);
+}
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 const signedText = (request, body) => [request.method, new URL(request.url).pathname,
   request.headers.get('X-Fakulteti-Time'), request.headers.get('X-Fakulteti-Nonce'), body].join('\n');
@@ -135,12 +146,12 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       return finish(json({events:rows.results}));
     }
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') {
-      const rows = await db.prepare("SELECT r.*,a.id AS account_id,a.profile AS cloud_profile,a.last_login FROM approval_requests r LEFT JOIN cloud_accounts a ON a.approval_id=r.id WHERE (r.role <> 'admin' OR r.id = ?) AND NOT EXISTS (SELECT 1 FROM cloud_accounts ca WHERE ca.email=r.email AND ca.approval_id<>r.id) ORDER BY r.created_at DESC LIMIT 1000").bind(canonical.id).all();
+      const rows = await db.prepare("SELECT r.*,a.id AS account_id,a.profile AS cloud_profile,a.profile_version,a.last_login FROM approval_requests r LEFT JOIN cloud_accounts a ON a.approval_id=r.id WHERE (r.role <> 'admin' OR r.id = ?) AND NOT EXISTS (SELECT 1 FROM cloud_accounts ca WHERE ca.email=r.email AND ca.approval_id<>r.id) ORDER BY r.created_at DESC LIMIT 1000").bind(canonical.id).all();
       return finish(json({ requests:rows.results.map(row=>{
         const profile=row.cloud_profile?JSON.parse(row.cloud_profile):null;
         return {...policy(row),online:Boolean(row.account_id),lastLogin:row.last_login||null,
-          profile:profile?{faculty:profile.faculty,branch:profile.branch,year:profile.year}:null};
-      }) }));
+          profile:academicProfile(profile),profileVersion:row.profile_version||null};
+      }), academicCatalog }));
     }
     const target = /^\/api\/admin\/requests\/([a-f0-9]{64})$/.exec(url.pathname);
     if (target && request.method === 'PATCH') {
@@ -148,10 +159,36 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       if (!['approved','rejected','suspended','pending'].includes(input.status) || !['student','instructor','president'].includes(input.role) || !Array.isArray(input.permissions) || input.permissions.some(p => !SECTIONS.includes(p)) || !LANDINGS.includes(input.landing) || !Number.isInteger(input.version)) fail('POLICY_INVALID');
       const routeSections = {home:'home',week:'schedule',courses:'courses',student:'exams',studentservices:'services',freerooms:'rooms',articles:'articles'};
       if (input.status === 'approved' && input.landing !== 'auto' && input.landing !== 'settings' && !input.permissions.includes(routeSections[input.landing])) fail('LANDING_DENIED');
-      const result = await db.prepare('UPDATE approval_requests SET status = ?, role = ?, permissions = ?, landing = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?').bind(input.status,input.role,JSON.stringify([...new Set(input.permissions)]),input.landing,now,target[1],input.version).run();
+      const targetAccount = await db.prepare('SELECT id,profile,profile_version FROM cloud_accounts WHERE approval_id = ?').bind(target[1]).first();
+      let academic;
+      if (input.academic !== undefined) {
+        if (input.status !== 'approved') fail('ACADEMIC_INVALID');
+        academic = validateAcademic(input.academic);
+        if (!targetAccount) fail('MIGRATION_REQUIRED',409);
+        if (!Number.isInteger(input.profileVersion) || input.profileVersion !== targetAccount.profile_version) fail('PROFILE_CHANGED',409);
+      }
+      const values = [input.status,input.role,JSON.stringify([...new Set(input.permissions)]),input.landing,now,target[1],input.version];
+      const update = 'UPDATE approval_requests SET status = ?, role = ?, permissions = ?, landing = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?';
+      let result;
+      if (academic) {
+        // D1 batches are transactions. Both versions are checked before either record changes.
+        // changes() ties the profile write to this exact successful policy update.
+        const nextProfile = {...JSON.parse(targetAccount.profile),...academic};
+        const results = await db.batch([
+          db.prepare(update + ' AND EXISTS (SELECT 1 FROM cloud_accounts WHERE id = ? AND profile_version = ?)').bind(...values,targetAccount.id,input.profileVersion),
+          db.prepare('UPDATE cloud_accounts SET profile = ?, profile_version = profile_version + 1, updated_at = ? WHERE id = ? AND profile_version = ? AND changes() = 1').bind(JSON.stringify(nextProfile),now,targetAccount.id,input.profileVersion),
+          db.prepare('INSERT INTO account_audit (id,actor,subject,action,created_at) SELECT ?,?,?,?,? WHERE changes() = 1').bind(random(),id,target[1],'academic:assigned',now)
+        ]);
+        result = results[0];
+        if (!result.meta.changes) {
+          const latest = await db.prepare('SELECT profile_version FROM cloud_accounts WHERE id = ?').bind(targetAccount.id).first();
+          if (latest?.profile_version !== input.profileVersion) fail('PROFILE_CHANGED',409);
+        }
+      } else result = await db.prepare(update).bind(...values).run();
       if (!result.meta.changes) fail('POLICY_CHANGED', 409);
       await db.prepare('INSERT INTO account_audit (id,actor,subject,action,created_at) VALUES (?,?,?,?,?)').bind(random(),id,target[1],'access:'+input.status,now).run();
-      return finish(json(policy(await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(target[1]).first())));
+      const savedAccount = await db.prepare('SELECT profile,profile_version FROM cloud_accounts WHERE approval_id = ?').bind(target[1]).first();
+      return finish(json({...policy(await db.prepare('SELECT * FROM approval_requests WHERE id = ?').bind(target[1]).first()),profile:academicProfile(savedAccount&&JSON.parse(savedAccount.profile)),profileVersion:savedAccount?.profile_version||null}));
     }
     fail('NOT_FOUND', 404);
   } catch (error) {

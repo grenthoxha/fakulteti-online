@@ -12,6 +12,8 @@ Legacy accounts are not silently uploaded: from their original device, open **Pr
 
 Profile changes use optimistic versions. If two devices edit the profile, local pending edits are retained and the account screen offers an explicit retry rather than silently overwriting them. Active approved local work can continue with the cached approval during a service outage; online admin actions always require server authorization.
 
+During approval the verified administrator can assign the faculty, Bachelor/Master programme, year and semester. The assignment and approval are saved together, guarded by both approval and profile versions; identity fields and device-local work are preserved. Leaving the academic selection unchanged keeps the existing student onboarding. Legacy local-only accounts must first connect online. The admin list exposes only academic profile fields, never private study data. To refresh the allowed academic options after a curriculum change, run `node scripts/build-academic-catalog.cjs` from the full app checkout and deploy `lib/academic-catalog.json` with the service. Run `node --test tests/admin-academic.test.mjs` in this service checkout for authorization, assignment and concurrency checks.
+
 The existing Android APK loads the live GitHub Pages app, so these web/database changes also apply after reopening that APK. There is no need to uninstall it or clear its data.
 
 Tests:

@@ -1,0 +1,48 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
+const catalog=JSON.parse(fs.readFileSync('server/account-approvals/lib/academic-catalog.json','utf8'));
+assert.deepEqual(catalog,require('../scripts/build-academic-catalog.cjs')());
+const states=[],effects=[],cleanups=[];let cursor=0,tree,checks=1,calls=[],failure='';
+const h=(type,props,...children)=>({type,props:props||{},children:children.flat(Infinity).filter(x=>x!=null&&x!==false)});
+const nodes=n=>n&&typeof n==='object'?[n,...n.children.flatMap(nodes)]:[];
+const text=n=>n&&typeof n==='object'?n.children.map(text).join(''):String(n??'');
+const React={createElement:h,Fragment:'fragment',useRef:v=>({current:v}),useState:initial=>{const i=cursor++;if(!(i in states))states[i]=typeof initial==='function'?initial():initial;return [states[i],v=>states[i]=typeof v==='function'?v(states[i]):v];},useEffect:f=>{const i=cursor++;if(!(i in states)){states[i]=true;effects.push(f);}}};
+const map=new Map(),storage={getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k)};
+const row={id:'a'.repeat(64),name:'Arta Hoxha',email:'arta@example.test',status:'pending',requestedRole:'student',role:'student',permissions:[],landing:'auto',online:true,version:1,profileVersion:1,profile:{faculty:'',branch:'',year:'',semester:''}};
+const root={crypto:webcrypto,navigator:{},document:{hidden:false,addEventListener(){},removeEventListener(){}},dispatchEvent(){},FakultetiLocalAccounts:{storage,current:()=>({id:'admin-local',email:'grent@gmail.com'}),syncProfile:async()=>{}},fetch:async(_,o)=>({ok:true,json:async()=>({id:o.headers['X-Fakulteti-Id'],email:'grent@gmail.com',status:'approved',role:'admin',isAdmin:true,permissions:[]})})};
+const c=vm.createContext({window:root,React,ReactDOM:{},TextEncoder,AbortController,Uint8Array,CustomEvent:class{},setTimeout,clearTimeout,setInterval:()=>1,clearInterval(){},console});
+vm.runInContext(fs.readFileSync('assets/account-approvals.js','utf8'),c);
+const api=root.FakultetiApprovals;
+api.list=async()=>({requests:[row],academicCatalog:catalog});api.audit=async()=>({events:[]});
+api.update=async(id,input)=>{calls.push(JSON.parse(JSON.stringify({id,input})));if(failure)throw Error(failure);return {...row,...input,version:input.version+1,profileVersion:input.academic?2:1,profile:input.academic||row.profile};};
+function render(){cursor=0;tree=root.FakultetiAccessManager({onClose(){}});while(effects.length){const cleanup=effects.shift()();if(cleanup)cleanups.push(cleanup);}return tree;}
+const ok=(v,m)=>{assert(v,m);checks++;};
+const find=label=>nodes(tree).find(n=>n.props['aria-label']===label);
+const button=label=>nodes(tree).find(n=>n.type==='button'&&text(n)===label);
+const change=(label,value)=>{find(label).props.onChange({target:{value}});render();};
+async function flush(){for(let i=0;i<8;i++)await Promise.resolve();render();}
+(async()=>{
+ await api.check();render();await flush();
+ nodes(tree).find(n=>n.props.className==='approval-request').props.onClick();render();
+ ok(find('Fakulteti i përdoruesit')&&find('Drejtimi i përdoruesit'),'applicant has academic selectors');
+ ok(find('Drejtimi i përdoruesit').props.disabled,'programme waits for faculty selection');
+ change('Fakulteti i përdoruesit','filozofik');
+ ok(text(find('Drejtimi i përdoruesit')).includes('Master')&&text(find('Drejtimi i përdoruesit')).includes('Bachelor'),'degree levels are distinguishable');
+ change('Drejtimi i përdoruesit','master-sociologji');
+ ok(find('Viti i përdoruesit').props.value==='1'&&find('Semestri i përdoruesit').props.value==='1','selecting programme initializes valid first year and semester');
+ change('Viti i përdoruesit','2');ok(find('Semestri i përdoruesit').props.value==='3','year change selects corresponding semester');
+ change('Semestri i përdoruesit','4');await button('Aprovo llogarinë').props.onClick();render();
+ assert.deepEqual(calls[0].input.academic,{faculty:'filozofik',branch:'master-sociologji',year:'2',semester:'4'});checks++;
+ ok(calls[0].id===row.id&&calls[0].input.profileVersion===1&&calls[0].input.version===1,'save targets the selected request with both revisions');
+ ok(text(tree).includes('Drejtimi dhe qasja u ruajtën.'),'saved academic assignment has visible confirmation');
+ change('Drejtimi i përdoruesit','master-arkivistike');ok(!text(find('Viti i përdoruesit')).includes('Viti II'),'one-year Master has no invented second year');
+ change('Fakulteti i përdoruesit','fiek');ok(find('Drejtimi i përdoruesit').props.value===''&&find('Viti i përdoruesit').props.disabled,'changing faculty resets incompatible programme/year');
+ const before=calls.length;await button('Ruaj qasjen').props.onClick();render();ok(calls.length===before&&text(tree).includes('Zgjidh fakultetin'),'incomplete assignment stays unsaved with an explanation');
+ const fiek=catalog.find(f=>f.id==='fiek');change('Drejtimi i përdoruesit',fiek.programmes[0].id);
+ failure='PROFILE_CHANGED';await button('Ruaj qasjen').props.onClick();render();ok(text(tree).includes('Përdoruesi e ndryshoi profilin.'),'concurrent profile change tells admin to reload');
+ ok(find('Drejtimi i përdoruesit').props.value===fiek.programmes[0].id,'failed save retains admin draft');
+ failure='';await find('Rifresko kërkesat').props.onClick();render();nodes(tree).find(n=>n.props.className==='approval-request').props.onClick();render();
+ await button('Aprovo llogarinë').props.onClick();render();ok(!('academic' in calls.at(-1).input),'approval without an academic choice retains student onboarding');
+ row.online=false;await find('Rifresko kërkesat').props.onClick();render();nodes(tree).find(n=>n.props.className==='approval-request').props.onClick();render();
+ ok(nodes(tree).find(n=>n.props.className==='approval-academic').props.disabled&&text(tree).includes('Caktimi bëhet pasi'),'local-only accounts receive a clear online prerequisite');
+ cleanups.forEach(f=>f());console.log(`PASS: ${checks} admin academic catalogue, selection, saving and conflict checks`);
+})().catch(e=>{cleanups.forEach(f=>f());console.error(e);process.exitCode=1;});

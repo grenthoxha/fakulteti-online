@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
-import {database} from '../server/account-approvals/tests/approval-service.test.mjs';
+import {database,device,linkOwner} from '../server/account-approvals/tests/approval-service.test.mjs';
 import {handleApprovalRequest} from '../server/account-approvals/lib/approval-service.mjs';
 
 function page(db,map=new Map(),online=true) {
@@ -18,6 +18,21 @@ function page(db,map=new Map(),online=true) {
  return {api:root.FakultetiLocalAccounts,map,root,get reloads(){return reloads;},close:()=>timers.forEach(clearTimeout)};
 }
 const profile={firstName:'Arta',lastName:'Hoxha',gender:'female',role:'student'},email='arta@example.test',password='Only-synthetic-test-123';
+test('admin assignment reaches the waiting student without deleting any account-local study work',async()=>{
+ const db=database(),entry=page(db);const created=await entry.api.register(email,password,false,profile);created.complete();
+ const student=page(db,entry.map),admin=await device('grent@gmail.com','Grent Hoxha');
+ try {
+  student.api.storage.setItem('u_notes','local notes');student.api.storage.setItem('u_grades','local grades');student.api.storage.setItem('u_daily_routines','local tasks');
+  const now=Date.parse('2026-11-19T20:00:00Z');await admin.enroll(db);await linkOwner(db,admin);
+  const request=await db.prepare('SELECT approval_id FROM cloud_accounts WHERE email=?').bind(email).first();
+  let changes=0;student.root.addEventListener('fakulteti:profile',()=>changes++);
+  const response=await handleApprovalRequest(await admin.request('/api/admin/requests/'+request.approval_id,'PATCH',{status:'approved',role:'student',permissions:['home','courses','schedule','exams'],landing:'auto',version:1,profileVersion:1,academic:{faculty:'filozofik',branch:'master-sociologji',year:'2',semester:'3'}}),{DB:db},now);
+  assert.equal(response.status,200);await student.api.syncProfile();
+  assert.equal(student.api.storage.getItem('u_branch'),'master-sociologji');assert.equal(student.api.storage.getItem('u_faculty'),'filozofik');assert.equal(student.api.storage.getItem('u_year'),'2');assert.equal(student.api.storage.getItem('u_semester'),'3');
+  assert.equal(student.api.storage.getItem('u_faculty_selected_v1'),'1');assert.deepEqual(JSON.parse(student.api.storage.getItem('u_unlocked')),[1,2]);assert.equal(changes,1);assert.equal(student.reloads,0);
+  assert.equal(student.api.storage.getItem('u_notes'),'local notes');assert.equal(student.api.storage.getItem('u_grades'),'local grades');assert.equal(student.api.storage.getItem('u_daily_routines'),'local tasks');
+ } finally {entry.close();student.close();}
+});
 test('frontend cloud flow preserves namespaces, keeps learning local and synchronizes only profiles',async()=>{
  const db=database(),a=page(db),created=await a.api.register(email,password,false,profile);created.complete();
  const first=page(db,a.map);assert.equal(first.api.isOnline(),true);
