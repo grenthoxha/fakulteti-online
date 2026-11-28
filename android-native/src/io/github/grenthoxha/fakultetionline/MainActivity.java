@@ -40,8 +40,11 @@ import android.window.OnBackInvokedDispatcher;
 public final class MainActivity extends Activity {
     private static final Uri APP_ORIGIN = Uri.parse("https://grenthoxha.github.io");
     private static final String APP_PATH = "/fakulteti-online/";
-    private static final int WEB_REVISION = 10;
-    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.9";
+    private static final int WEB_REVISION = 11;
+    private static final int ADMIN_ALERT_PERMISSION = 809;
+    private String pendingApprovalScope;
+    private String approvalBridgeScope;
+    private static final String START_URL = APP_ORIGIN + APP_PATH + "?source=homescreen&app=1.0.10";
     private static final int FILE_PICKER = 1;
     private static final int NOTIFICATION_PERMISSION = 2;
     private static final int REPEAT_NOTIFICATION_PERMISSION = 3;
@@ -77,6 +80,10 @@ public final class MainActivity extends Activity {
                 window.dispatchEvent(new CustomEvent('fakulteti:pomo-permission', { detail: event.data === 'pomo-notifications-on' }));
               } else if (typeof event.data === 'string' && event.data.startsWith('reminders-permission:')) {
                 try { window.dispatchEvent(new CustomEvent('fakulteti:reminders-permission', {detail:JSON.parse(event.data.slice(21))})); } catch {}
+              } else if (typeof event.data === 'string' && event.data.startsWith('approval-alerts-state:')) {
+                try { window.dispatchEvent(new CustomEvent('fakulteti:approval-alerts-state', { detail: JSON.parse(event.data.slice(22)) })); } catch {}
+              } else if (typeof event.data === 'string' && event.data.startsWith('approval-alerts-open:')) {
+                window.dispatchEvent(new CustomEvent('fakulteti:approval-alerts-open', { detail: event.data.slice(21) }));
               } else if (event.data === 'widget-sync') {
                 window.dispatchEvent(new Event('fakulteti:widget-sync'));
               } else if (typeof event.data === 'string' && event.data.startsWith('widget-command:')) {
@@ -91,6 +98,7 @@ public final class MainActivity extends Activity {
               demoRepeatSupported: true,
               notificationFeedSupported: true,
               scheduledRemindersSupported: true,
+              adminApprovalsSupported: true,
               widgetsSupported: true,
               pomoNotificationsSupported: true,
               send(command) {
@@ -343,6 +351,12 @@ public final class MainActivity extends Activity {
     }
 
     private void handlePageMessage(String message) {
+        if(message.startsWith("approval-alerts-sync:")){AdminApprovalAlerts.sync(this,message.substring(21));sendApprovalState();return;}
+        if(message.equals("approval-alerts-clear")){AdminApprovalAlerts.clear(this);approvalBridgeScope=null;pendingApprovalScope=null;sendApprovalState();return;}
+        if(message.equals("approval-alerts-state")){sendApprovalState();return;}
+        if(message.equals("approval-alerts-check")){AdminApprovalAlerts.checkAsync(this,true);sendApprovalState();return;}
+        if(message.startsWith("approval-alerts-ready:")){approvalBridgeScope=message.substring(22);openPendingApproval();return;}
+        if(message.equals("approval-alerts-permission")){if(!focusLocked&&hasWindowFocus())requestApprovalPermission();return;}
         if(message.equals("reminders-permission")){if(!focusLocked&&hasWindowFocus())requestReminderPermission();return;}
         if(message.startsWith("reminders-state:")){ScheduledReminders.sync(this,message.substring(16));return;}
         if (message.equals("pomo-notifications")) { if (!focusLocked && hasWindowFocus()) requestPomodoroNotifications(); return; }
@@ -416,6 +430,8 @@ public final class MainActivity extends Activity {
     }
 
     private void readNotificationIntent(Intent intent) {
+        pendingApprovalScope=intent.getStringExtra(AdminApprovalAlerts.OPEN);
+        intent.removeExtra(AdminApprovalAlerts.OPEN);
         pendingNotificationId = intent.getStringExtra(DemoNotifications.OPEN_ITEM);
         pendingNotificationScope = intent.getStringExtra(DemoNotifications.OPEN_SCOPE);
         intent.removeExtra(DemoNotifications.OPEN_ITEM);
@@ -429,6 +445,7 @@ public final class MainActivity extends Activity {
         readNotificationIntent(intent);
         readWidgetIntent(intent);
         openPendingNotification();
+        openPendingApproval();
         sendWidgetCommands();
     }
 
@@ -475,7 +492,23 @@ public final class MainActivity extends Activity {
         pendingNotificationScope = null;
     }
 
+    private void openPendingApproval(){
+        if(pagePort==null||focusLocked||pendingApprovalScope==null||approvalBridgeScope==null)return;
+        if(pendingApprovalScope.equals(approvalBridgeScope)&&pendingApprovalScope.equals(AdminApprovalAlerts.scope(this))){hideFullscreenVideo();pagePort.postMessage(new WebMessage("approval-alerts-open:"+pendingApprovalScope));}
+        pendingApprovalScope=null;
+    }
+    private void sendApprovalState(){if(pagePort!=null)pagePort.postMessage(new WebMessage("approval-alerts-state:"+AdminApprovalAlerts.state(this)));}
+    private void requestApprovalPermission(){
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+            if(getPreferences(MODE_PRIVATE).getBoolean("asked_approval_alerts",false)&&!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)){showNotificationSettings();return;}
+            getPreferences(MODE_PRIVATE).edit().putBoolean("asked_approval_alerts",true).apply();requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},ADMIN_ALERT_PERMISSION);return;
+        }
+        if(!AdminApprovalAlerts.permitted(this)){showNotificationSettings();return;}
+        AdminApprovalAlerts.schedule(this);AdminApprovalAlerts.checkAsync(this,true);sendApprovalState();
+    }
+
     private void closePagePort() {
+        approvalBridgeScope=null;
         if (pagePort != null) {
             pagePort.close();
             pagePort = null;
@@ -505,6 +538,7 @@ public final class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(request, permissions, grants);
+        if(request==ADMIN_ALERT_PERMISSION){AdminApprovalAlerts.schedule(this);AdminApprovalAlerts.checkAsync(this,true);sendApprovalState();return;}
         if(request==REMINDERS_PERMISSION){finishReminderPermission();return;}
         if (request==POMODORO_PERMISSION) { finishPomodoroPermission(); return; }
         if ((request == NOTIFICATION_PERMISSION || request == REPEAT_NOTIFICATION_PERMISSION) && grants.length > 0
@@ -573,6 +607,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        AdminApprovalAlerts.schedule(this);sendApprovalState();openPendingApproval();
         sendWidgetCommands();
         ScheduledReminders.reschedule(this);
         FacultyWidgets.updateAll(this);

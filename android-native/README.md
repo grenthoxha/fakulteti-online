@@ -1,6 +1,6 @@
 # Fakulteti Android wrapper
 
-Version: 1.0.9-preview (versionCode 10). Package: io.github.grenthoxha.fakultetionline.
+Version: 1.0.10-preview (versionCode 11). Package: io.github.grenthoxha.fakultetionline.
 
 The APK loads the published GitHub Pages app. An upgrade refreshes WebView resources once, without clearing local accounts or Web Storage. YouTube uses its own controls; fullscreen opens through WebChromeClient and returns with Back. Rotation keeps the current player.
 
@@ -40,6 +40,20 @@ python tests/native-widgets.py
 ```
 
 Run these checks from the full repository checkout. The widget test exercises production snapshot validation, responsive rendering, phase transitions and Java/JavaScript timer parity with JVM doubles. Real Samsung launcher placement and physical-device behaviour are separate checks.
+
+## Administrator approval alerts
+
+The verified administrator receives real pending-account notifications from the existing approval service. Open **Profili → Cilësimet → Aprovimet dhe qasja → Njoftimet në telefon** and allow notifications. On a supported APK registration is automatic for the verified admin; the control can disable/revoke it or open Android permission settings. Other users cannot enroll.
+
+A persisted JobScheduler job with network access checks about every 15 minutes, including while the WebView is closed. Android battery management, force-stop, disabled notifications or no internet can delay delivery. A 30-day read-only device credential is refreshed when the app is used; reopen the app periodically to renew it. No password or private signing key is stored in the native job. Requests already seen do not alert again, dismissed notices are not reposted without a new request, and approving all requests clears the notice. Tapping it opens the verified administrator's approval panel. The app logo is used and lock-screen contents are private. Sign-out, account switching and server-side admin/session revocation stop access.
+
+```sh
+node tests/admin-alerts.cjs
+node --test server/account-approvals/tests/admin-alerts.test.mjs
+python tests/native-admin-alerts.py
+```
+
+The JVM test uses production scheduling/checking logic with Android doubles and synthetic HTTPS replies. APK signature/API compilation are checked during build; no physical Samsung delivery test was performed.
 
 ## Academic reminders
 

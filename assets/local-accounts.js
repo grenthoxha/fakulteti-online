@@ -220,12 +220,12 @@
 
   function signOut() {
     root.dispatchEvent?.(new CustomEvent('fakulteti:cloud-signout'));
-    root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
+    root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');root.fakultetiAndroid?.send('approval-alerts-clear');
     raw.removeItem(SESSION);
   }
   root.addEventListener('storage', event => {
     if ((event.key === SESSION || event.key === null || event.key === USERS) && raw.getItem(SESSION) !== startupSession) {
-      root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');
+      root.fakultetiAndroid?.send('notification-clear');root.fakultetiAndroid?.send('widget-clear');root.fakultetiAndroid?.send('approval-alerts-clear');
       root.location.reload();
     } else if (event.key === USERS && startupAccount && !current()) {
       signOut(); root.location.reload();

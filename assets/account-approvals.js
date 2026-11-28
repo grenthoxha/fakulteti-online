@@ -101,7 +101,8 @@
     get policy() { return currentPolicy; }, isAdmin: () => Boolean(currentPolicy?.isAdmin),
     adminLink: () => call('/api/admin-link','POST',{}),
     audit: () => call('/api/admin/audit'),
-    list: () => call('/api/admin/requests'), update: (id, policy) => call('/api/admin/requests/' + id,'PATCH',policy) };
+    alertsEnroll:()=>call('/api/admin/alerts','POST',{}),alertsRevoke:()=>call('/api/admin/alerts','DELETE'),
+    list: () => call('/api/admin/requests'), update: async (id, policy) => {const result=await call('/api/admin/requests/' + id,'PATCH',policy);root.dispatchEvent(new CustomEvent('fakulteti:requests-updated'));return result;} };
 
   const h = React.createElement, {useState,useEffect,useRef} = React;
   const icon = path => h('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true},h('path',{d:path}));
@@ -196,6 +197,7 @@
     const visible=rows.filter(row=>row.id!==currentPolicy.id&&row.role!=='admin').filter(row=>tab==='all'||(tab==='active'?row.status==='approved':row.status==='pending')).filter(row=>(row.name+' '+row.email).toLocaleLowerCase('sq').includes(query.toLocaleLowerCase('sq')));
     return h('div',{className:'approval-manager-overlay',role:'dialog','aria-modal':true,'aria-label':'Aprovimet dhe qasja'},h('section',{className:'approval-manager card-surface'},
       h('header',{className:'approval-manager-header'},h('div',null,h('h2',null,'Aprovimet dhe qasja'),h('p',null,rows.filter(r=>r.status==='pending').length+' në pritje · '+rows.filter(r=>r.status==='approved').length+' aktivë · '+rows.filter(r=>r.online).length+' llogari online')),h('button',{type:'button','aria-label':'Mbyll administrimin',className:'approval-icon-button',onClick:onClose},icon('M6 6l12 12M18 6L6 18'))),
+      root.FakultetiAdminAlertsControl&&h(root.FakultetiAdminAlertsControl),
       h('div',{className:'approval-manager-body'},h('aside',{className:'approval-requests'},
         h('div',{className:'approval-manager-tools'},h('input',{type:'search',placeholder:'Kërko emrin ose emailin',value:query,onChange:e=>setQuery(e.target.value),'aria-label':'Kërko kërkesat'}),h('button',{type:'button',onClick:load,disabled:busy,className:'approval-icon-button','aria-label':'Rifresko kërkesat'},icon('M20 8a8 8 0 10.5 5M20 3v5h-5'))),
         h('div',{className:'approval-tabs'},[['pending','Në pritje'],['active','Aktivë'],['all','Të gjithë']].map(([value,label])=>h('button',{key:value,type:'button','aria-pressed':tab===value,onClick:()=>setTab(value)},label,value==='pending'?' ('+rows.filter(row=>row.status==='pending').length+')':''))),

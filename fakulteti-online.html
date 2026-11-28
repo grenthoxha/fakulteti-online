@@ -12,11 +12,13 @@
   <link rel="manifest" href="./manifest.webmanifest?v=4">
   <meta name="apple-mobile-web-app-title" content="Fakulteti">
   <meta name="application-name" content="Fakulteti">
+  <link rel="stylesheet" href="./assets/phone-entry.css?v=20261128-1">
+  <script src="./assets/phone-entry.js?v=20261128-1"></script>
   <script src="./assets/cloud-accounts.js?v=2"></script>
-  <script src="./assets/local-accounts.js?v=20261126-1"></script>
+  <script src="./assets/local-accounts.js?v=20261128-1"></script>
   <script>window.FakultetiOnlineAccountsRequired = true; var unitStorage = window.FakultetiLocalAccounts.storage;</script>
   <link rel="stylesheet" href="./assets/local-auth.css?v=4">
-  <link rel="stylesheet" href="./assets/account-approvals.css?v=20261128-1">
+  <link rel="stylesheet" href="./assets/account-approvals.css?v=20261128-2">
   <link rel="stylesheet" href="./assets/student-support.css?v=20261104-logo">
   <link rel="stylesheet" href="./assets/home-reference.css?v=20261126-3">
   <link rel="stylesheet" href="./assets/app-refresh.css?v=20261127-1">
@@ -1732,7 +1734,8 @@
   <script src="./assets/student-support.js?v=20261115-accounts1"></script>
   <script src="./assets/local-auth-ui.js?v=13"></script>
   <script src="./assets/app-refresh.js?v=20261127-1"></script>
-  <script src="./assets/account-approvals.js?v=20261128-2"></script>
+  <script src="./assets/account-approvals.js?v=20261128-3"></script>
+  <script src="./assets/admin-alerts.js?v=20261128-1"></script>
   <script src="./assets/cloud-account-ui.js?v=1"></script>
   <script src="./assets/pomodoro-core.js?v=1"></script>
   <script src="./assets/pomodoro-planning.js?v=20261127-1"></script>
@@ -11274,7 +11277,7 @@ const getInitialScheduleProgram = (fullName, branchId, yearId, explicitFaculty =
 const getInitialAcademyView = (role, fullName, branchId) => role === 'instructor' ? 'instructor' : prefersFreeRoomsHome(fullName) && (!branchId || getStudentFacultyContext(branchId).hasFreeRooms) ? 'freerooms' : prefersSocialWorkSchedule(fullName) ? 'week' : 'home';
 
 const UNIT_INSTALL_URL = 'https://grenthoxha.github.io/fakulteti-online/?install=1';
-const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.9', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.9-android-preview/Fakulteti-Online.apk' });
+const UNIT_ANDROID_APK = Object.freeze({ version: '1.0.10', url: 'https://github.com/grenthoxha/fakulteti-online/releases/download/v1.0.10-android-preview/Fakulteti-Online.apk' });
 const getUnitInstallContext = (nav = navigator) => {
   const ua = String(nav.userAgent || '');
   const ios = /iPhone|iPad|iPod/i.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -38870,7 +38873,7 @@ function App() {
     onLanguageChange: handleLanguageChange
   });
 }
-ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/(window.FakultetiLocalAccounts.current() ? React.createElement(window.FakultetiApprovalGate, null, React.createElement(App)) : React.createElement(window.FakultetiLocalAuthView))));
+ReactDOM.createRoot(document.getElementById('root')).render( /*#__PURE__*/React.createElement(AppErrorBoundary, null, /*#__PURE__*/(window.FakultetiPhoneEntry?.allowed ? (window.FakultetiLocalAccounts.current() ? React.createElement(window.FakultetiApprovalGate, null, React.createElement(App)) : React.createElement(window.FakultetiLocalAuthView)) : React.createElement(window.FakultetiPhoneEntry?.View || (() => React.createElement('main', null, 'Kthehu në telefon'))))));
   
 
   </script>

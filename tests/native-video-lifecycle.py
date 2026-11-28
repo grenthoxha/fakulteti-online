@@ -1,4 +1,4 @@
-import os,subprocess
+import os,subprocess,re
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 s=(root/'android-native/src/io/github/grenthoxha/fakultetionline/MainActivity.java').read_text(encoding='utf8')
@@ -63,7 +63,10 @@ if True:
  subprocess.run([str(java_home/'bin/javac.exe'),'--release','17',str(p)],check=True)
  subprocess.run([str(java_home/'bin/java.exe'),'-cp',str(folder),'NativeVideoTest'],check=True)
 manifest=(root/'android-native/AndroidManifest.xml').read_text()
-assert 'android:versionCode="10"' in manifest and 'android:versionName="1.0.9-preview"' in manifest
+code=re.search(r'android:versionCode="(\d+)"',manifest).group(1)
+version=re.search(r'android:versionName="([^"-]+)-preview"',manifest).group(1)
+assert 'private static final int WEB_REVISION = '+code+';' in s
+assert '&app='+version+'"' in s
 assert 'orientation|screenSize|keyboardHidden' in manifest
 assert 'WebStorage.deleteAllData' not in s and 'clearApplicationUserData' not in s
 print('PASS: native version, rotation preservation and local data safeguards')

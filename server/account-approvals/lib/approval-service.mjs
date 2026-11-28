@@ -1,5 +1,6 @@
 import { handleCloudAuth, cloudAccount, handleCloudProfile } from './cloud-accounts.mjs';
 import academicCatalog from './academic-catalog.json' with { type: 'json' };
+import {issueAdminAlertToken,revokeAdminAlertToken,readAdminAlerts} from './admin-alerts.mjs';
 export const ADMIN_EMAIL = 'grent@gmail.com';
 export const SECTIONS = ['home', 'schedule', 'courses', 'exams', 'services', 'rooms', 'messages', 'articles'];
 const LANDINGS = ['auto', 'home', 'week', 'courses', 'student', 'studentservices', 'freerooms', 'articles', 'settings'];
@@ -90,7 +91,7 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
   const local = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
   const headers = { 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'Vary':'Origin' };
   if (allowedOrigins.has(origin) || local) Object.assign(headers, { 'Access-Control-Allow-Origin':origin,
-    'Access-Control-Allow-Methods':'GET, POST, PATCH, OPTIONS', 'Access-Control-Allow-Headers':'Content-Type, X-Fakulteti-Id, X-Fakulteti-Time, X-Fakulteti-Nonce, X-Fakulteti-Signature' });
+    'Access-Control-Allow-Methods':'GET, POST, PATCH, DELETE, OPTIONS', 'Access-Control-Allow-Headers':'Content-Type, X-Fakulteti-Id, X-Fakulteti-Time, X-Fakulteti-Nonce, X-Fakulteti-Signature, X-Fakulteti-Device, X-Fakulteti-Alert' });
   const finish = response => { Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value)); return response; };
   try {
     if (url.pathname === '/link-admin') return finish(await linkAdmin(request, env.DB, now, env.APPROVAL_OWNER_EMAIL));
@@ -99,6 +100,7 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
     if (request.method === 'OPTIONS') return finish(new Response(null, { status:204 }));
     if (!env.DB) fail('SERVICE_UNAVAILABLE', 503);
     const db = env.DB;
+    if (url.pathname === '/api/admin/alerts/pending') return finish(json(await readAdminAlerts(request,db,now,cloudAccount,isLinkedAdmin)));
     const body = ['POST','PATCH'].includes(request.method) ? await request.text() : '';
     if (utf8.encode(body).length > (url.pathname === '/api/cloud/profile' || url.pathname === '/api/cloud/register' ? 270000 : 8192)) fail('REQUEST_TOO_LARGE', 413);
     let input = {};
@@ -141,6 +143,8 @@ export async function handleApprovalRequest(request, env, now = Date.now()) {
       return finish(json({ url:url.origin + '/link-admin?request=' + id + '&token=' + token }));
     }
     if (!isAdmin) fail('ADMIN_REQUIRED', 403);
+    if (url.pathname === '/api/admin/alerts' && request.method === 'POST') return finish(json(await issueAdminAlertToken(db,id,canonical.id,account,now)));
+    if (url.pathname === '/api/admin/alerts' && request.method === 'DELETE') return finish(json(await revokeAdminAlertToken(db,id)));
     if (url.pathname === '/api/admin/audit' && request.method === 'GET') {
       const rows=await db.prepare('SELECT e.action,e.created_at AS createdAt,COALESCE(a.email,r.email) AS email,COALESCE(r.name,ar.name) AS name FROM account_audit e LEFT JOIN cloud_accounts a ON a.id=e.subject LEFT JOIN approval_requests r ON r.id=e.subject LEFT JOIN approval_requests ar ON ar.id=a.approval_id ORDER BY e.created_at DESC LIMIT 100').all();
       return finish(json({events:rows.results}));
