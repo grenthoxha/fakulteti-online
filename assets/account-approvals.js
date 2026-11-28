@@ -158,6 +158,17 @@
       !accounts.isOnline?.()&&root.FakultetiCloudAccountCard&&h(root.FakultetiCloudAccountCard),
       h('button',{type:'button',className:'approval-text-button',onClick:()=>{accounts.signOut();root.location.reload();}},'Dil nga llogaria')));
   };
+  root.FakultetiAcademicAssignmentWait = function AcademicAssignmentWait({onLogout}) {
+    const [busy,setBusy]=useState(false),[error,setError]=useState('');
+    const refresh=async()=>{setBusy(true);setError('');try{await api.check();}catch{setError('Kontrolli nuk u krye. Provo përsëri me internet.');}finally{setBusy(false);}};
+    return h('main',{className:'approval-wait-page'},h('section',{className:'approval-wait-card card-surface border border-default'},brand(),
+      h('div',{className:'approval-status-icon','aria-hidden':true},icon('M12 8v4l3 2M22 12a10 10 0 11-20 0 10 10 0 0120 0')),
+      h('h1',null,'Në pritje të caktimit të drejtimit'),
+      h('p',null,'Administratori do të caktojë drejtimin dhe vitin e studimit. App-i do të hapet automatikisht sapo të jenë caktuar.'),
+      error&&h('p',{className:'approval-error',role:'alert'},error),
+      h('button',{type:'button',className:'approval-primary',disabled:busy,onClick:refresh},busy?'Po kontrollohet…':'Kontrollo përsëri'),
+      h('button',{type:'button',className:'approval-text-button',onClick:onLogout},'Dil nga llogaria')));
+  };
   root.FakultetiAccessManager = function AccessManager({onClose}) {
     const [events,setEvents]=useState([]);
     const [catalog,setCatalog]=useState([]);
@@ -169,10 +180,10 @@
     const save=async status=>{setBusy(true);setError('');setNotice('');try{
       const input={status,role:draft.role,permissions:draft.permissions,landing:draft.landing,version:selected.version};
       const academicChanged=Object.keys(draft.academic).some(key=>draft.academic[key]!==academicOf(selected.profile)[key]);
-      if(status==='approved'&&academicChanged){
+      if(status==='approved'&&selected.online){
         const year=catalog.find(f=>f.id===draft.academic.faculty)?.programmes.find(b=>b.id===draft.academic.branch)?.years.find(y=>y.id===draft.academic.year);
         if(!year?.semesters.some(s=>s.id===draft.academic.semester))throw Error('ACADEMIC_INVALID');
-        input.academic=draft.academic;input.profileVersion=selected.profileVersion;
+        if(academicChanged){input.academic=draft.academic;input.profileVersion=selected.profileVersion;}
       }
       const result=await api.update(selected.id,input);const saved={...selected,...result};setRows(rows=>rows.map(row=>row.id===result.id?{...row,...result}:row));setSelected(saved);setDraft({...saved,academic:academicOf(saved.profile)});setNotice(status==='approved'?(academicChanged?'Drejtimi dhe qasja u ruajtën.':'Qasja u ruajt.'):status==='rejected'?'Kërkesa u refuzua.':'Qasja u pezullua.');
     }catch(e){setError(errorText(e));}finally{setBusy(false);}};
@@ -192,9 +203,9 @@
       h('section',{className:'approval-user-details'},selected&&draft?h(React.Fragment,null,
         h('div',{className:'approval-user-heading'},h('h3',null,selected.name),h('p',null,selected.email),h('p',{className:'text-sm text-secondary'},selected.online?'Llogari online':'Llogari e mëparshme · Ende pa u lidhur online'),selected.lastLogin&&h('p',{className:'text-sm text-secondary'},'Hyrja e fundit: '+new Date(selected.lastLogin).toLocaleString('sq'))),
         h('fieldset',{className:'approval-academic',disabled:busy||!selected.online||!catalog.length},h('legend',null,'Fakulteti dhe drejtimi'),
-          h('p',null,selected.online?'Cakto drejtimin gjatë aprovimit, ose lëre ta zgjedhë studenti pasi të aprovohet.':'Caktimi bëhet pasi përdoruesi ta lidhë llogarinë online.'),
+          h('p',null,selected.online?'Cakto drejtimin dhe vitin. Pas aprovimit studenti hyn drejtpërdrejt, pa i zgjedhur përsëri.':'Caktimi bëhet pasi përdoruesi ta lidhë llogarinë online.'),
           h('div',{className:'approval-form-row'},
-            h('label',null,'Fakulteti',h('select',{'aria-label':'Fakulteti i përdoruesit',value:draft.academic.faculty,onChange:e=>setAcademic({faculty:e.target.value,branch:'',year:'',semester:''})},options(catalog,'Zgjedh studenti'))),
+            h('label',null,'Fakulteti',h('select',{'aria-label':'Fakulteti i përdoruesit',value:draft.academic.faculty,onChange:e=>setAcademic({faculty:e.target.value,branch:'',year:'',semester:''})},options(catalog,'Zgjidh fakultetin'))),
             h('label',null,'Drejtimi',h('select',{'aria-label':'Drejtimi i përdoruesit',value:draft.academic.branch,disabled:!faculty,onChange:e=>{const b=faculty.programmes.find(item=>item.id===e.target.value),y=b?.years[0];setAcademic({branch:e.target.value,year:y?.id||'',semester:y?.semesters[0]?.id||''});}},options(faculty?.programmes,'Zgjidh drejtimin'))),
             h('label',null,'Viti',h('select',{'aria-label':'Viti i përdoruesit',value:draft.academic.year,disabled:!branch,onChange:e=>{const y=branch.years.find(item=>item.id===e.target.value);setAcademic({year:e.target.value,semester:y?.semesters[0]?.id||''});}},options(branch?.years,'Zgjidh vitin'))),
             h('label',null,'Semestri',h('select',{'aria-label':'Semestri i përdoruesit',value:draft.academic.semester,disabled:!year,onChange:e=>setAcademic({semester:e.target.value})},options(year?.semesters,'Zgjidh semestrin'))))),

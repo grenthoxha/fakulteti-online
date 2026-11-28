@@ -82,10 +82,12 @@ async function gateFixture(status = 'approved') {
 
   const html = fs.readFileSync('fakulteti-online.html', 'utf8');
   const appSource = html.slice(html.indexOf('function App() {'), html.indexOf('\nReactDOM.createRoot', html.indexOf('function App() {')));
-  function appFixture(rooms = false) {
+  function appFixture(rooms = false, {managed = false, assigned = true, admin = false} = {}) {
     const hooks = harness(), storage = new Map(Object.entries({u_name: rooms ? 'Bujar Hoti' : 'Arta Hoxha', u_real_name: rooms ? 'Bujar Hoti' : 'Arta Hoxha', u_branch: 'psychology', u_faculty: 'philosophy', u_year: '1', u_semester: '1'}));
+    if (!assigned) {storage.delete('u_branch');storage.delete('u_year');storage.delete('u_semester');}
     const doc = events({hidden: false, documentElement: {classList: {toggle() {}}}});
     const root = events({document: doc, history: {}, scrollTo() {}, navigator: {standalone: true}, matchMedia: () => ({matches: true}), FakultetiLocalAccounts: {current: () => ({id: 'account'})}});
+    if (managed) {root.FakultetiApprovals={policy:{status:'approved',role:'student',permissions:['home','courses','schedule','services','exams']},isAdmin:()=>admin,can:()=>true,landing:v=>v,fallback:v=>v};root.FakultetiAcademicAssignmentWait='AcademicAssignmentWait';}
     const c = vm.createContext({...hooks.hooks, React: hooks.hooks, window: root, document: doc, navigator: root.navigator, activeUiLanguage: 'sq', unitStorage: {getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v))},
       isValidStudentFullName: v => v.includes(' '), normalizeStudentName: v => v, getStudentFacultyContext: () => ({hasFreeRooms: true, faculty: {id: 'philosophy'}, branch: {years: [{id: 1}, {id: 2}]}}), prefersFreeRoomsHome: name => name === 'Bujar Hoti', UnitInstallState: {prepare() {}}, getInitialAcademyView: () => 'home', AcademyApp: 'AcademyApp', BujarRoomsApp: 'BujarRoomsApp', Onboarding: 'Onboarding'});
     vm.runInContext(appSource, c);
@@ -98,6 +100,10 @@ async function gateFixture(status = 'approved') {
   a.storage.set('u_name', 'Arta student'); a.root.dispatchEvent(new Event('fakulteti:profile', {detail: {accountId: 'other'}})); ok(a.render().props.studentName === 'Arta Hoxha', 'profile events cannot update another account');
   a.root.dispatchEvent(new Event('fakulteti:profile', {detail: {accountId: 'account'}})); tree = a.render(); ok(tree.props.studentName === 'Arta student' && tree.props.key === academicKey, 'remote name refresh updates header without losing the open course');
   a.storage.set('u_year', '2'); a.root.dispatchEvent(new Event('fakulteti:profile', {detail: {accountId: 'account'}})); tree = a.render(); ok(tree.props.initialYear === 2 && tree.props.key !== academicKey, 'actual academic context change uses the new curriculum'); a.unmount();
+  const waiting=appFixture(false,{managed:true,assigned:false});ok(waiting.render().type==='AcademicAssignmentWait','unassigned approved student is not asked to choose a programme');
+  waiting.storage.set('u_branch','psychology');waiting.storage.set('u_year','2');waiting.storage.set('u_semester','3');waiting.root.dispatchEvent(new Event('fakulteti:profile',{detail:{accountId:'account'}}));tree=waiting.render();ok(tree.type==='AcademyApp'&&tree.props.initialYear===2,'admin profile assignment opens the app without another chooser');waiting.unmount();
+  const assigned=appFixture(false,{managed:true});ok(assigned.render().type==='AcademyApp','preassigned student enters directly');assigned.unmount();
+  const owner=appFixture(false,{managed:true,assigned:false,admin:true});ok(owner.render().type==='Onboarding','administrator retains their own academic setup');owner.unmount();
   for (const file of ['github-publish/index.html', 'github-publish/fakulteti-online.html']) ok(fs.readFileSync(file, 'utf8') === html, 'HTML mirror remains identical');
   console.log(`PASS: ${checks} launch logo, foreground preservation, profile refresh and access security checks`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

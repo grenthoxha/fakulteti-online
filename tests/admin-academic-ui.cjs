@@ -41,7 +41,9 @@ async function flush(){for(let i=0;i<8;i++)await Promise.resolve();render();}
  failure='PROFILE_CHANGED';await button('Ruaj qasjen').props.onClick();render();ok(text(tree).includes('Përdoruesi e ndryshoi profilin.'),'concurrent profile change tells admin to reload');
  ok(find('Drejtimi i përdoruesit').props.value===fiek.programmes[0].id,'failed save retains admin draft');
  failure='';await find('Rifresko kërkesat').props.onClick();render();nodes(tree).find(n=>n.props.className==='approval-request').props.onClick();render();
- await button('Aprovo llogarinë').props.onClick();render();ok(!('academic' in calls.at(-1).input),'approval without an academic choice retains student onboarding');
+ const noChoiceCalls=calls.length;await button('Aprovo llogarinë').props.onClick();render();ok(calls.length===noChoiceCalls&&text(tree).includes('Zgjidh fakultetin'),'unassigned applicant requires an admin academic selection before approval');
+ change('Fakulteti i përdoruesit','filozofik');change('Drejtimi i përdoruesit','psikologji');await button('Aprovo llogarinë').props.onClick();render();
+ await button('Ruaj qasjen').props.onClick();render();ok(!('academic' in calls.at(-1).input),'saving unchanged existing academics does not overwrite the profile');
  row.online=false;await find('Rifresko kërkesat').props.onClick();render();nodes(tree).find(n=>n.props.className==='approval-request').props.onClick();render();
  ok(nodes(tree).find(n=>n.props.className==='approval-academic').props.disabled&&text(tree).includes('Caktimi bëhet pasi'),'local-only accounts receive a clear online prerequisite');
  cleanups.forEach(f=>f());console.log(`PASS: ${checks} admin academic catalogue, selection, saving and conflict checks`);
